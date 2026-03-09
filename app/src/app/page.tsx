@@ -89,7 +89,7 @@ export default function Home() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            <div className="flex gap-4 p-3 rounded-lg bg-primary/5 border border-primary/10">
+                            <div className="flex gap-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
                                 <Bell className="w-5 h-5 text-primary shrink-0" />
                                 <div className="text-sm">
                                     <p className="font-bold">システムメンテナンスのお知らせ</p>
