@@ -24,14 +24,14 @@ export default function RootLayout({
                 <SidebarProvider>
                     <AppSidebar />
                     <main className="flex-1 flex flex-col min-w-0">
-                        <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-card/80 backdrop-blur-md sticky top-0 z-20">
+                        <header className="h-16 flex items-center justify-between px-6 bg-background/90 backdrop-blur-md sticky top-0 z-20">
                             <div className="flex items-center gap-4 flex-1 max-w-xl">
                                 <SidebarTrigger className="-ml-1" />
                                 <div className="relative w-full group">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
                                     <Input
                                         placeholder="「消防設備士 期限」などで検索..."
-                                        className="pl-10 h-9 bg-muted/50 border-transparent focus-visible:bg-background focus-visible:border-primary/50 transition-all rounded-full w-full max-w-md"
+                                        className="pl-10 h-10 bg-card border-none shadow-sm focus-visible:ring-1 focus-visible:ring-primary transition-all rounded-xl w-full max-w-md"
                                     />
                                     <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-1 text-[10px] font-medium text-muted-foreground/50 border border-border/50 rounded px-1.5 bg-background/50">
                                         <Command className="w-2.5 h-2.5" />
@@ -44,7 +44,7 @@ export default function RootLayout({
                                     <Bell className="w-5 h-5 text-muted-foreground" />
                                     <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-[10px] font-bold text-white flex items-center justify-center rounded-full ring-2 ring-background animate-in zoom-in">1</span>
                                 </div>
-                                <button className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 border border-border/50 rounded-md hover:border-primary/30">
+                                <button className="text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors px-3 py-1.5 rounded-lg border border-transparent">
                                     ログアウト
                                 </button>
                             </div>

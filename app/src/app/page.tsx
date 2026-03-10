@@ -21,7 +21,7 @@ export default function Home() {
                         <p className="text-xs text-muted-foreground">+2 (今月)</p>
                     </CardContent>
                 </Card>
-                <Card className="shadow-sm">
+                <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">期限切れ（要対応）</CardTitle>
                         <AlertCircle className="h-4 w-4 text-destructive" />
@@ -89,14 +89,14 @@ export default function Home() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            <div className="flex gap-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                            <div className="flex gap-4 p-4 rounded-xl bg-primary/5 border-none">
                                 <Bell className="w-5 h-5 text-primary shrink-0" />
                                 <div className="text-sm">
                                     <p className="font-bold">システムメンテナンスのお知らせ</p>
                                     <p className="text-xs text-muted-foreground mt-1">本日20:00〜21:00まで、バックアップ作業のため一時的にアクセスが不安定になる可能性があります。</p>
                                 </div>
                             </div>
-                            <div className="flex gap-4 p-3 rounded-lg hover:bg-muted transition-colors cursor-pointer">
+                            <div className="flex gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer border border-transparent">
                                 <Users className="w-5 h-5 text-muted-foreground shrink-0" />
                                 <div className="text-sm">
                                     <p className="font-bold">新規社員の登録完了</p>
