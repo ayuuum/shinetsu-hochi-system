@@ -22,41 +22,39 @@ export default function RootLayout({
         <html lang="ja">
             <body className={noto.className}>
                 <SidebarProvider>
-                    <div className="flex min-h-screen bg-background text-foreground w-full">
-                        <AppSidebar />
-                        <main className="flex-1 flex flex-col min-w-0">
-                            <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-card/80 backdrop-blur-md sticky top-0 z-20">
-                                <div className="flex items-center gap-4 flex-1 max-w-xl">
-                                    <SidebarTrigger className="-ml-1" />
-                                    <div className="relative w-full group">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
-                                        <Input
-                                            placeholder="「消防設備士 期限」などで検索..."
-                                            className="pl-10 h-9 bg-muted/50 border-transparent focus-visible:bg-background focus-visible:border-primary/50 transition-all rounded-full w-full max-w-md"
-                                        />
-                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-1 text-[10px] font-medium text-muted-foreground/50 border border-border/50 rounded px-1.5 bg-background/50">
-                                            <Command className="w-2.5 h-2.5" />
-                                            <span>K</span>
-                                        </div>
+                    <AppSidebar />
+                    <main className="flex-1 flex flex-col min-w-0">
+                        <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-card/80 backdrop-blur-md sticky top-0 z-20">
+                            <div className="flex items-center gap-4 flex-1 max-w-xl">
+                                <SidebarTrigger className="-ml-1" />
+                                <div className="relative w-full group">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                                    <Input
+                                        placeholder="「消防設備士 期限」などで検索..."
+                                        className="pl-10 h-9 bg-muted/50 border-transparent focus-visible:bg-background focus-visible:border-primary/50 transition-all rounded-full w-full max-w-md"
+                                    />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-1 text-[10px] font-medium text-muted-foreground/50 border border-border/50 rounded px-1.5 bg-background/50">
+                                        <Command className="w-2.5 h-2.5" />
+                                        <span>K</span>
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <div className="relative cursor-pointer hover:opacity-80 transition-opacity">
-                                        <Bell className="w-5 h-5 text-muted-foreground" />
-                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-[10px] font-bold text-white flex items-center justify-center rounded-full ring-2 ring-background animate-in zoom-in">1</span>
-                                    </div>
-                                    <button className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 border border-border/50 rounded-md hover:border-primary/30">
-                                        ログアウト
-                                    </button>
-                                </div>
-                            </header>
-                            <div className="flex-1 p-6 md:p-8 overflow-y-auto">
-                                <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
-                                    {children}
                                 </div>
                             </div>
-                        </main>
-                    </div>
+                            <div className="flex items-center gap-4">
+                                <div className="relative cursor-pointer hover:opacity-80 transition-opacity">
+                                    <Bell className="w-5 h-5 text-muted-foreground" />
+                                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-[10px] font-bold text-white flex items-center justify-center rounded-full ring-2 ring-background animate-in zoom-in">1</span>
+                                </div>
+                                <button className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 border border-border/50 rounded-md hover:border-primary/30">
+                                    ログアウト
+                                </button>
+                            </div>
+                        </header>
+                        <div className="flex-1 p-6 md:p-8 overflow-y-auto">
+                            <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                {children}
+                            </div>
+                        </div>
+                    </main>
                 </SidebarProvider>
             </body>
         </html>

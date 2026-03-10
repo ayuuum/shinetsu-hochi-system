@@ -52,15 +52,13 @@ export function AppSidebar() {
                     {menuItems.map((item) => (
                         <SidebarMenuItem key={item.title}>
                             <SidebarMenuButton
-                                asChild
+                                render={<Link href={item.url} />}
                                 isActive={pathname === item.url}
                                 tooltip={item.title}
                                 className="transition-all duration-200"
                             >
-                                <Link href={item.url}>
-                                    <item.icon className="w-4 h-4" />
-                                    <span>{item.title}</span>
-                                </Link>
+                                <item.icon className="w-4 h-4" />
+                                <span>{item.title}</span>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     ))}
