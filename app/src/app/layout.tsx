@@ -24,7 +24,7 @@ export default function RootLayout({
                 <SidebarProvider>
                     <AppSidebar />
                     <main className="flex-1 flex flex-col min-w-0">
-                        <header className="h-16 flex items-center justify-between px-6 bg-background/90 backdrop-blur-md sticky top-0 z-20">
+                        <header className="h-16 flex items-center justify-between px-6 bg-background/80 backdrop-blur-md sticky top-0 z-20 border-b border-border/50">
                             <div className="flex items-center gap-4 flex-1 max-w-xl">
                                 <SidebarTrigger className="-ml-1" />
                                 <div className="relative w-full group">

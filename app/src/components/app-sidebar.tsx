@@ -37,15 +37,19 @@ export function AppSidebar() {
 
     return (
         <Sidebar collapsible="icon" className="border-r border-border bg-sidebar">
-            <SidebarHeader className="h-16 flex items-center px-4 border-b border-border/50">
-                <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
-                        <span className="text-white font-bold text-xs">信</span>
-                    </div>
-                    <span className="font-bold text-lg tracking-tight group-data-[collapsible=icon]:hidden whitespace-nowrap">
-                        信越報知
-                    </span>
-                </div>
+            <SidebarHeader className="h-16 flex items-center justify-center border-b border-border/50 p-2">
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton size="lg" className="pointer-events-none">
+                            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                                <span className="font-bold text-xs">信</span>
+                            </div>
+                            <div className="grid flex-1 text-left text-sm leading-tight ml-1">
+                                <span className="truncate font-bold text-lg tracking-wider">信越報知</span>
+                            </div>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
             </SidebarHeader>
             <SidebarContent className="py-2">
                 <SidebarMenu>
