@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
+import { Search, Bell, Command } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 const noto = Noto_Sans_JP({ subsets: ["latin"], weight: ["400", "700"] });
 
@@ -18,45 +21,43 @@ export default function RootLayout({
     return (
         <html lang="ja">
             <body className={noto.className}>
-                <div className="flex min-h-screen bg-background text-foreground">
-                    {/* シンプルなナビゲーション（後でSidebarコンポーネントに置き換え可能） */}
-                    <aside className="w-64 border-r border-border bg-card hidden md:flex flex-col">
-                        <div className="p-6 border-b border-border">
-                            <h1 className="text-xl font-bold text-primary">信越報知</h1>
-                            <p className="text-xs text-muted-foreground mt-1">Management System</p>
-                        </div>
-                        <nav className="flex-1 p-4 space-y-2">
-                            <a href="#" className="block px-4 py-2 rounded-md bg-primary/10 text-primary font-bold">ダッシュボード</a>
-                            <a href="#" className="block px-4 py-2 rounded-md hover:bg-muted transition-colors">社員一覧</a>
-                            <a href="#" className="block px-4 py-2 rounded-md hover:bg-muted transition-colors">資格・講習管理</a>
-                            <a href="#" className="block px-4 py-2 rounded-md hover:bg-muted transition-colors">車両・備品</a>
-                        </nav>
-                        <div className="p-4 border-t border-border">
-                            <div className="flex items-center gap-3 px-2 py-1">
-                                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold">I</div>
-                                <div className="text-sm">
-                                    <p className="font-bold">飯沼 様</p>
-                                    <p className="text-xs text-muted-foreground italic">Admin</p>
+                <SidebarProvider>
+                    <div className="flex min-h-screen bg-background text-foreground w-full">
+                        <AppSidebar />
+                        <main className="flex-1 flex flex-col min-w-0">
+                            <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-card/80 backdrop-blur-md sticky top-0 z-20">
+                                <div className="flex items-center gap-4 flex-1 max-w-xl">
+                                    <SidebarTrigger className="-ml-1" />
+                                    <div className="relative w-full group">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                                        <Input
+                                            placeholder="「消防設備士 期限」などで検索..."
+                                            className="pl-10 h-9 bg-muted/50 border-transparent focus-visible:bg-background focus-visible:border-primary/50 transition-all rounded-full w-full max-w-md"
+                                        />
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-1 text-[10px] font-medium text-muted-foreground/50 border border-border/50 rounded px-1.5 bg-background/50">
+                                            <Command className="w-2.5 h-2.5" />
+                                            <span>K</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <div className="relative cursor-pointer hover:opacity-80 transition-opacity">
+                                        <Bell className="w-5 h-5 text-muted-foreground" />
+                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-[10px] font-bold text-white flex items-center justify-center rounded-full ring-2 ring-background animate-in zoom-in">1</span>
+                                    </div>
+                                    <button className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 border border-border/50 rounded-md hover:border-primary/30">
+                                        ログアウト
+                                    </button>
+                                </div>
+                            </header>
+                            <div className="flex-1 p-6 md:p-8 overflow-y-auto">
+                                <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                    {children}
                                 </div>
                             </div>
-                        </div>
-                    </aside>
-
-                    <main className="flex-1 flex flex-col">
-                        <header className="h-16 border-b border-border flex items-center justify-between px-8 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-                            <h2 className="text-sm font-bold opacity-70 italic">株式会社信越報知 システム</h2>
-                            <div className="flex items-center gap-4">
-                                <span className="text-xs bg-destructive text-white px-2 py-0.5 rounded-full animate-pulse">緊急 1件</span>
-                                <button className="text-sm border border-primary text-primary px-4 py-1.5 rounded-md hover:bg-primary hover:text-white transition-all">
-                                    ログアウト
-                                </button>
-                            </div>
-                        </header>
-                        <div className="flex-1 p-8">
-                            {children}
-                        </div>
-                    </main>
-                </div>
+                        </main>
+                    </div>
+                </SidebarProvider>
             </body>
         </html>
     );
