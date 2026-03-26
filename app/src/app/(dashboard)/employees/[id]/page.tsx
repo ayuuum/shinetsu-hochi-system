@@ -388,7 +388,7 @@ export default function EmployeeDetailPage() {
                 <TabsContent value="family" className="mt-6">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-bold">家族・緊急連絡先</h3>
-                        <Button size="sm" variant="outline"><Plus className="mr-2 h-4 w-4" />家族追加</Button>
+                        <Button size="sm" variant="outline" disabled title="この機能は準備中です"><Plus className="mr-2 h-4 w-4" />家族追加</Button>
                     </div>
                     {employee.employee_family.length === 0 ? (
                         <Card className="bg-muted/10 border-dashed"><CardContent className="py-10 text-center text-muted-foreground text-sm">家族情報が登録されていません。</CardContent></Card>
@@ -416,7 +416,7 @@ export default function EmployeeDetailPage() {
                     <Card className="shadow-sm border-border/50">
                         <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle className="text-lg font-bold">健康診断記録</CardTitle>
-                            <Button size="sm" variant="outline"><Plus className="mr-2 h-4 w-4" />受診記録追加</Button>
+                            <Button size="sm" variant="outline" disabled title="この機能は準備中です"><Plus className="mr-2 h-4 w-4" />受診記録追加</Button>
                         </CardHeader>
                         <CardContent>
                             {employee.health_checks.length === 0 ? (
