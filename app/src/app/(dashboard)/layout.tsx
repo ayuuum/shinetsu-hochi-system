@@ -16,8 +16,9 @@ export default function DashboardLayout({
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
+            <div className="flex flex-col items-center justify-center min-h-screen gap-3">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                <p className="text-sm text-muted-foreground">読み込み中...</p>
             </div>
         );
     }
