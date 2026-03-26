@@ -249,13 +249,15 @@ export default function EmployeeDetailPage() {
 
             {/* Main Content Tabs */}
             <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="flex w-full h-12 bg-muted/30 p-1 rounded-xl overflow-x-auto">
-                    <TabsTrigger value="basic" className="flex-shrink-0 rounded-lg data-[state=active]:shadow-sm"><User className="mr-1.5 h-4 w-4" />基本情報</TabsTrigger>
-                    <TabsTrigger value="qualifications" className="flex-shrink-0 rounded-lg data-[state=active]:shadow-sm"><Award className="mr-1.5 h-4 w-4" />保有資格</TabsTrigger>
-                    <TabsTrigger value="construction" className="flex-shrink-0 rounded-lg data-[state=active]:shadow-sm"><HardHat className="mr-1.5 h-4 w-4" />施工実績</TabsTrigger>
-                    <TabsTrigger value="family" className="flex-shrink-0 rounded-lg data-[state=active]:shadow-sm"><Users className="mr-1.5 h-4 w-4" />家族</TabsTrigger>
-                    <TabsTrigger value="health" className="flex-shrink-0 rounded-lg data-[state=active]:shadow-sm"><Heart className="mr-1.5 h-4 w-4" />健康診断</TabsTrigger>
-                </TabsList>
+                <div className="overflow-x-auto -mx-1 px-1">
+                    <TabsList className="inline-flex min-w-full h-auto bg-muted/30 p-1 rounded-xl">
+                        <TabsTrigger value="basic" className="flex-shrink-0 rounded-lg px-3 py-2 text-xs md:text-sm"><User className="mr-1 h-3.5 w-3.5 hidden md:inline" />基本情報</TabsTrigger>
+                        <TabsTrigger value="qualifications" className="flex-shrink-0 rounded-lg px-3 py-2 text-xs md:text-sm"><Award className="mr-1 h-3.5 w-3.5 hidden md:inline" />保有資格</TabsTrigger>
+                        <TabsTrigger value="construction" className="flex-shrink-0 rounded-lg px-3 py-2 text-xs md:text-sm"><HardHat className="mr-1 h-3.5 w-3.5 hidden md:inline" />施工実績</TabsTrigger>
+                        <TabsTrigger value="family" className="flex-shrink-0 rounded-lg px-3 py-2 text-xs md:text-sm"><Users className="mr-1 h-3.5 w-3.5 hidden md:inline" />家族</TabsTrigger>
+                        <TabsTrigger value="health" className="flex-shrink-0 rounded-lg px-3 py-2 text-xs md:text-sm"><Heart className="mr-1 h-3.5 w-3.5 hidden md:inline" />健康診断</TabsTrigger>
+                    </TabsList>
+                </div>
 
                 <TabsContent value="basic" className="mt-6 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
