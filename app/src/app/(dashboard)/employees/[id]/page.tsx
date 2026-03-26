@@ -249,12 +249,12 @@ export default function EmployeeDetailPage() {
 
             {/* Main Content Tabs */}
             <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-5 h-12 bg-muted/30 p-1 rounded-xl">
-                    <TabsTrigger value="basic" className="rounded-lg data-[state=active]:shadow-sm"><User className="mr-2 h-4 w-4" />基本情報</TabsTrigger>
-                    <TabsTrigger value="qualifications" className="rounded-lg data-[state=active]:shadow-sm"><Award className="mr-2 h-4 w-4" />保有資格</TabsTrigger>
-                    <TabsTrigger value="construction" className="rounded-lg data-[state=active]:shadow-sm"><HardHat className="mr-2 h-4 w-4" />施工実績</TabsTrigger>
-                    <TabsTrigger value="family" className="rounded-lg data-[state=active]:shadow-sm"><Users className="mr-2 h-4 w-4" />家族</TabsTrigger>
-                    <TabsTrigger value="health" className="rounded-lg data-[state=active]:shadow-sm"><Heart className="mr-2 h-4 w-4" />健康診断</TabsTrigger>
+                <TabsList className="flex w-full h-12 bg-muted/30 p-1 rounded-xl overflow-x-auto">
+                    <TabsTrigger value="basic" className="flex-shrink-0 rounded-lg data-[state=active]:shadow-sm"><User className="mr-1.5 h-4 w-4" />基本情報</TabsTrigger>
+                    <TabsTrigger value="qualifications" className="flex-shrink-0 rounded-lg data-[state=active]:shadow-sm"><Award className="mr-1.5 h-4 w-4" />保有資格</TabsTrigger>
+                    <TabsTrigger value="construction" className="flex-shrink-0 rounded-lg data-[state=active]:shadow-sm"><HardHat className="mr-1.5 h-4 w-4" />施工実績</TabsTrigger>
+                    <TabsTrigger value="family" className="flex-shrink-0 rounded-lg data-[state=active]:shadow-sm"><Users className="mr-1.5 h-4 w-4" />家族</TabsTrigger>
+                    <TabsTrigger value="health" className="flex-shrink-0 rounded-lg data-[state=active]:shadow-sm"><Heart className="mr-1.5 h-4 w-4" />健康診断</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="basic" className="mt-6 space-y-4">

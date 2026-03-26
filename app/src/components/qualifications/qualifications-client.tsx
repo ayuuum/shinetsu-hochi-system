@@ -149,7 +149,7 @@ export function QualificationsClient({ initialQualifications, categories }: Qual
             </div>
 
             {/* Table */}
-            <div className="border rounded-xl bg-card overflow-hidden shadow-sm">
+            <div className="border rounded-xl bg-card overflow-x-auto shadow-sm">
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-muted/50">
