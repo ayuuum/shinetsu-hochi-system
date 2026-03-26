@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Calendar, Users, Truck, Bell, ShieldAlert, ClipboardCheck, Wine } from "lucide-react";
+import { AlertCircle, Calendar, Users, Truck, Bell, ShieldAlert, ShieldCheck, ClipboardCheck, Wine } from "lucide-react";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { addDays, isBefore, isAfter } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -104,7 +104,7 @@ export default async function Home() {
             </div>
 
             {/* Stats Overview */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">登録従業員数</CardTitle>
@@ -187,7 +187,13 @@ export default async function Home() {
                     </CardHeader>
                     <CardContent>
                         {upcomingSchedule.length === 0 ? (
-                            <p className="text-sm text-muted-foreground py-8 text-center">対応が必要なアラートはありません。</p>
+                            <div className="flex flex-col items-center justify-center py-10 text-center">
+                                <div className="p-3 rounded-full bg-green-50 mb-3">
+                                    <ShieldCheck className="h-6 w-6 text-green-500" />
+                                </div>
+                                <p className="text-sm font-medium">すべて正常です</p>
+                                <p className="text-xs text-muted-foreground mt-1">対応が必要なアラートはありません。</p>
+                            </div>
                         ) : (
                             <div className="space-y-3">
                                 {upcomingSchedule.map((alert, i) => {
@@ -209,7 +215,7 @@ export default async function Home() {
                                             </div>
                                             <div className="text-right flex items-center gap-2">
                                                 <span className="text-sm">{alert.expiryDate}</span>
-                                                <Badge variant="secondary" className={`${style.badge} text-[10px]`}>
+                                                <Badge variant="secondary" className={`${style.badge} text-xs`}>
                                                     {alert.daysRemaining < 0
                                                         ? `${Math.abs(alert.daysRemaining)}日超過`
                                                         : `残${alert.daysRemaining}日`}
