@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif; max-width: 800px; margin: 40px auto; padding: 0 40px; font-size: 13px; color: #222; }
+  h1 { font-size: 24px; text-align: center; border-bottom: 2px solid #222; padding-bottom: 12px; margin-bottom: 32px; }
+  h2 { font-size: 15px; margin-top: 28px; border-bottom: 1px solid #ccc; padding-bottom: 6px; }
+  h3 { font-size: 13px; margin-top: 20px; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; }
+  th { background: #f5f5f5; font-weight: bold; }
+  .header-info { display: flex; justify-content: space-between; margin-bottom: 32px; }
+  .total-row { font-weight: bold; background: #f0f0f0; }
+  .grand-total { font-weight: bold; background: #222; color: white; }
+  .meta { margin-bottom: 6px; }
+  .right { text-align: right; }
+  .text-right { text-align: right; }
+  .note { font-size: 11px; color: #555; margin-top: 6px; }
+  .summary-box { border: 2px solid #222; padding: 16px 20px; margin: 20px 0; }
+  .summary-box p { margin: 4px 0; font-size: 18px; font-weight: bold; text-align: center; }
+  .ref-note { font-size: 11px; color: #555; text-align: center; margin-top: 4px; }
+  .module-detail { font-size: 12px; color: #444; }
+  .req-id { font-size: 11px; color: #666; white-space: nowrap; }
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<h1>御 見 積 書</h1>
+
+<div class="header-info">
+  <div>
+    <p class="meta"><strong>発行日：</strong>2026年3月25日</p>
+    <p class="meta"><strong>見積番号：</strong>AMB-2026-003（改訂版）</p>
+    <p class="meta"><strong>有効期限：</strong>2026年4月24日（30日間）</p>
+    <br>
+    <p class="meta"><strong>御見積先：</strong>株式会社信越報知 御中</p>
+  </div>
+  <div class="right">
+    <p class="meta"><strong>株式会社Amber</strong></p>
+    <p class="meta">代表取締役 松井歩武</p>
+    <p class="meta">東京都港区虎ノ門3-1-1 2階</p>
+  </div>
+</div>
+
+<h2>件名：社員・資格管理システム 開発費用</h2>
+
+<div class="summary-box">
+  <p>御見積金額（税込）：¥1,100,000-</p>
+</div>
+<p class="ref-note">準拠文書：要件定義書（AMB-RD-2026-001 ver.1.0）</p>
+
+<!-- ==================== 機能別内訳 ==================== -->
+
+<h2>■ 初期開発費用 — 機能別内訳（請負）</h2>
+
+<table>
+  <tr>
+    <th style="width:4%">#</th>
+    <th style="width:18%">機能モジュール</th>
+    <th style="width:10%">対応要件</th>
+    <th style="width:38%">主な開発内容</th>
+    <th style="width:10%" class="text-right">工数</th>
+    <th style="width:12%" class="text-right">金額</th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>基盤設計・環境構築</td>
+    <td class="req-id">NFR-001〜004</td>
+    <td class="module-detail">DB設計（12テーブル）、Supabase構築、Vercelデプロイ、認証設定（メール）、RLS設定</td>
+    <td class="text-right">3人日</td>
+    <td class="text-right">¥60,000</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>社員台帳管理</td>
+    <td class="req-id">REQ-002</td>
+    <td class="module-detail">社員CRUD、基本情報・雇用・保険・緊急連絡先、顔写真アップロード、検索・フィルタ（氏名・資格・拠点）、CSVエクスポート</td>
+    <td class="text-right">4人日</td>
+    <td class="text-right">¥80,000</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>資格・免許管理</td>
+    <td class="req-id">REQ-003</td>
+    <td class="module-detail">資格マスタ（25種プリセット＋カスタム追加）、社員別資格CRUD、講習履歴、証書画像UP（複数枚）、消防設備士の講習期限自動算出（初回2年/以後5年・4/1起算）、免状写真更新期限、講習申込ステータス</td>
+    <td class="text-right">5人日</td>
+    <td class="text-right">¥100,000</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>自動アラート通知</td>
+    <td class="req-id">REQ-004</td>
+    <td class="module-detail">4段階アラート（60日/30日/14日/期限切れ）、日次バッチ処理（毎朝7:00）、メール通知（GAS連携）、重複送信防止、送信ログ管理</td>
+    <td class="text-right">4人日</td>
+    <td class="text-right">¥80,000</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>施工実績ログ</td>
+    <td class="req-id">REQ-005</td>
+    <td class="module-detail">施工実績CRUD（物件・発注者・設備種別・施工内容・金額）、技術者配置管理、施工実績書PDF/Excel出力、期間・種別フィルタ出力</td>
+    <td class="text-right">3人日</td>
+    <td class="text-right">¥60,000</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>車両管理</td>
+    <td class="req-id">REQ-006</td>
+    <td class="module-detail">車両台帳CRUD、車検・自賠責・任意保険の期限管理、アラート連動</td>
+    <td class="text-right">2人日</td>
+    <td class="text-right">¥40,000</td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td>アルコールチェック記録</td>
+    <td class="req-id">REQ-007</td>
+    <td class="module-detail">スマホ最適化入力フォーム（出勤時/退勤時）、確認者選択、本日記録状況、管理者一覧・未記録アラート、現行Excel互換エクスポート、月次集計レポート</td>
+    <td class="text-right">4人日</td>
+    <td class="text-right">¥80,000</td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td>ダッシュボード</td>
+    <td class="req-id">REQ-001</td>
+    <td class="module-detail">サマリーカード（社員数・期限切れ・要対応件数）、要対応アラート一覧、今月の予定、アルコールチェック未記録警告</td>
+    <td class="text-right">3人日</td>
+    <td class="text-right">¥60,000</td>
+  </tr>
+  <tr>
+    <td>9</td>
+    <td>認証・権限管理・モバイル対応</td>
+    <td class="req-id">REQ-008</td>
+    <td class="module-detail">メール認証、パスワードリセット、3ロール（管理者/総務/技術者）の権限制御、レスポンシブUI</td>
+    <td class="text-right">3人日</td>
+    <td class="text-right">¥60,000</td>
+  </tr>
+  <tr>
+    <td>10</td>
+    <td>テスト・検証</td>
+    <td class="req-id">受入基準</td>
+    <td class="module-detail">結合テスト、消防設備士の期限算出ロジック検証、各ブラウザ・スマホ動作確認、バグ修正</td>
+    <td class="text-right">3人日</td>
+    <td class="text-right">¥60,000</td>
+  </tr>
+  <tr>
+    <td>11</td>
+    <td>マニュアル・納品対応</td>
+    <td class="req-id">—</td>
+    <td class="module-detail">管理者向け操作マニュアル（PDF）、導入サポート・操作説明</td>
+    <td class="text-right">1人日</td>
+    <td class="text-right">¥20,000</td>
+  </tr>
+  <tr class="total-row">
+    <td colspan="4">小計</td>
+    <td class="text-right">35人日</td>
+    <td class="text-right">¥700,000</td>
+  </tr>
+  <tr>
+    <td colspan="4">プロジェクト管理費（進捗管理・コミュニケーション・仕様調整）</td>
+    <td class="text-right">—</td>
+    <td class="text-right">¥300,000</td>
+  </tr>
+  <tr class="total-row">
+    <td colspan="4"><strong>合計（税別）</strong></td>
+    <td class="text-right"></td>
+    <td class="text-right"><strong>¥1,000,000</strong></td>
+  </tr>
+  <tr>
+    <td colspan="4">消費税（10%）</td>
+    <td class="text-right"></td>
+    <td class="text-right">¥100,000</td>
+  </tr>
+  <tr class="grand-total">
+    <td colspan="4">合計（税込）</td>
+    <td class="text-right"></td>
+    <td class="text-right">¥1,100,000</td>
+  </tr>
+</table>
+
+<p class="note">
+  開発体制：エンジニア2名（フロントエンド/バックエンド兼務）<br>
+  開発期間：契約締結後 約1ヶ月（2026年4月〜2026年5月予定）<br>
+  単価：¥20,000/人日
+</p>
+
+<!-- ==================== 月額保守 ==================== -->
+
+<h2>■ 月額保守費用（別途契約）</h2>
+
+<table>
+  <tr><th>項目</th><th>月額（税別）</th><th>内容</th></tr>
+  <tr><td>システム保守・運用サポート</td><td class="text-right">¥50,000</td><td>バグ修正、軽微な仕様変更、操作サポート（月4時間まで）</td></tr>
+</table>
+
+<p class="note">※保守契約は初期開発納品後、別途「保守委託契約書」を締結します。</p>
+
+<!-- ==================== 納品物 ==================== -->
+
+<h2>納品物（成果物）</h2>
+
+<table>
+  <tr><th>#</th><th>成果物</th><th>対応要件</th><th>対応モジュール</th></tr>
+  <tr><td>1</td><td>社員台帳管理機能（基本情報・雇用情報・保険情報・緊急連絡先）</td><td class="req-id">REQ-002</td><td>#2</td></tr>
+  <tr><td>2</td><td>資格・免許管理機能（資格マスタ25種プリセット・取得情報・講習履歴・証書画像UP）</td><td class="req-id">REQ-003</td><td>#3</td></tr>
+  <tr><td>3</td><td>消防設備士 講習期限自動算出機能（初回2年/以後5年・4/1起算ルール対応）</td><td class="req-id">REQ-003-A</td><td>#3</td></tr>
+  <tr><td>4</td><td>自動アラート通知機能（4段階・メール通知・講習申込ステータス管理）</td><td class="req-id">REQ-004</td><td>#4</td></tr>
+  <tr><td>5</td><td>施工実績ログ機能（実績書PDF/Excel出力付き）</td><td class="req-id">REQ-005</td><td>#5</td></tr>
+  <tr><td>6</td><td>車両管理機能（車検・自賠責・任意保険 期限管理）</td><td class="req-id">REQ-006</td><td>#6</td></tr>
+  <tr><td>7</td><td>アルコールチェック記録機能（スマホ入力・Excel出力・未記録アラート）</td><td class="req-id">REQ-007</td><td>#7</td></tr>
+  <tr><td>8</td><td>ダッシュボード（アラート一覧・月次予定・アルコール未記録警告）</td><td class="req-id">REQ-001</td><td>#8</td></tr>
+  <tr><td>9</td><td>認証・権限管理（管理者/総務/技術者 3ロール）</td><td class="req-id">REQ-008</td><td>#9</td></tr>
+  <tr><td>10</td><td>モバイル対応（スマホ・タブレットからの操作）</td><td class="req-id">NFR-004</td><td>#9</td></tr>
+  <tr><td>11</td><td>検索・フィルタ機能（氏名・資格・拠点での絞り込み）</td><td class="req-id">REQ-002</td><td>#2</td></tr>
+  <tr><td>12</td><td>本番環境（Vercel + Supabase）</td><td class="req-id">NFR-001〜003</td><td>#1</td></tr>
+  <tr><td>13</td><td>管理者向け操作マニュアル（PDF）</td><td class="req-id">—</td><td>#11</td></tr>
+</table>
+
+<!-- ==================== 対象外 ==================== -->
+
+<h2>対象外（別途費用）</h2>
+
+<table>
+  <tr><th>#</th><th>対象外事項</th></tr>
+  <tr><td>1</td><td>既存ExcelデータのDB移行・データ入力代行</td></tr>
+  <tr><td>2</td><td>要件定義書に定義されていない機能の追加・変更</td></tr>
+  <tr><td>3</td><td>電話・訪問によるサポート対応</td></tr>
+  <tr><td>4</td><td>インフラ利用料（Supabase・Vercel等の月額費用）</td></tr>
+  <tr><td>5</td><td>アルコール検知器本体・ハードウェア費用</td></tr>
+</table>
+
+<!-- ==================== 支払い条件 ==================== -->
+
+<h2>支払い条件</h2>
+
+<table>
+  <tr><th>タイミング</th><th class="text-right">金額（税込）</th></tr>
+  <tr><td>契約締結後10営業日以内</td><td class="text-right">¥550,000（総額の50%）</td></tr>
+  <tr><td>納品・検収完了後10営業日以内</td><td class="text-right">¥550,000（残額50%）</td></tr>
+</table>
+
+<p class="note">支払い方法：銀行振込（振込先は契約書に記載）</p>
+
+<!-- ==================== 備考 ==================== -->
+
+<h2>備考</h2>
+
+<ul style="font-size: 12px; color: #444;">
+  <li>開発範囲は要件定義書（AMB-RD-2026-001 ver.1.0）に準拠します。</li>
+  <li>要件の変更・追加が生じた場合は、別途お見積りのうえ対応します。</li>
+  <li>検収基準は要件定義書の「受入テスト基準」（第10章）および請負契約書に明記します。</li>
+  <li>納品後30日間は無償でのバグ修正対応を行います（瑕疵担保）。</li>
+</ul>
+
+</body>
+</html>

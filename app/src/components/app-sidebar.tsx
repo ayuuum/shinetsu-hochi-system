@@ -6,9 +6,10 @@ import {
     ScrollText,
     Truck,
     Settings,
-    ChevronLeft,
-    ChevronRight,
-    Search
+    Wine,
+    ClipboardCheck,
+    Upload,
+    LogOut,
 } from "lucide-react";
 import {
     Sidebar,
@@ -18,22 +19,28 @@ import {
     SidebarMenu,
     SidebarMenuItem,
     SidebarMenuButton,
-    SidebarProvider,
-    SidebarTrigger,
     SidebarRail,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/hooks/use-auth";
 
 const menuItems = [
     { title: "ダッシュボード", icon: LayoutDashboard, url: "/" },
     { title: "社員一覧", icon: Users, url: "/employees" },
     { title: "資格・講習管理", icon: ScrollText, url: "/qualifications" },
     { title: "車両・備品", icon: Truck, url: "/vehicles" },
+    { title: "点検スケジュール", icon: ClipboardCheck, url: "/inspections" },
+    { title: "アルコールチェック", icon: Wine, url: "/alcohol-checks" },
+    { title: "データインポート", icon: Upload, url: "/import" },
 ];
 
 export function AppSidebar() {
     const pathname = usePathname();
+    const { user, role, signOut } = useAuth();
+
+    const displayName = user?.email?.split("@")[0] || "ユーザー";
+    const roleLabel = role === "admin" ? "管理者" : role === "hr" ? "人事" : role === "technician" ? "技術者" : "";
 
     return (
         <Sidebar collapsible="icon" className="border-r border-border bg-sidebar">
@@ -71,17 +78,19 @@ export function AppSidebar() {
             <SidebarFooter className="p-4 border-t border-border/50">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton tooltip="設定">
-                            <Settings className="w-4 h-4" />
-                            <span>設定</span>
+                        <SidebarMenuButton tooltip="ログアウト" onClick={signOut}>
+                            <LogOut className="w-4 h-4" />
+                            <span>ログアウト</span>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
                 <div className="mt-4 flex items-center gap-3 px-2 group-data-[collapsible=icon]:hidden">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold shrink-0">I</div>
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold shrink-0">
+                        {displayName.charAt(0).toUpperCase()}
+                    </div>
                     <div className="text-xs overflow-hidden">
-                        <p className="font-bold truncate">飯沼 様</p>
-                        <p className="text-muted-foreground italic">Admin</p>
+                        <p className="font-bold truncate">{displayName}</p>
+                        <p className="text-muted-foreground italic">{roleLabel}</p>
                     </div>
                 </div>
             </SidebarFooter>
