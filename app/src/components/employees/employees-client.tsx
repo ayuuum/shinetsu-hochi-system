@@ -39,8 +39,8 @@ interface EmployeesClientProps {
 
 export function EmployeesClient({ initialEmployees, qualMasters, currentPage = 1, totalPages = 1 }: EmployeesClientProps) {
     const [search, setSearch] = useState("");
-    const [branchFilter, setBranchFilter] = useState("all");
-    const [qualFilter, setQualFilter] = useState("all");
+    const [branchFilter, setBranchFilter] = useState<string | null>(null);
+    const [qualFilter, setQualFilter] = useState<string | null>(null);
     const [qualHolders, setQualHolders] = useState<Set<string>>(new Set());
 
     const fetchQualHolders = async (qualId: string) => {
@@ -53,9 +53,9 @@ export function EmployeesClient({ initialEmployees, qualMasters, currentPage = 1
         }
     };
 
-    const handleQualFilterChange = (val: string) => {
-        setQualFilter(val ?? "all");
-        if (val !== "all") {
+    const handleQualFilterChange = (val: string | null) => {
+        setQualFilter(val);
+        if (val && val !== "all") {
             fetchQualHolders(val);
         } else {
             setQualHolders(new Set());
@@ -67,8 +67,8 @@ export function EmployeesClient({ initialEmployees, qualMasters, currentPage = 1
             emp.name.toLowerCase().includes(search.toLowerCase()) ||
             (emp.name_kana?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
             emp.employee_number.toLowerCase().includes(search.toLowerCase());
-        const matchesBranch = branchFilter === "all" || emp.branch === branchFilter;
-        const matchesQual = qualFilter === "all" || qualHolders.has(emp.id);
+        const matchesBranch = !branchFilter || branchFilter === "all" || emp.branch === branchFilter;
+        const matchesQual = !qualFilter || qualFilter === "all" || qualHolders.has(emp.id);
         return matchesSearch && matchesBranch && matchesQual;
     });
 
@@ -98,10 +98,10 @@ export function EmployeesClient({ initialEmployees, qualMasters, currentPage = 1
                         className="pl-9"
                     />
                 </div>
-                <Select value={branchFilter} onValueChange={(val: string | null) => setBranchFilter(val ?? "all")}>
+                <Select value={branchFilter ?? undefined} onValueChange={(val: string | null) => setBranchFilter(val)}>
                     <SelectTrigger className="w-full md:w-[180px]">
                         <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
-                        <SelectValue placeholder="拠点フィルタ" />
+                        <SelectValue placeholder="すべての拠点" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">すべての拠点</SelectItem>
@@ -110,10 +110,10 @@ export function EmployeesClient({ initialEmployees, qualMasters, currentPage = 1
                         <SelectItem value="白馬">白馬営業所</SelectItem>
                     </SelectContent>
                 </Select>
-                <Select value={qualFilter} onValueChange={(val: string | null) => handleQualFilterChange(val ?? "all")}>
+                <Select value={qualFilter ?? undefined} onValueChange={(val: string | null) => handleQualFilterChange(val)}>
                     <SelectTrigger className="w-full md:w-[240px]">
                         <Award className="mr-2 h-4 w-4 text-muted-foreground" />
-                        <SelectValue placeholder="資格フィルタ" />
+                        <SelectValue placeholder="すべての資格" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">すべての資格</SelectItem>

@@ -53,7 +53,7 @@ export function AlcoholClient({
     employees: Employee[];
 }) {
     const [dateFilter, setDateFilter] = useState(format(new Date(), "yyyy-MM-dd"));
-    const [locationFilter, setLocationFilter] = useState("all");
+    const [locationFilter, setLocationFilter] = useState<string | null>(null);
     const [editingItem, setEditingItem] = useState<AlcoholCheckRow | null>(null);
     const [deletingItem, setDeletingItem] = useState<AlcoholCheckRow | null>(null);
     const router = useRouter();
@@ -63,7 +63,7 @@ export function AlcoholClient({
             const checkDate = c.check_datetime.slice(0, 10);
             if (checkDate !== dateFilter) return false;
         }
-        if (locationFilter !== "all" && c.location !== locationFilter) return false;
+        if (locationFilter && locationFilter !== "all" && c.location !== locationFilter) return false;
         return true;
     });
 
@@ -118,9 +118,9 @@ export function AlcoholClient({
                     onChange={(e) => setDateFilter(e.target.value)}
                     className="w-[180px]"
                 />
-                <Select value={locationFilter} onValueChange={(val: string | null) => setLocationFilter(val ?? "all")}>
+                <Select value={locationFilter ?? undefined} onValueChange={(val: string | null) => setLocationFilter(val)}>
                     <SelectTrigger className="w-[160px]">
-                        <SelectValue placeholder="拠点" />
+                        <SelectValue placeholder="全拠点" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">全拠点</SelectItem>

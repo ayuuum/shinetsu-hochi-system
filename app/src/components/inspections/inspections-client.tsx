@@ -61,13 +61,13 @@ export function InspectionsClient({
     employees: Employee[];
 }) {
     const [search, setSearch] = useState("");
-    const [statusFilter, setStatusFilter] = useState("all");
+    const [statusFilter, setStatusFilter] = useState<string | null>(null);
     const [editingItem, setEditingItem] = useState<InspectionWithEmployee | null>(null);
     const [deletingItem, setDeletingItem] = useState<InspectionWithEmployee | null>(null);
     const router = useRouter();
 
     const filtered = initialSchedules.filter(s => {
-        if (statusFilter !== "all" && s.status !== statusFilter) return false;
+        if (statusFilter && statusFilter !== "all" && s.status !== statusFilter) return false;
         if (!search) return true;
         const q = search.toLowerCase();
         return (
@@ -119,9 +119,9 @@ export function InspectionsClient({
                     onChange={(e) => setSearch(e.target.value)}
                     className="max-w-sm"
                 />
-                <Select value={statusFilter} onValueChange={(val: string | null) => setStatusFilter(val ?? "all")}>
-                    <SelectTrigger className="w-[140px]">
-                        <SelectValue placeholder="ステータス" />
+                <Select value={statusFilter ?? undefined} onValueChange={(val: string | null) => setStatusFilter(val)}>
+                    <SelectTrigger className="w-[160px]">
+                        <SelectValue placeholder="全てのステータス" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">全て</SelectItem>

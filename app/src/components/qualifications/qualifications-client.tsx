@@ -45,16 +45,16 @@ interface QualificationsClientProps {
 
 export function QualificationsClient({ initialQualifications, categories }: QualificationsClientProps) {
     const [search, setSearch] = useState("");
-    const [categoryFilter, setCategoryFilter] = useState("all");
-    const [levelFilter, setLevelFilter] = useState("all");
+    const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+    const [levelFilter, setLevelFilter] = useState<string | null>(null);
 
     const filtered = initialQualifications.filter((q) => {
         const level = getAlertLevel(q.expiry_date);
         const matchesSearch =
             q.employees?.name?.toLowerCase().includes(search.toLowerCase()) ||
             q.qualification_master?.name?.toLowerCase().includes(search.toLowerCase());
-        const matchesCategory = categoryFilter === "all" || q.qualification_master?.category === categoryFilter;
-        const matchesLevel = levelFilter === "all" || level === levelFilter;
+        const matchesCategory = !categoryFilter || categoryFilter === "all" || q.qualification_master?.category === categoryFilter;
+        const matchesLevel = !levelFilter || levelFilter === "all" || level === levelFilter;
         return matchesSearch && matchesCategory && matchesLevel;
     });
 
@@ -122,9 +122,9 @@ export function QualificationsClient({ initialQualifications, categories }: Qual
                         className="pl-9"
                     />
                 </div>
-                <Select value={categoryFilter} onValueChange={(val: string | null) => setCategoryFilter(val ?? "all")}>
+                <Select value={categoryFilter ?? undefined} onValueChange={(val: string | null) => setCategoryFilter(val)}>
                     <SelectTrigger className="w-full md:w-[200px]">
-                        <SelectValue placeholder="カテゴリ" />
+                        <SelectValue placeholder="すべてのカテゴリ" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">すべてのカテゴリ</SelectItem>
@@ -133,9 +133,9 @@ export function QualificationsClient({ initialQualifications, categories }: Qual
                         ))}
                     </SelectContent>
                 </Select>
-                <Select value={levelFilter} onValueChange={(val: string | null) => setLevelFilter(val ?? "all")}>
+                <Select value={levelFilter ?? undefined} onValueChange={(val: string | null) => setLevelFilter(val)}>
                     <SelectTrigger className="w-full md:w-[180px]">
-                        <SelectValue placeholder="ステータス" />
+                        <SelectValue placeholder="すべてのステータス" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">すべて</SelectItem>
