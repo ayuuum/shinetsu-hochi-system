@@ -81,20 +81,25 @@ function LoginForm() {
 export default function LoginPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-            <Card className="w-full max-w-md shadow-xl">
-                <CardHeader className="text-center space-y-2">
-                    <div className="mx-auto w-12 h-12 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg">
+            <div className="w-full max-w-md space-y-6">
+                <div className="text-center space-y-2">
+                    <div className="mx-auto w-14 h-14 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg shadow-primary/20">
                         信
                     </div>
-                    <CardTitle className="text-2xl font-bold tracking-tight">信越報知</CardTitle>
-                    <CardDescription>社員・資格管理システム</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Suspense fallback={<div className="h-48 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>}>
-                        <LoginForm />
-                    </Suspense>
-                </CardContent>
-            </Card>
+                    <h1 className="text-2xl font-bold tracking-tight mt-4">信越報知</h1>
+                    <p className="text-sm text-muted-foreground">社員・資格管理システム</p>
+                </div>
+                <Card className="shadow-xl border-0">
+                    <CardContent className="pt-6">
+                        <Suspense fallback={<div className="h-48 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>}>
+                            <LoginForm />
+                        </Suspense>
+                    </CardContent>
+                </Card>
+                <p className="text-center text-xs text-muted-foreground">
+                    &copy; 信越報知機器株式会社
+                </p>
+            </div>
         </div>
     );
 }
