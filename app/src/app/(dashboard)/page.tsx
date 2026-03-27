@@ -175,9 +175,9 @@ export default async function Home() {
                 </Card>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <div className="grid gap-4 lg:grid-cols-5">
                 {/* アラート一覧 */}
-                <Card className="col-span-4">
+                <Card className="lg:col-span-3">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <ShieldAlert className="h-5 w-5" />
@@ -230,7 +230,7 @@ export default async function Home() {
                 </Card>
 
                 {/* システム通知 */}
-                <Card className="col-span-3">
+                <Card className="lg:col-span-2">
                     <CardHeader>
                         <CardTitle>システム情報</CardTitle>
                     </CardHeader>
