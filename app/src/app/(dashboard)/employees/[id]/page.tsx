@@ -247,7 +247,7 @@ export default function EmployeeDetailPage() {
     );
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
+        <div className="space-y-6 animate-in fade-in duration-200 pb-10">
             {/* Header */}
             <div className="flex flex-col gap-4">
                 <Button variant="ghost" onClick={() => router.back()} className="w-fit -ml-2 text-muted-foreground">

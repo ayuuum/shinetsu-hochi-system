@@ -65,7 +65,7 @@ export function QualificationsClient({ initialQualifications, categories }: Qual
     }, {} as Record<AlertLevel, number>);
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
+        <div className="space-y-6 animate-in fade-in duration-200">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">資格・講習管理</h1>
                 <p className="text-muted-foreground mt-2">全従業員の資格・免状の期限と更新予定を一元管理します。</p>

@@ -57,11 +57,12 @@ export default async function Home() {
     ] = await Promise.all([
         supabase.from("employees").select("id, name, hire_date, branch"),
         supabase.from("employee_qualifications").select(`
-            *,
+            employee_id,
+            expiry_date,
             employees(id, name, branch),
             qualification_master(name, category)
         `).not("expiry_date", "is", null).order("expiry_date", { ascending: true }),
-        supabase.from("vehicles").select("*"),
+        supabase.from("vehicles").select("plate_number, inspection_expiry"),
         supabase.from("inspection_schedules").select("id, scheduled_date, status")
             .gte("scheduled_date", new Date().toISOString().slice(0, 10))
             .lte("scheduled_date", addDays(new Date(), 30).toISOString().slice(0, 10)),
@@ -99,7 +100,7 @@ export default async function Home() {
     const upcomingSchedule = alerts.slice(0, 8);
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-1000">
+        <div className="space-y-8 animate-in fade-in duration-200">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">ダッシュボード</h1>
                 <p className="text-muted-foreground mt-2">

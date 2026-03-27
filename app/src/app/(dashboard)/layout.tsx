@@ -1,28 +1,15 @@
-"use client";
-
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Bell } from "lucide-react";
 import { SearchTrigger } from "@/components/search-trigger";
-import { CommandSearch } from "@/components/command-search";
-import { useAuth } from "@/hooks/use-auth";
+import { LazyCommandSearch } from "@/components/lazy-command-search";
 
 export default function DashboardLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
-    const { loading } = useAuth();
-
-    if (loading) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-screen gap-3">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-                <p className="text-sm text-muted-foreground">読み込み中...</p>
-            </div>
-        );
-    }
-
+    // middleware already handles auth redirect — no need to block rendering here
     return (
         <SidebarProvider>
             <AppSidebar />
@@ -39,12 +26,12 @@ export default function DashboardLayout({
                     </div>
                 </header>
                 <div className="flex-1 p-6 md:p-8 overflow-y-auto">
-                    <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <div className="max-w-7xl mx-auto">
                         {children}
                     </div>
                 </div>
             </main>
-            <CommandSearch />
+            <LazyCommandSearch />
         </SidebarProvider>
     );
 }
