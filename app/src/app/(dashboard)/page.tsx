@@ -27,7 +27,7 @@ function classifyAlerts(qualifications: QualificationAlertRow[]): AlertItem[] {
     const alerts: AlertItem[] = [];
 
     for (const q of qualifications) {
-        if (!q.expiry_date) continue;
+        if (!q.expiry_date || !q.employee_id) continue;
         const level = getAlertLevel(q.expiry_date, now);
         if (level === "ok") continue;
 
