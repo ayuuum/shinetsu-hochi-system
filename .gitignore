@@ -27,3 +27,4 @@ app/tsconfig.tsbuildinfo
 # Excel backup
 ~$*.xlsx
 .gstack/
+.vercel

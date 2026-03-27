@@ -2,11 +2,26 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createBrowserClient } from "@supabase/ssr";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
+
+function getLoginErrorMessage(message: string) {
+    const normalized = message.toLowerCase();
+
+    if (
+        normalized.includes("fetch")
+        || normalized.includes("network")
+        || normalized.includes("invalid url")
+        || normalized.includes("failed to construct")
+    ) {
+        return "認証サーバーに接続できません。時間をおいて再試行してください。";
+    }
+
+    return "メールアドレスまたはパスワードが正しくありません。";
+}
 
 function LoginForm() {
     const [email, setEmail] = useState("");
@@ -15,11 +30,6 @@ function LoginForm() {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
-
-    const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
 
     async function handleLogin(e: React.FormEvent) {
         e.preventDefault();
@@ -34,7 +44,8 @@ function LoginForm() {
         setLoading(false);
 
         if (error) {
-            setError("メールアドレスまたはパスワードが正しくありません。");
+            console.error("Login failed:", error);
+            setError(getLoginErrorMessage(error.message));
         } else {
             const redirectTo = searchParams.get("redirectTo") || "/";
             router.push(redirectTo);
