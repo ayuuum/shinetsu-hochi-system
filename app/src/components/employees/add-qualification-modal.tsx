@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -56,6 +56,8 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [masters, setMasters] = useState<Tables<"qualification_master">[]>([]);
+    const [loadingMasters, setLoadingMasters] = useState(false);
+    const [mastersError, setMastersError] = useState<string | null>(null);
     const [certificateFile, setCertificateFile] = useState<File | null>(null);
 
     const form = useForm<FormValues>({
@@ -68,19 +70,35 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
         },
     });
 
+    const fetchMasters = useCallback(async () => {
+        setLoadingMasters(true);
+        setMastersError(null);
+
+        try {
+            const { data, error } = await supabase
+                .from("qualification_master")
+                .select("*")
+                .order("category", { ascending: true });
+
+            if (error) {
+                throw error;
+            }
+
+            setMasters(data || []);
+        } catch (error) {
+            console.error("Failed to load qualification masters:", error);
+            setMasters([]);
+            setMastersError("資格マスタの取得に失敗しました。");
+        } finally {
+            setLoadingMasters(false);
+        }
+    }, []);
+
     useEffect(() => {
         if (open) {
-            fetchMasters();
+            void fetchMasters();
         }
-    }, [open]);
-
-    const fetchMasters = async () => {
-        const { data } = await supabase
-            .from("qualification_master")
-            .select("*")
-            .order("category", { ascending: true });
-        if (data) setMasters(data);
-    };
+    }, [fetchMasters, open]);
 
     // 自動期限計算（資格・日付・初回フラグのいずれが変わっても再計算）
     const recalculateExpiry = (overrides?: { qualificationId?: string; acquiredDate?: string; isInitial?: boolean }) => {
@@ -109,52 +127,64 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
 
         let certificateUrl: string | null = null;
 
-        // Upload certificate image if provided
-        if (certificateFile) {
-            const ext = certificateFile.name.split(".").pop();
-            const filePath = `${employeeId}/${crypto.randomUUID()}.${ext}`;
-            const { error: uploadError } = await supabase.storage
-                .from("certificates")
-                .upload(filePath, certificateFile);
+        try {
+            if (certificateFile) {
+                const ext = certificateFile.name.split(".").pop();
+                const filePath = `${employeeId}/${crypto.randomUUID()}.${ext}`;
+                const { error: uploadError } = await supabase.storage
+                    .from("certificates")
+                    .upload(filePath, certificateFile);
 
-            if (uploadError) {
-                toast.error("証書画像のアップロードに失敗しました: " + uploadError.message);
-                setIsSubmitting(false);
+                if (uploadError) {
+                    toast.error("証書画像のアップロードに失敗しました: " + uploadError.message);
+                    return;
+                }
+
+                certificateUrl = filePath;
+            }
+
+            const { error } = await supabase.from("employee_qualifications").insert([
+                {
+                    employee_id: employeeId,
+                    qualification_id: values.qualification_id,
+                    acquired_date: values.acquired_date,
+                    expiry_date: values.expiry_date || null,
+                    certificate_url: certificateUrl,
+                },
+            ]);
+
+            if (error) {
+                if (certificateUrl) {
+                    await supabase.storage.from("certificates").remove([certificateUrl]);
+                }
+                toast.error("登録に失敗しました: " + error.message);
                 return;
             }
 
-            // Store the file path (not a public URL since bucket is private)
-            certificateUrl = filePath;
-        }
-
-        const { error } = await supabase.from("employee_qualifications").insert([
-            {
-                employee_id: employeeId,
-                qualification_id: values.qualification_id,
-                acquired_date: values.acquired_date,
-                expiry_date: values.expiry_date || null,
-                certificate_url: certificateUrl,
-            },
-        ]);
-
-        setIsSubmitting(false);
-
-        if (error) {
-            toast.error("登録に失敗しました: " + error.message);
-        } else {
             setOpen(false);
             form.reset();
             setCertificateFile(null);
-            if (onSuccess) onSuccess();
+            onSuccess?.();
+        } finally {
+            setIsSubmitting(false);
         }
     }
 
+    const handleOpenChange = (nextOpen: boolean) => {
+        setOpen(nextOpen);
+        if (!nextOpen) {
+            form.reset();
+            setCertificateFile(null);
+            setMastersError(null);
+        }
+    };
+
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger
                 render={<Button size="sm"><Plus className="mr-1 h-3.5 w-3.5" />資格追加</Button>}
             />
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[425px] max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Award className="h-5 w-5 text-primary" />
@@ -166,24 +196,54 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        {mastersError && (
+                            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
+                                <p>{mastersError}</p>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="mt-2"
+                                    onClick={() => void fetchMasters()}
+                                >
+                                    再読み込み
+                                </Button>
+                            </div>
+                        )}
+
                         <FormField
                             control={form.control}
                             name="qualification_id"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>資格名</FormLabel>
-                                    <Select onValueChange={(val) => { if (val) { field.onChange(val); recalculateExpiry({ qualificationId: val }); } }} value={field.value}>
+                                    <Select
+                                        onValueChange={(val) => {
+                                            if (val) {
+                                                field.onChange(val);
+                                                recalculateExpiry({ qualificationId: val });
+                                            }
+                                        }}
+                                        value={field.value}
+                                        disabled={loadingMasters || !!mastersError || masters.length === 0}
+                                    >
                                         <FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="資格を選択" />
+                                                <SelectValue placeholder={loadingMasters ? "資格マスタを読み込み中..." : "資格を選択"} />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {masters.map(m => (
-                                                <SelectItem key={m.id} value={m.id}>
-                                                    [{m.category}] {m.name}
-                                                </SelectItem>
-                                            ))}
+                                            {loadingMasters ? (
+                                                <SelectItem value="loading" disabled>読み込み中...</SelectItem>
+                                            ) : masters.length === 0 ? (
+                                                <SelectItem value="empty" disabled>資格マスタがありません</SelectItem>
+                                            ) : (
+                                                masters.map(m => (
+                                                    <SelectItem key={m.id} value={m.id}>
+                                                        [{m.category}] {m.name}
+                                                    </SelectItem>
+                                                ))
+                                            )}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -200,7 +260,10 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                                         <FormControl>
                                             <Checkbox
                                                 checked={field.value}
-                                                onCheckedChange={(val) => { field.onChange(val); recalculateExpiry({ isInitial: !!val }); }}
+                                                onCheckedChange={(val) => {
+                                                    field.onChange(!!val);
+                                                    recalculateExpiry({ isInitial: !!val });
+                                                }}
                                             />
                                         </FormControl>
                                         <div className="space-y-1 leading-none">
@@ -263,8 +326,8 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                         </div>
 
                         <DialogFooter>
-                            <Button type="submit" disabled={isSubmitting} className="w-full">
-                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            <Button type="submit" disabled={isSubmitting || loadingMasters || !!mastersError || masters.length === 0} className="w-full">
+                                {(isSubmitting || loadingMasters) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 保存する
                             </Button>
                         </DialogFooter>

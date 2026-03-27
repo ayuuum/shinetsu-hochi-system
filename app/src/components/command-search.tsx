@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
 import { supabase } from "@/lib/supabase";
 import { Search, User, Award, Truck } from "lucide-react";
+import { Tables } from "@/types/supabase";
 
 type SearchResult = {
     id: string;
@@ -14,16 +15,33 @@ type SearchResult = {
     href: string;
 };
 
+type EmployeeSearchRow = Pick<
+    Tables<"employees">,
+    "id" | "name" | "name_kana" | "employee_number" | "branch" | "job_title"
+>;
+
+type QualificationSearchRow = Pick<Tables<"employee_qualifications">, "id" | "employee_id"> & {
+    employees: Pick<Tables<"employees">, "name"> | null;
+    qualification_master: Pick<Tables<"qualification_master">, "name"> | null;
+};
+
+type VehicleSearchRow = Pick<Tables<"vehicles">, "id" | "plate_number" | "vehicle_name">;
+
 export function CommandSearch() {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<SearchResult[]>([]);
     const [loading, setLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const router = useRouter();
 
     // Cmd+K shortcut
     useEffect(() => {
         const down = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                setOpen(false);
+                return;
+            }
             if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
                 setOpen((prev) => !prev);
@@ -34,69 +52,105 @@ export function CommandSearch() {
     }, []);
 
     const search = useCallback(async (q: string) => {
-        if (q.length < 1) {
+        const trimmed = q.trim();
+        if (trimmed.length < 1) {
             setResults([]);
+            setErrorMessage(null);
             return;
         }
+
         setLoading(true);
-        const pattern = `%${q}%`;
+        setErrorMessage(null);
+        const pattern = `%${trimmed}%`;
 
-        const [empRes, qualRes, vehRes] = await Promise.all([
-            supabase
-                .from("employees")
-                .select("id, name, name_kana, employee_number, branch, job_title")
-                .or(`name.ilike.${pattern},name_kana.ilike.${pattern},employee_number.ilike.${pattern}`)
-                .limit(5),
-            supabase
-                .from("employee_qualifications")
-                .select("id, employee_id, employees(name), qualification_master(name)")
-                .or(`qualification_master.name.ilike.${pattern}`)
-                .limit(5),
-            supabase
-                .from("vehicles")
-                .select("id, plate_number, vehicle_name")
-                .or(`plate_number.ilike.${pattern},vehicle_name.ilike.${pattern}`)
-                .limit(3),
-        ]);
+        try {
+            const [employeeResult, qualificationMasterResult, vehicleResult] = await Promise.all([
+                supabase
+                    .from("employees")
+                    .select("id, name, name_kana, employee_number, branch, job_title")
+                    .or(`name.ilike.${pattern},name_kana.ilike.${pattern},employee_number.ilike.${pattern}`)
+                    .limit(5),
+                supabase
+                    .from("qualification_master")
+                    .select("id, name")
+                    .ilike("name", pattern)
+                    .limit(5),
+                supabase
+                    .from("vehicles")
+                    .select("id, plate_number, vehicle_name")
+                    .or(`plate_number.ilike.${pattern},vehicle_name.ilike.${pattern}`)
+                    .limit(3),
+            ]);
 
-        const items: SearchResult[] = [];
+            if (employeeResult.error) throw employeeResult.error;
+            if (qualificationMasterResult.error) throw qualificationMasterResult.error;
+            if (vehicleResult.error) throw vehicleResult.error;
 
-        empRes.data?.forEach((e) => {
-            items.push({
-                id: e.id,
-                type: "employee",
-                title: e.name,
-                subtitle: [e.branch, e.job_title].filter(Boolean).join(" / ") || e.employee_number,
-                href: `/employees/${e.id}`,
+            let qualificationRows: QualificationSearchRow[] = [];
+            const qualificationIds = qualificationMasterResult.data?.map((item) => item.id) || [];
+
+            if (qualificationIds.length > 0) {
+                const { data, error } = await supabase
+                    .from("employee_qualifications")
+                    .select("id, employee_id, employees(name), qualification_master(name)")
+                    .in("qualification_id", qualificationIds)
+                    .limit(5);
+
+                if (error) throw error;
+                qualificationRows = (data || []) as QualificationSearchRow[];
+            }
+
+            const items: SearchResult[] = [];
+
+            (employeeResult.data as EmployeeSearchRow[] | null)?.forEach((employee) => {
+                items.push({
+                    id: employee.id,
+                    type: "employee",
+                    title: employee.name,
+                    subtitle: [employee.branch, employee.job_title].filter(Boolean).join(" / ") || employee.employee_number,
+                    href: `/employees/${employee.id}`,
+                });
             });
-        });
 
-        qualRes.data?.forEach((q: any) => {
-            items.push({
-                id: q.id,
-                type: "qualification",
-                title: q.qualification_master?.name || "資格",
-                subtitle: q.employees?.name || "",
-                href: `/employees/${q.employee_id}`,
+            qualificationRows.forEach((qualification) => {
+                if (!qualification.employee_id) return;
+
+                items.push({
+                    id: qualification.id,
+                    type: "qualification",
+                    title: qualification.qualification_master?.name || "資格",
+                    subtitle: qualification.employees?.name || "",
+                    href: `/employees/${qualification.employee_id}`,
+                });
             });
-        });
 
-        vehRes.data?.forEach((v) => {
-            items.push({
-                id: v.id,
-                type: "vehicle",
-                title: v.plate_number,
-                subtitle: v.vehicle_name || "",
-                href: "/vehicles",
+            (vehicleResult.data as VehicleSearchRow[] | null)?.forEach((vehicle) => {
+                items.push({
+                    id: vehicle.id,
+                    type: "vehicle",
+                    title: vehicle.plate_number,
+                    subtitle: vehicle.vehicle_name || "",
+                    href: "/vehicles",
+                });
             });
-        });
 
-        setResults(items);
-        setLoading(false);
+            setResults(
+                items.filter(
+                    (item, index, list) =>
+                        list.findIndex((candidate) => candidate.type === item.type && candidate.id === item.id) === index
+                )
+            );
+        } catch (error) {
+            console.error("Command search failed:", error);
+            setResults([]);
+            setErrorMessage("検索に失敗しました。少し時間をおいて再試行してください。");
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
     useEffect(() => {
-        const timer = setTimeout(() => search(query), 200);
+        const timer = setTimeout(() => void search(query), 200);
         return () => clearTimeout(timer);
     }, [query, search]);
 
@@ -143,7 +197,7 @@ export function CommandSearch() {
                         )}
                         {!loading && query.length > 0 && results.length === 0 && (
                             <Command.Empty className="text-sm text-muted-foreground text-center py-6">
-                                該当する結果がありません
+                                {errorMessage || "該当する結果がありません"}
                             </Command.Empty>
                         )}
                         {!loading && query.length === 0 && (

@@ -5,7 +5,6 @@ import {
     Users,
     ScrollText,
     Truck,
-    Settings,
     Wine,
     ClipboardCheck,
     Upload,

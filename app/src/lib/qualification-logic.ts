@@ -1,4 +1,4 @@
-import { addYears, setMonth, setDate, isAfter, isBefore, getYear, getMonth } from "date-fns";
+import { addYears, setMonth, setDate, getYear, getMonth } from "date-fns";
 
 /**
  * 消防設備士の講習期限計算

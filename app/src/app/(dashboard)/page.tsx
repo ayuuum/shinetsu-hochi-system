@@ -5,6 +5,7 @@ import { addDays, isBefore, isAfter } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { getAlertLevel, getDaysRemaining, alertStyles, type AlertLevel } from "@/lib/alert-utils";
+import { Tables } from "@/types/supabase";
 
 type AlertItem = {
     level: Exclude<AlertLevel, "ok">;
@@ -16,7 +17,12 @@ type AlertItem = {
     daysRemaining: number;
 };
 
-function classifyAlerts(qualifications: any[]): AlertItem[] {
+type QualificationAlertRow = Pick<Tables<"employee_qualifications">, "employee_id" | "expiry_date"> & {
+    employees: Pick<Tables<"employees">, "name" | "branch"> | null;
+    qualification_master: Pick<Tables<"qualification_master">, "name" | "category"> | null;
+};
+
+function classifyAlerts(qualifications: QualificationAlertRow[]): AlertItem[] {
     const now = new Date();
     const alerts: AlertItem[] = [];
 
@@ -73,7 +79,7 @@ export default async function Home() {
     ).length || 0;
 
     // アラート分類（資格期限ベース）
-    const alerts = classifyAlerts(qualifications || []);
+    const alerts = classifyAlerts((qualifications || []) as QualificationAlertRow[]);
     const expiredCount = alerts.filter(a => a.level === "danger").length;
     const within30Count = alerts.filter(a => a.level === "warning" || a.level === "urgent").length;
 

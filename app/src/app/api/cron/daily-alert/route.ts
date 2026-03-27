@@ -1,9 +1,24 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { Tables } from "@/types/supabase";
 
 // Vercel Cron: 毎朝7:00 JST (= 22:00 UTC前日)
 // vercel.json に cron 設定が必要
+
+type QualificationAlertRow = Pick<Tables<"employee_qualifications">, "expiry_date" | "status"> & {
+    employees: Pick<Tables<"employees">, "name" | "branch"> | null;
+    qualification_master: Pick<Tables<"qualification_master">, "name"> | null;
+};
+
+type EmailAlert = {
+    level: "info" | "warning" | "urgent" | "critical";
+    employeeName: string;
+    branch: string | null;
+    qualificationName: string;
+    expiryDate: string;
+    daysRemaining: number;
+    status: string | null;
+};
 
 export async function GET(request: Request) {
     // Cron secret で保護
@@ -34,26 +49,26 @@ export async function GET(request: Request) {
         .order("expiry_date", { ascending: true });
 
     const now = new Date();
-    const alerts: any[] = [];
+    const alerts: EmailAlert[] = [];
 
-    for (const q of qualifications || []) {
+    for (const q of (qualifications || []) as QualificationAlertRow[]) {
         const expiry = new Date(q.expiry_date!);
         const days = Math.floor((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
         if (days > 60) continue;
 
-        let level = "info";
+        let level: EmailAlert["level"] = "info";
         if (days < 0) level = "critical";
         else if (days <= 14) level = "urgent";
         else if (days <= 30) level = "warning";
 
         alerts.push({
             level,
-            employeeName: (q.employees as any)?.name || "不明",
-            branch: (q.employees as any)?.branch || null,
-            qualificationName: (q.qualification_master as any)?.name || "不明",
+            employeeName: q.employees?.name || "不明",
+            branch: q.employees?.branch || null,
+            qualificationName: q.qualification_master?.name || "不明",
             expiryDate: q.expiry_date,
             daysRemaining: days,
-            status: q.status,
+            status: q.status || null,
         });
     }
 
@@ -100,7 +115,7 @@ export async function GET(request: Request) {
     });
 }
 
-function buildEmailHtml(alerts: any[]): string {
+function buildEmailHtml(alerts: EmailAlert[]): string {
     const rows = alerts
         .map((a) => {
             const color = a.level === "critical" ? "#dc2626" : a.level === "urgent" ? "#ea580c" : "#ca8a04";

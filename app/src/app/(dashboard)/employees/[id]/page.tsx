@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -62,8 +62,10 @@ function getExpiryBadge(expiryDate: string | null) {
 export default function EmployeeDetailPage() {
     const params = useParams();
     const router = useRouter();
+    const employeeId = Array.isArray(params.id) ? params.id[0] : params.id;
     const [employee, setEmployee] = useState<EmployeeDetail | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
     const [editOpen, setEditOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleting, setDeleting] = useState(false);
@@ -71,13 +73,119 @@ export default function EmployeeDetailPage() {
     const [deletingConstructionId, setDeletingConstructionId] = useState<string | null>(null);
     const [certUrls, setCertUrls] = useState<Record<string, string>>({});
 
+    const fetchEmployeeDetail = useCallback(async () => {
+        if (!employeeId) {
+            setEmployee(null);
+            setLoading(false);
+            return;
+        }
+
+        setLoading(true);
+        setLoadError(null);
+        setCertUrls({});
+
+        try {
+            const { data: empData, error: employeeError } = await supabase
+                .from("employees")
+                .select(`
+                    *,
+                    employee_qualifications(*, qualification_master(*)),
+                    employee_family(*)
+                `)
+                .eq("id", employeeId)
+                .single();
+
+            if (employeeError) {
+                throw employeeError;
+            }
+
+            if (!empData) {
+                setEmployee(null);
+                return;
+            }
+
+            const [constructionResult, healthResult] = await Promise.all([
+                supabase
+                    .from("construction_records")
+                    .select("*")
+                    .eq("employee_id", employeeId)
+                    .order("construction_date", { ascending: false }),
+                supabase
+                    .from("health_checks")
+                    .select("*")
+                    .eq("employee_id", employeeId)
+                    .order("check_date", { ascending: false }),
+            ]);
+
+            if (constructionResult.error) {
+                console.error("Failed to load construction records:", constructionResult.error);
+            }
+            if (healthResult.error) {
+                console.error("Failed to load health checks:", healthResult.error);
+            }
+
+            const normalizedQualifications = empData.employee_qualifications ?? [];
+            const employeeDetail = {
+                ...empData,
+                employee_qualifications: normalizedQualifications,
+                employee_family: empData.employee_family ?? [],
+                construction_records: constructionResult.data || [],
+                health_checks: healthResult.data || [],
+            } as EmployeeDetail;
+            setEmployee(employeeDetail);
+
+            const qualsWithCert = normalizedQualifications.filter(
+                (q: EmployeeQualification) => q.certificate_url
+            );
+
+            if (qualsWithCert.length === 0) {
+                return;
+            }
+
+            const signedUrlEntries = await Promise.all(
+                qualsWithCert.map(async (q) => {
+                    try {
+                        const { data, error } = await supabase.storage
+                            .from("certificates")
+                            .createSignedUrl(q.certificate_url!, 3600);
+
+                        if (error || !data?.signedUrl) {
+                            if (error) {
+                                console.error(`Failed to create signed URL for qualification ${q.id}:`, error);
+                            }
+                            return null;
+                        }
+
+                        return [q.id, data.signedUrl] as const;
+                    } catch (error) {
+                        console.error(`Failed to fetch certificate URL for qualification ${q.id}:`, error);
+                        return null;
+                    }
+                })
+            );
+
+            setCertUrls(
+                Object.fromEntries(
+                    signedUrlEntries.filter((entry): entry is readonly [string, string] => entry !== null)
+                )
+            );
+        } catch (error) {
+            console.error("Failed to load employee detail:", error);
+            setEmployee(null);
+            setLoadError("社員情報の取得に失敗しました。");
+            toast.error("社員情報の取得に失敗しました。");
+        } finally {
+            setLoading(false);
+        }
+    }, [employeeId]);
+
     const handleDeleteQualification = async (qualId: string) => {
         const { error } = await supabase.from("employee_qualifications").delete().eq("id", qualId);
         if (error) {
             toast.error("削除に失敗しました: " + error.message);
         } else {
             toast.success("資格情報を削除しました");
-            fetchEmployeeDetail();
+            await fetchEmployeeDetail();
         }
         setDeletingQualId(null);
     };
@@ -88,69 +196,14 @@ export default function EmployeeDetailPage() {
             toast.error("削除に失敗しました: " + error.message);
         } else {
             toast.success("施工実績を削除しました");
-            fetchEmployeeDetail();
+            await fetchEmployeeDetail();
         }
         setDeletingConstructionId(null);
     };
 
     useEffect(() => {
-        if (params.id) fetchEmployeeDetail();
-    }, [params.id]);
-
-    const fetchEmployeeDetail = async () => {
-        setLoading(true);
-        const id = params.id as string;
-
-        // construction_records と health_checks はテーブルが存在しない可能性に備え個別取得
-        const { data: empData } = await supabase
-            .from("employees")
-            .select(`
-                *,
-                employee_qualifications(*, qualification_master(*)),
-                employee_family(*)
-            `)
-            .eq("id", id)
-            .single();
-
-        if (empData) {
-            // construction_records
-            const { data: constructionData } = await supabase
-                .from("construction_records")
-                .select("*")
-                .eq("employee_id", id)
-                .order("construction_date", { ascending: false });
-
-            // health_checks
-            const { data: healthData } = await supabase
-                .from("health_checks")
-                .select("*")
-                .eq("employee_id", id)
-                .order("check_date", { ascending: false });
-
-            const employeeDetail = {
-                ...empData,
-                construction_records: constructionData || [],
-                health_checks: healthData || [],
-            } as EmployeeDetail;
-            setEmployee(employeeDetail);
-
-            // Fetch signed URLs for certificate images
-            const qualsWithCert = empData.employee_qualifications?.filter(
-                (q: EmployeeQualification) => q.certificate_url
-            ) || [];
-            if (qualsWithCert.length > 0) {
-                const urls: Record<string, string> = {};
-                for (const q of qualsWithCert) {
-                    const { data } = await supabase.storage
-                        .from("certificates")
-                        .createSignedUrl(q.certificate_url!, 3600);
-                    if (data?.signedUrl) urls[q.id] = data.signedUrl;
-                }
-                setCertUrls(urls);
-            }
-        }
-        setLoading(false);
-    };
+        void fetchEmployeeDetail();
+    }, [fetchEmployeeDetail]);
 
     const handleDelete = async () => {
         setDeleting(true);
@@ -169,6 +222,17 @@ export default function EmployeeDetailPage() {
 
     if (loading) {
         return <div className="flex items-center justify-center min-h-[400px] text-muted-foreground">読み込み中...</div>;
+    }
+
+    if (loadError) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-center">
+                <p className="text-sm text-muted-foreground">{loadError}</p>
+                <Button variant="outline" onClick={() => void fetchEmployeeDetail()}>
+                    再試行
+                </Button>
+            </div>
+        );
     }
 
     if (!employee) {

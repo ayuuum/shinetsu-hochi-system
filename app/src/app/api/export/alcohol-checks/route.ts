@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { Tables } from "@/types/supabase";
+
+type AlcoholCheckExportRow = Tables<"alcohol_checks"> & {
+    employee: Pick<Tables<"employees">, "name"> | null;
+    checker: Pick<Tables<"employees">, "name"> | null;
+};
 
 export async function GET(request: NextRequest) {
     const cookieStore = await cookies();
@@ -49,7 +55,7 @@ export async function GET(request: NextRequest) {
         "検知値(mg/L)", "判定", "拠点", "備考",
     ];
 
-    const rows = (checks || []).map((c: any) => [
+    const rows = ((checks || []) as AlcoholCheckExportRow[]).map((c) => [
         c.check_datetime || "",
         c.employee?.name || "",
         c.check_type || "",

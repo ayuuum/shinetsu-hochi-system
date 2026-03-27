@@ -1,5 +1,6 @@
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { EmployeesClient, type EmployeeWithQualCount } from "@/components/employees/employees-client";
+import { Tables } from "@/types/supabase";
 
 const PAGE_SIZE = 50;
 
@@ -14,7 +15,7 @@ export default async function EmployeesPage({
     const to = from + PAGE_SIZE - 1;
 
     let employees: EmployeeWithQualCount[] = [];
-    let mastersData: any[] = [];
+    let mastersData: Tables<"qualification_master">[] = [];
     let totalPages = 1;
 
     try {

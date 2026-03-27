@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -47,15 +48,68 @@ const COLUMN_MAP: Record<string, string> = {
     "blood_type": "blood_type",
 };
 
-function parseCSV(text: string): { headers: string[]; rows: ParsedRow[] } {
-    const lines = text.split(/\r?\n/).filter(line => line.trim());
-    if (lines.length === 0) return { headers: [], rows: [] };
+function cleanCSVValue(value: string) {
+    return value.trim().replace(/\ufeff/g, "");
+}
 
-    const headers = lines[0].split(",").map(h => h.trim().replace(/^["']|["']$/g, ""));
+function parseCSV(text: string): { headers: string[]; rows: ParsedRow[] } {
+    const records: string[][] = [];
+    let currentValue = "";
+    let currentRecord: string[] = [];
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+
+        if (char === "\"") {
+            if (inQuotes && text[i + 1] === "\"") {
+                currentValue += "\"";
+                i++;
+            } else {
+                inQuotes = !inQuotes;
+            }
+            continue;
+        }
+
+        if (char === "," && !inQuotes) {
+            currentRecord.push(cleanCSVValue(currentValue));
+            currentValue = "";
+            continue;
+        }
+
+        if ((char === "\n" || char === "\r") && !inQuotes) {
+            if (char === "\r" && text[i + 1] === "\n") {
+                i++;
+            }
+
+            currentRecord.push(cleanCSVValue(currentValue));
+            currentValue = "";
+
+            if (currentRecord.some((cell) => cell.length > 0)) {
+                records.push(currentRecord);
+            }
+
+            currentRecord = [];
+            continue;
+        }
+
+        currentValue += char;
+    }
+
+    if (currentValue.length > 0 || currentRecord.length > 0) {
+        currentRecord.push(cleanCSVValue(currentValue));
+        if (currentRecord.some((cell) => cell.length > 0)) {
+            records.push(currentRecord);
+        }
+    }
+
+    if (records.length === 0) return { headers: [], rows: [] };
+
+    const [rawHeaders, ...dataRows] = records;
+    const headers = rawHeaders.map((header) => cleanCSVValue(header));
     const rows: ParsedRow[] = [];
 
-    for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(",").map(v => v.trim().replace(/^["']|["']$/g, ""));
+    for (const values of dataRows) {
         const row: ParsedRow = {};
         headers.forEach((h, idx) => {
             const mapped = COLUMN_MAP[h] || h;
@@ -89,42 +143,66 @@ function validateRow(row: ParsedRow, index: number): ValidationResult {
 }
 
 export default function ImportPage() {
+    const router = useRouter();
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [file, setFile] = useState<File | null>(null);
     const [results, setResults] = useState<ValidationResult[] | null>(null);
     const [importing, setImporting] = useState(false);
+    const [validating, setValidating] = useState(false);
     const [importResult, setImportResult] = useState<{ success: number; failed: number } | null>(null);
+
+    const processFile = useCallback(async (f: File) => {
+        setValidating(true);
+        setImportResult(null);
+        setResults(null);
+
+        try {
+            const text = await f.text();
+            const { rows } = parseCSV(text);
+
+            if (rows.length === 0) {
+                toast.error("データが見つかりません");
+                return;
+            }
+
+            const validated = rows.map((row, i) => validateRow(row, i));
+            setResults(validated);
+        } catch (error) {
+            console.error("Failed to parse import file:", error);
+            toast.error("CSVの解析に失敗しました。ファイル形式を確認してください。");
+            setResults(null);
+        } finally {
+            setValidating(false);
+        }
+    }, []);
+
+    const resetImport = useCallback(() => {
+        setFile(null);
+        setResults(null);
+        setImportResult(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    }, []);
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         const f = e.dataTransfer.files[0];
         if (f && (f.name.endsWith(".csv") || f.name.endsWith(".txt"))) {
             setFile(f);
-            processFile(f);
+            void processFile(f);
         } else {
+            resetImport();
             toast.error("CSVファイルを選択してください");
         }
-    }, []);
+    }, [processFile, resetImport]);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const f = e.target.files?.[0];
         if (f) {
             setFile(f);
-            processFile(f);
+            void processFile(f);
         }
-    };
-
-    const processFile = async (f: File) => {
-        setImportResult(null);
-        const text = await f.text();
-        const { rows } = parseCSV(text);
-
-        if (rows.length === 0) {
-            toast.error("データが見つかりません");
-            return;
-        }
-
-        const validated = rows.map((row, i) => validateRow(row, i));
-        setResults(validated);
     };
 
     const handleImport = async (skipErrors: boolean) => {
@@ -204,15 +282,20 @@ export default function ImportPage() {
                             onDrop={handleDrop}
                             onDragOver={(e) => e.preventDefault()}
                             className="border-2 border-dashed rounded-xl p-12 text-center hover:border-primary/50 transition-colors cursor-pointer"
-                            onClick={() => document.getElementById("file-input")?.click()}
+                            onClick={() => fileInputRef.current?.click()}
                         >
-                            <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-4" />
+                            {validating ? (
+                                <Loader2 className="mx-auto h-10 w-10 text-muted-foreground mb-4 animate-spin" />
+                            ) : (
+                                <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-4" />
+                            )}
                             <p className="text-sm text-muted-foreground">
-                                ドラッグ&ドロップ または クリックしてファイルを選択
+                                {validating ? "CSVを検証中..." : "ドラッグ&ドロップ または クリックしてファイルを選択"}
                             </p>
                             {file && <p className="mt-2 text-sm font-medium">{file.name}</p>}
                             <input
                                 id="file-input"
+                                ref={fileInputRef}
                                 type="file"
                                 accept=".csv,.txt"
                                 onChange={handleFileSelect}
@@ -265,17 +348,17 @@ export default function ImportPage() {
 
                     <div className="flex flex-col sm:flex-row gap-4">
                         {errorCount === 0 ? (
-                            <Button onClick={() => handleImport(false)} disabled={importing} className="flex-1">
+                            <Button onClick={() => handleImport(false)} disabled={importing || validating || validCount === 0} className="flex-1">
                                 {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {validCount}名をインポート
                             </Button>
                         ) : (
                             <>
-                                <Button onClick={() => handleImport(true)} disabled={importing} className="flex-1">
+                                <Button onClick={() => handleImport(true)} disabled={importing || validating || validCount === 0} className="flex-1">
                                     {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     エラー行をスキップして {validCount}名をインポート
                                 </Button>
-                                <Button variant="outline" onClick={() => { setFile(null); setResults(null); }}>
+                                <Button variant="outline" onClick={resetImport}>
                                     修正して再アップロード
                                 </Button>
                             </>
@@ -296,10 +379,10 @@ export default function ImportPage() {
                                 )}
                             </div>
                             <div className="flex gap-4 justify-center">
-                                <Button onClick={() => { setFile(null); setResults(null); setImportResult(null); }} variant="outline">
+                                <Button onClick={resetImport} variant="outline">
                                     別のファイルをインポート
                                 </Button>
-                                <Button onClick={() => window.location.href = "/employees"}>
+                                <Button onClick={() => router.push("/employees")}>
                                     社員一覧を確認
                                 </Button>
                             </div>
