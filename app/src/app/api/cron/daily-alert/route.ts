@@ -52,6 +52,7 @@ export async function GET(request: Request) {
     const alerts: EmailAlert[] = [];
 
     for (const q of (qualifications || []) as QualificationAlertRow[]) {
+        if (!q.expiry_date) continue;
         const expiry = new Date(q.expiry_date!);
         const days = Math.floor((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
         if (days > 60) continue;
