@@ -31,18 +31,25 @@ export function useAuth(): AuthState {
 
     useEffect(() => {
         const fetchAuth = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            const currentUser = session?.user ?? null;
-            setUser(currentUser);
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                const currentUser = session?.user ?? null;
+                setUser(currentUser);
 
-            if (currentUser) {
-                setRole(await fetchRole(currentUser.id));
+                if (currentUser) {
+                    setRole(await fetchRole(currentUser.id));
+                }
+            } catch (e) {
+                console.error("Auth check failed:", e);
+            } finally {
+                setLoading(false);
             }
-
-            setLoading(false);
         };
 
-        fetchAuth();
+        // タイムアウト: 10秒で強制的にloading解除
+        const timeout = setTimeout(() => setLoading(false), 10000);
+        fetchAuth().then(() => clearTimeout(timeout));
+
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (_event, session) => {
