@@ -538,6 +538,50 @@ export type Database = {
         }
         Relationships: []
       }
+      training_history: {
+        Row: {
+          id: string
+          employee_qualification_id: string
+          training_date: string
+          training_type: string
+          provider: string | null
+          certificate_number: string | null
+          next_due_date: string | null
+          notes: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          employee_qualification_id: string
+          training_date: string
+          training_type?: string
+          provider?: string | null
+          certificate_number?: string | null
+          next_due_date?: string | null
+          notes?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          employee_qualification_id?: string
+          training_date?: string
+          training_type?: string
+          provider?: string | null
+          certificate_number?: string | null
+          next_due_date?: string | null
+          notes?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_history_employee_qualification_id_fkey"
+            columns: ["employee_qualification_id"]
+            isOneToOne: false
+            referencedRelation: "employee_qualifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
