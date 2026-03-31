@@ -2,6 +2,22 @@ import { createBrowserClient } from '@supabase/ssr';
 import { Database } from '../types/supabase';
 import { getSupabaseEnv } from './supabase-env';
 
-const { url: supabaseUrl, anonKey: supabaseAnonKey } = getSupabaseEnv();
+function createSupabaseBrowser() {
+    const { url, anonKey } = getSupabaseEnv();
+    return createBrowserClient<Database>(url, anonKey);
+}
 
-export const supabase = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
+let _supabase: ReturnType<typeof createSupabaseBrowser> | undefined;
+
+export const supabase = new Proxy({} as ReturnType<typeof createSupabaseBrowser>, {
+    get(_target, prop, receiver) {
+        if (!_supabase) {
+            _supabase = createSupabaseBrowser();
+        }
+        const value = Reflect.get(_supabase, prop, receiver);
+        if (typeof value === 'function') {
+            return value.bind(_supabase);
+        }
+        return value;
+    },
+});
