@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Tables } from "@/types/supabase";
 import {
     Table,
@@ -13,6 +14,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
     Select,
     SelectContent,
@@ -20,10 +22,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert } from "lucide-react";
+import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil } from "lucide-react";
 import { differenceInDays } from "date-fns";
 import Link from "next/link";
 import { getAlertLevel, type AlertLevel } from "@/lib/alert-utils";
+import { EditQualificationModal } from "@/components/qualifications/edit-qualification-modal";
 
 export type QualificationRow = Tables<"employee_qualifications"> & {
     employees: { id: string; name: string; branch: string | null } | null;
@@ -47,6 +50,8 @@ export function QualificationsClient({ initialQualifications, categories }: Qual
     const [search, setSearch] = useState("");
     const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
     const [levelFilter, setLevelFilter] = useState<string | null>(null);
+    const [editingItem, setEditingItem] = useState<QualificationRow | null>(null);
+    const router = useRouter();
 
     const filtered = initialQualifications.filter((q) => {
         const level = getAlertLevel(q.expiry_date);
@@ -161,12 +166,13 @@ export function QualificationsClient({ initialQualifications, categories }: Qual
                             <TableHead>有効期限</TableHead>
                             <TableHead>ステータス</TableHead>
                             <TableHead>申込状況</TableHead>
+                            <TableHead className="w-[80px]">操作</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {filtered.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                                <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
                                     該当する資格データがありません。
                                 </TableCell>
                             </TableRow>
@@ -183,7 +189,11 @@ export function QualificationsClient({ initialQualifications, categories }: Qual
                                             </Link>
                                         </TableCell>
                                         <TableCell className="text-sm">{q.employees?.branch || "-"}</TableCell>
-                                        <TableCell className="text-sm font-medium">{q.qualification_master?.name || "-"}</TableCell>
+                                        <TableCell className="text-sm font-medium">
+                                            <Link href={`/qualifications/${q.id}`} className="hover:text-primary hover:underline">
+                                                {q.qualification_master?.name || "-"}
+                                            </Link>
+                                        </TableCell>
                                         <TableCell>
                                             <Badge variant="outline" className="text-[10px]">{q.qualification_master?.category || "-"}</Badge>
                                         </TableCell>
@@ -201,6 +211,15 @@ export function QualificationsClient({ initialQualifications, categories }: Qual
                                         <TableCell>
                                             <Badge variant="outline">{q.status || "未着手"}</Badge>
                                         </TableCell>
+                                        <TableCell>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon-sm"
+                                                onClick={() => setEditingItem(q)}
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                        </TableCell>
                                     </TableRow>
                                 );
                             })
@@ -208,6 +227,17 @@ export function QualificationsClient({ initialQualifications, categories }: Qual
                     </TableBody>
                 </Table>
             </div>
+
+            {/* Edit Modal */}
+            {editingItem && (
+                <EditQualificationModal
+                    qualification={editingItem}
+                    open={!!editingItem}
+                    onOpenChange={(open) => {
+                        if (!open) setEditingItem(null);
+                    }}
+                />
+            )}
         </div>
     );
 }
