@@ -1,26 +1,33 @@
 "use client";
 
 import { Search, Command } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export function SearchTrigger() {
+export const OPEN_COMMAND_SEARCH_EVENT = "app:open-command-search";
+
+export function SearchTrigger({ className }: { className?: string }) {
     const handleClick = () => {
-        // Dispatch Cmd+K to open command palette
-        document.dispatchEvent(
-            new KeyboardEvent("keydown", { key: "k", metaKey: true })
-        );
+        document.dispatchEvent(new CustomEvent(OPEN_COMMAND_SEARCH_EVENT));
     };
 
     return (
         <button
+            type="button"
             onClick={handleClick}
-            className="relative w-full group flex items-center"
+            aria-label="検索を開く"
+            className={cn(
+                "group relative flex w-full items-center justify-between overflow-hidden rounded-[10px] border border-border bg-card px-3 py-2 text-left shadow-sm [touch-action:manipulation] transition-all duration-200 hover:border-primary/20 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+                className
+            )}
         >
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <div className="pl-10 h-10 bg-card border-none shadow-sm rounded-xl w-full max-w-md flex items-center text-sm text-muted-foreground cursor-pointer hover:bg-accent transition-colors">
-                社員名・資格名で検索...
+            <div className="flex min-w-0 items-center gap-2">
+                <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+                <span className="truncate text-sm text-muted-foreground transition-colors group-hover:text-foreground">
+                    社員・資格・車両を検索...
+                </span>
             </div>
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-1 text-[10px] font-medium text-muted-foreground/50 border border-border/50 rounded px-1.5 bg-background/50">
-                <Command className="w-2.5 h-2.5" />
+            <div className="ml-3 hidden shrink-0 items-center gap-1 rounded bg-muted/50 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground md:flex border border-border/50">
+                <Command aria-hidden="true" className="h-3 w-3" />
                 <span>K</span>
             </div>
         </button>

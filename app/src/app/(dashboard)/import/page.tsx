@@ -1,23 +1,44 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Upload, FileSpreadsheet, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/use-auth";
+import { Tables } from "@/types/supabase";
+import {
+    previewEmployeeImportAction,
+    runEmployeeImportAction,
+} from "@/app/actions/admin-ops-actions";
+import { type EmployeeImportPreviewRow, type EmployeeImportSourceRow } from "@/lib/imports/employee-import";
+import {
+    CheckCircle,
+    Download,
+    FileSpreadsheet,
+    History,
+    Loader2,
+    RefreshCcw,
+    Upload,
+    XCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 
-type ParsedRow = Record<string, string>;
-type ValidationResult = {
-    row: number;
-    data: ParsedRow;
-    errors: string[];
-    valid: boolean;
+type ImportRunRow = Pick<
+    Tables<"import_runs">,
+    "id" | "source_file_name" | "status" | "summary" | "inserted_rows" | "failed_rows" | "skipped_rows" | "created_at"
+>;
+
+type ImportPreviewSummary = {
+    total: number;
+    valid: number;
+    invalid: number;
+    duplicateInFile: number;
+    duplicateInDb: number;
 };
 
-const REQUIRED_FIELDS = ["employee_number", "name", "name_kana", "birth_date"];
 const COLUMN_MAP: Record<string, string> = {
     "社員番号": "employee_number",
     "氏名": "name",
@@ -31,8 +52,10 @@ const COLUMN_MAP: Record<string, string> = {
     "拠点": "branch",
     "雇用形態": "employment_type",
     "職種": "job_title",
-    "血液型": "blood_type",
-    // English column names
+    "役職": "position",
+    "雇用保険番号": "emp_insurance_no",
+    "保険証番号": "health_insurance_no",
+    "厚生年金番号": "pension_no",
     "employee_number": "employee_number",
     "name": "name",
     "name_kana": "name_kana",
@@ -45,26 +68,29 @@ const COLUMN_MAP: Record<string, string> = {
     "branch": "branch",
     "employment_type": "employment_type",
     "job_title": "job_title",
-    "blood_type": "blood_type",
+    "position": "position",
+    "emp_insurance_no": "emp_insurance_no",
+    "health_insurance_no": "health_insurance_no",
+    "pension_no": "pension_no",
 };
 
 function cleanCSVValue(value: string) {
     return value.trim().replace(/\ufeff/g, "");
 }
 
-function parseCSV(text: string): { headers: string[]; rows: ParsedRow[] } {
+function parseCSV(text: string): EmployeeImportSourceRow[] {
     const records: string[][] = [];
     let currentValue = "";
     let currentRecord: string[] = [];
     let inQuotes = false;
 
-    for (let i = 0; i < text.length; i++) {
-        const char = text[i];
+    for (let index = 0; index < text.length; index += 1) {
+        const char = text[index];
 
         if (char === "\"") {
-            if (inQuotes && text[i + 1] === "\"") {
+            if (inQuotes && text[index + 1] === "\"") {
                 currentValue += "\"";
-                i++;
+                index += 1;
             } else {
                 inQuotes = !inQuotes;
             }
@@ -78,8 +104,8 @@ function parseCSV(text: string): { headers: string[]; rows: ParsedRow[] } {
         }
 
         if ((char === "\n" || char === "\r") && !inQuotes) {
-            if (char === "\r" && text[i + 1] === "\n") {
-                i++;
+            if (char === "\r" && text[index + 1] === "\n") {
+                index += 1;
             }
 
             currentRecord.push(cleanCSVValue(currentValue));
@@ -103,293 +129,437 @@ function parseCSV(text: string): { headers: string[]; rows: ParsedRow[] } {
         }
     }
 
-    if (records.length === 0) return { headers: [], rows: [] };
-
-    const [rawHeaders, ...dataRows] = records;
-    const headers = rawHeaders.map((header) => cleanCSVValue(header));
-    const rows: ParsedRow[] = [];
-
-    for (const values of dataRows) {
-        const row: ParsedRow = {};
-        headers.forEach((h, idx) => {
-            const mapped = COLUMN_MAP[h] || h;
-            row[mapped] = values[idx] || "";
-        });
-        rows.push(row);
+    if (records.length === 0) {
+        return [];
     }
 
-    return { headers, rows };
+    const [headers, ...dataRows] = records;
+
+    return dataRows.map((values) => {
+        const row: EmployeeImportSourceRow = {};
+        headers.forEach((header, index) => {
+            const mapped = COLUMN_MAP[cleanCSVValue(header)] || cleanCSVValue(header);
+            row[mapped] = values[index] || "";
+        });
+        return row;
+    });
 }
 
-function validateRow(row: ParsedRow, index: number): ValidationResult {
-    const errors: string[] = [];
+function formatDateTime(value: string) {
+    return new Intl.DateTimeFormat("ja-JP", {
+        month: "numeric",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    }).format(new Date(value));
+}
 
-    for (const field of REQUIRED_FIELDS) {
-        if (!row[field] || !row[field].trim()) {
-            const label = Object.entries(COLUMN_MAP).find(([, v]) => v === field)?.[0] || field;
-            errors.push(`${label}が未入力`);
-        }
+function getRunBadge(status: ImportRunRow["status"]) {
+    if (status === "completed") {
+        return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">完了</Badge>;
     }
-
-    if (row.birth_date && !/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(row.birth_date)) {
-        errors.push("生年月日の形式が不正（YYYY-MM-DD）");
+    if (status === "failed") {
+        return <Badge variant="destructive">失敗</Badge>;
     }
-
-    if (row.email && row.email.trim() && !row.email.includes("@")) {
-        errors.push("メールアドレスの形式が不正");
-    }
-
-    return { row: index + 2, data: row, errors, valid: errors.length === 0 };
+    return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">実行中</Badge>;
 }
 
 export default function ImportPage() {
     const router = useRouter();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [file, setFile] = useState<File | null>(null);
-    const [results, setResults] = useState<ValidationResult[] | null>(null);
+    const [sourceRows, setSourceRows] = useState<EmployeeImportSourceRow[]>([]);
+    const [previewRows, setPreviewRows] = useState<EmployeeImportPreviewRow[]>([]);
+    const [previewSummary, setPreviewSummary] = useState<ImportPreviewSummary | null>(null);
+    const [recentRuns, setRecentRuns] = useState<ImportRunRow[]>([]);
     const [importing, setImporting] = useState(false);
     const [validating, setValidating] = useState(false);
-    const [importResult, setImportResult] = useState<{ success: number; failed: number } | null>(null);
+    const [loadingRuns, setLoadingRuns] = useState(false);
+    const [importResult, setImportResult] = useState<{ inserted: number; failed: number; skipped: number } | null>(null);
+    const { isAdminOrHr, loading } = useAuth();
 
-    const processFile = useCallback(async (f: File) => {
-        setValidating(true);
-        setImportResult(null);
-        setResults(null);
+    const loadRecentRuns = useCallback(async () => {
+        setLoadingRuns(true);
+        const { data, error } = await supabase
+            .from("import_runs")
+            .select("id, source_file_name, status, summary, inserted_rows, failed_rows, skipped_rows, created_at")
+            .eq("import_kind", "employees")
+            .order("created_at", { ascending: false })
+            .limit(6);
 
-        try {
-            const text = await f.text();
-            const { rows } = parseCSV(text);
+        setLoadingRuns(false);
 
-            if (rows.length === 0) {
-                toast.error("データが見つかりません");
-                return;
-            }
-
-            const validated = rows.map((row, i) => validateRow(row, i));
-            setResults(validated);
-        } catch (error) {
-            console.error("Failed to parse import file:", error);
-            toast.error("CSVの解析に失敗しました。ファイル形式を確認してください。");
-            setResults(null);
-        } finally {
-            setValidating(false);
+        if (error) {
+            console.error("Failed to load import runs:", error);
+            return;
         }
+
+        setRecentRuns((data || []) as ImportRunRow[]);
     }, []);
+
+    useEffect(() => {
+        if (!isAdminOrHr) {
+            return;
+        }
+
+        void loadRecentRuns();
+    }, [isAdminOrHr, loadRecentRuns]);
 
     const resetImport = useCallback(() => {
         setFile(null);
-        setResults(null);
+        setSourceRows([]);
+        setPreviewRows([]);
+        setPreviewSummary(null);
         setImportResult(null);
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
     }, []);
 
-    const handleDrop = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
-        const f = e.dataTransfer.files[0];
-        if (f && (f.name.endsWith(".csv") || f.name.endsWith(".txt"))) {
-            setFile(f);
-            void processFile(f);
-        } else {
-            resetImport();
-            toast.error("CSVファイルを選択してください");
+    const processFile = useCallback(async (nextFile: File) => {
+        setValidating(true);
+        setImportResult(null);
+        setPreviewRows([]);
+        setPreviewSummary(null);
+        setSourceRows([]);
+
+        try {
+            const text = await nextFile.text();
+            const rows = parseCSV(text);
+
+            if (rows.length === 0) {
+                toast.error("データが見つかりません。ヘッダー行とデータ行を確認してください。");
+                return;
+            }
+
+            const result = await previewEmployeeImportAction(rows);
+            if (!result.success) {
+                toast.error(result.error);
+                return;
+            }
+
+            setSourceRows(rows);
+            setPreviewRows(result.rows);
+            setPreviewSummary(result.summary);
+        } catch (error) {
+            console.error("Failed to parse import file:", error);
+            toast.error("CSVの解析に失敗しました。ファイル形式を確認してください。");
+        } finally {
+            setValidating(false);
         }
+    }, []);
+
+    const handleDrop = useCallback((event: React.DragEvent) => {
+        event.preventDefault();
+        const nextFile = event.dataTransfer.files[0];
+        if (!nextFile || (!nextFile.name.endsWith(".csv") && !nextFile.name.endsWith(".txt"))) {
+            resetImport();
+            toast.error("CSVファイルを選択してください。");
+            return;
+        }
+
+        setFile(nextFile);
+        void processFile(nextFile);
     }, [processFile, resetImport]);
 
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const f = e.target.files?.[0];
-        if (f) {
-            setFile(f);
-            void processFile(f);
+    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const nextFile = event.target.files?.[0];
+        if (!nextFile) {
+            return;
         }
+
+        setFile(nextFile);
+        void processFile(nextFile);
     };
 
-    const handleImport = async (skipErrors: boolean) => {
-        if (!results) return;
-
-        const toImport = skipErrors ? results.filter(r => r.valid) : results;
-        if (toImport.some(r => !r.valid) && !skipErrors) {
-            toast.error("エラー行があります。「エラー行をスキップしてインポート」を使用してください。");
+    const handleImport = async () => {
+        if (sourceRows.length === 0) {
             return;
         }
 
         setImporting(true);
-        let success = 0;
-        let failed = 0;
-
-        for (const item of toImport) {
-            if (!item.valid) continue;
-            const d = item.data;
-            const { error } = await supabase.from("employees").insert([{
-                employee_number: d.employee_number,
-                name: d.name,
-                name_kana: d.name_kana,
-                birth_date: d.birth_date.replace(/\//g, "-"),
-                gender: d.gender || null,
-                phone_number: d.phone_number || null,
-                email: d.email || null,
-                address: d.address || null,
-                hire_date: d.hire_date?.replace(/\//g, "-") || null,
-                branch: d.branch || null,
-                employment_type: d.employment_type || null,
-                job_title: d.job_title || null,
-                blood_type: d.blood_type || null,
-            }]);
-
-            if (error) {
-                failed++;
-                console.error(`Row ${item.row}:`, error.message);
-            } else {
-                success++;
-            }
-        }
-
+        const result = await runEmployeeImportAction({
+            sourceRows,
+            fileName: file?.name,
+        });
         setImporting(false);
-        setImportResult({ success, failed });
 
-        if (failed === 0) {
-            toast.success(`${success}名の社員を登録しました`);
-        } else {
-            toast.error(`${success}名登録、${failed}名失敗`);
+        if (!result.success) {
+            toast.error(result.error);
+            await loadRecentRuns();
+            return;
         }
+
+        setImportResult({
+            inserted: result.inserted,
+            failed: result.failed,
+            skipped: result.skipped,
+        });
+        toast.success(`${result.inserted}件の社員データを登録しました。`);
+        await loadRecentRuns();
+        router.refresh();
     };
 
-    const validCount = results?.filter(r => r.valid).length || 0;
-    const errorCount = results?.filter(r => !r.valid).length || 0;
+    const downloadErrorCsv = useCallback(() => {
+        const invalidRows = previewRows.filter((row) => !row.valid);
+        if (invalidRows.length === 0) {
+            return;
+        }
+
+        const csv = [
+            ["行番号", "社員番号", "氏名", "エラー内容"].join(","),
+            ...invalidRows.map((row) => [
+                row.row,
+                `"${row.employeeNumber.replace(/"/g, "\"\"")}"`,
+                `"${row.name.replace(/"/g, "\"\"")}"`,
+                `"${row.errors.join(" / ").replace(/"/g, "\"\"")}"`,
+            ].join(",")),
+        ].join("\n");
+
+        const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = "employee-import-errors.csv";
+        anchor.click();
+        URL.revokeObjectURL(url);
+    }, [previewRows]);
+
+    if (loading) {
+        return (
+            <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">
+                権限を確認中...
+            </div>
+        );
+    }
+
+    if (!isAdminOrHr) {
+        return (
+            <div className="space-y-6">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">データインポート</h1>
+                    <p className="mt-2 text-muted-foreground">CSVファイルから社員データを一括登録します。</p>
+                </div>
+                <Card>
+                    <CardContent className="space-y-4 pt-6">
+                        <p className="text-sm text-muted-foreground">
+                            この画面は管理者または人事のみ利用できます。
+                        </p>
+                        <Button variant="outline" onClick={() => router.push("/employees")}>
+                            社員一覧へ戻る
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">データインポート</h1>
-                <p className="text-muted-foreground mt-2">CSVファイルから社員データを一括登録します。</p>
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">データインポート</h1>
+                    <p className="mt-2 text-muted-foreground">
+                        CSV を dry-run で検証してから、社員データを一括登録します。
+                    </p>
+                </div>
+                <Button variant="outline" render={<Link href="/operations-log" />}>
+                    <History className="mr-2 h-4 w-4" />
+                    運用履歴を見る
+                </Button>
             </div>
 
-            {!importResult && (
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <FileSpreadsheet className="h-5 w-5" />
+                        ファイルアップロード
+                    </CardTitle>
+                    <CardDescription>
+                        UTF-8 の CSV をアップロードしてください。server 側で必須項目、日付形式、社員番号重複を検証します。
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div
+                        onDrop={handleDrop}
+                        onDragOver={(event) => event.preventDefault()}
+                        className="cursor-pointer rounded-2xl border-2 border-dashed border-border/70 px-6 py-12 text-center transition-colors hover:border-primary/50"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        {validating ? (
+                            <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-muted-foreground" />
+                        ) : (
+                            <Upload className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+                        )}
+                        <p className="text-sm text-muted-foreground">
+                            {validating ? "CSVを検証中..." : "ドラッグ&ドロップ または クリックしてファイルを選択"}
+                        </p>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                            一度に処理できるのは 1,500 行までです
+                        </p>
+                        {file && <p className="mt-3 text-sm font-medium">{file.name}</p>}
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".csv,.txt"
+                            onChange={handleFileSelect}
+                            className="hidden"
+                        />
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        <Badge variant="outline">必須: 社員番号 / 氏名 / フリガナ / 生年月日 / 入社日 / 拠点</Badge>
+                        <Badge variant="outline">重複チェック: 社員番号</Badge>
+                        <Badge variant="outline">日付形式: YYYY-MM-DD または YYYY/M/D</Badge>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {previewSummary && (
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <FileSpreadsheet className="h-5 w-5" />
-                            ファイルアップロード
-                        </CardTitle>
+                        <CardTitle>dry-run 結果</CardTitle>
                         <CardDescription>
-                            CSVファイル（カンマ区切り、UTF-8）をアップロードしてください。
-                            ヘッダー行に「社員番号, 氏名, フリガナ, 生年月日」が必須です。
+                            {previewSummary.total}行中 {previewSummary.valid}行が登録可能、{previewSummary.invalid}行に修正が必要です。
                         </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div
-                            onDrop={handleDrop}
-                            onDragOver={(e) => e.preventDefault()}
-                            className="border-2 border-dashed rounded-xl p-12 text-center hover:border-primary/50 transition-colors cursor-pointer"
-                            onClick={() => fileInputRef.current?.click()}
-                        >
-                            {validating ? (
-                                <Loader2 className="mx-auto h-10 w-10 text-muted-foreground mb-4 animate-spin" />
-                            ) : (
-                                <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-4" />
+                    <CardContent className="space-y-4">
+                        <div className="grid gap-3 sm:grid-cols-4">
+                            <div className="rounded-2xl border border-border/60 bg-background/75 p-4">
+                                <p className="text-xs text-muted-foreground">登録可能</p>
+                                <p className="mt-2 text-2xl font-semibold">{previewSummary.valid}</p>
+                            </div>
+                            <div className="rounded-2xl border border-border/60 bg-background/75 p-4">
+                                <p className="text-xs text-muted-foreground">修正必要</p>
+                                <p className="mt-2 text-2xl font-semibold">{previewSummary.invalid}</p>
+                            </div>
+                            <div className="rounded-2xl border border-border/60 bg-background/75 p-4">
+                                <p className="text-xs text-muted-foreground">ファイル内重複</p>
+                                <p className="mt-2 text-2xl font-semibold">{previewSummary.duplicateInFile}</p>
+                            </div>
+                            <div className="rounded-2xl border border-border/60 bg-background/75 p-4">
+                                <p className="text-xs text-muted-foreground">既存重複</p>
+                                <p className="mt-2 text-2xl font-semibold">{previewSummary.duplicateInDb}</p>
+                            </div>
+                        </div>
+
+                        <div className="max-h-[420px] space-y-2 overflow-y-auto">
+                            {previewRows.map((row) => (
+                                <div
+                                    key={row.row}
+                                    className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${
+                                        row.valid
+                                            ? "border-emerald-200 bg-emerald-50/80"
+                                            : "border-rose-200 bg-rose-50/80"
+                                    }`}
+                                >
+                                    {row.valid ? (
+                                        <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                                    ) : (
+                                        <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+                                    )}
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-medium">
+                                            {row.row}行目: {row.name || "(氏名未入力)"} {row.employeeNumber ? `(${row.employeeNumber})` : ""}
+                                        </p>
+                                        {!row.valid && (
+                                            <div className="mt-2 flex flex-wrap gap-1.5">
+                                                {row.errors.map((errorMessage) => (
+                                                    <Badge key={`${row.row}-${errorMessage}`} variant="destructive" className="text-[10px]">
+                                                        {errorMessage}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex flex-col gap-3 sm:flex-row">
+                            <Button
+                                onClick={handleImport}
+                                disabled={importing || validating || previewSummary.valid === 0}
+                                className="flex-1"
+                            >
+                                {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {previewSummary.invalid > 0
+                                    ? `有効行 ${previewSummary.valid}件だけインポート`
+                                    : `${previewSummary.valid}件をインポート`}
+                            </Button>
+                            {previewSummary.invalid > 0 && (
+                                <Button variant="outline" onClick={downloadErrorCsv}>
+                                    <Download className="mr-2 h-4 w-4" />
+                                    エラーCSVを出力
+                                </Button>
                             )}
-                            <p className="text-sm text-muted-foreground">
-                                {validating ? "CSVを検証中..." : "ドラッグ&ドロップ または クリックしてファイルを選択"}
-                            </p>
-                            {file && <p className="mt-2 text-sm font-medium">{file.name}</p>}
-                            <input
-                                id="file-input"
-                                ref={fileInputRef}
-                                type="file"
-                                accept=".csv,.txt"
-                                onChange={handleFileSelect}
-                                className="hidden"
-                            />
+                            <Button variant="outline" onClick={resetImport}>
+                                <RefreshCcw className="mr-2 h-4 w-4" />
+                                別ファイルを選ぶ
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>
-            )}
-
-            {results && !importResult && (
-                <>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>バリデーション結果</CardTitle>
-                            <CardDescription>
-                                {results.length}行中 {validCount}行OK、{errorCount}行エラー
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="max-h-[400px] overflow-y-auto space-y-2">
-                                {results.map((r) => (
-                                    <div
-                                        key={r.row}
-                                        className={`flex items-start gap-3 p-3 rounded-lg text-sm ${r.valid ? "bg-green-50" : "bg-red-50"}`}
-                                    >
-                                        {r.valid
-                                            ? <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
-                                            : <XCircle className="h-4 w-4 text-red-600 mt-0.5 shrink-0" />
-                                        }
-                                        <div className="flex-1 min-w-0">
-                                            <span className="font-medium">
-                                                {r.row}行目: {r.data.name || "(名前なし)"} ({r.data.employee_number || "番号なし"})
-                                            </span>
-                                            {!r.valid && (
-                                                <div className="mt-1 text-red-600">
-                                                    {r.errors.map((err, i) => (
-                                                        <span key={i} className="mr-2">
-                                                            <Badge variant="destructive" className="text-[10px]">{err}</Badge>
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        {errorCount === 0 ? (
-                            <Button onClick={() => handleImport(false)} disabled={importing || validating || validCount === 0} className="flex-1">
-                                {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {validCount}名をインポート
-                            </Button>
-                        ) : (
-                            <>
-                                <Button onClick={() => handleImport(true)} disabled={importing || validating || validCount === 0} className="flex-1">
-                                    {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    エラー行をスキップして {validCount}名をインポート
-                                </Button>
-                                <Button variant="outline" onClick={resetImport}>
-                                    修正して再アップロード
-                                </Button>
-                            </>
-                        )}
-                    </div>
-                </>
             )}
 
             {importResult && (
                 <Card>
-                    <CardContent className="pt-6">
-                        <div className="text-center space-y-4">
-                            <CheckCircle className="mx-auto h-12 w-12 text-green-600" />
-                            <div>
-                                <p className="text-xl font-bold">{importResult.success}名の社員を登録しました</p>
-                                {importResult.failed > 0 && (
-                                    <p className="text-sm text-red-600 mt-1">{importResult.failed}名は登録に失敗しました</p>
-                                )}
-                            </div>
-                            <div className="flex gap-4 justify-center">
-                                <Button onClick={resetImport} variant="outline">
-                                    別のファイルをインポート
-                                </Button>
-                                <Button onClick={() => router.push("/employees")}>
-                                    社員一覧を確認
-                                </Button>
-                            </div>
+                    <CardContent className="space-y-4 pt-6 text-center">
+                        <CheckCircle className="mx-auto h-12 w-12 text-emerald-600" />
+                        <div>
+                            <p className="text-xl font-semibold">{importResult.inserted}件の社員データを登録しました</p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                失敗 {importResult.failed}件 / スキップ {importResult.skipped}件
+                            </p>
+                        </div>
+                        <div className="flex flex-col justify-center gap-3 sm:flex-row">
+                            <Button variant="outline" onClick={resetImport}>
+                                別のファイルをインポート
+                            </Button>
+                            <Button render={<Link href="/employees" />}>
+                                社員一覧を確認
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>
             )}
+
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>直近のインポート履歴</CardTitle>
+                        <CardDescription>
+                            実行結果と失敗件数をこの画面でも確認できます。
+                        </CardDescription>
+                    </div>
+                    {loadingRuns && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    {recentRuns.length === 0 ? (
+                        <div className="rounded-2xl border border-dashed border-border/70 px-4 py-6 text-sm text-muted-foreground">
+                            まだインポート履歴はありません。
+                        </div>
+                    ) : (
+                        recentRuns.map((run) => (
+                            <div
+                                key={run.id}
+                                className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background/70 px-4 py-3 md:flex-row md:items-center md:justify-between"
+                            >
+                                <div className="space-y-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <p className="font-medium">{run.source_file_name || "ファイル名なし"}</p>
+                                        {getRunBadge(run.status)}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                        {run.summary || `${run.inserted_rows}件登録 / ${run.failed_rows}件失敗 / ${run.skipped_rows}件スキップ`}
+                                    </p>
+                                </div>
+                                <p className="text-xs text-muted-foreground">{formatDateTime(run.created_at)}</p>
+                            </div>
+                        ))
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 }

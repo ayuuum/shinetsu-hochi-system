@@ -45,6 +45,8 @@ export type Database = {
           check_type: string | null
           checker_id: string | null
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           employee_id: string | null
           id: string
           is_abnormal: boolean | null
@@ -57,6 +59,8 @@ export type Database = {
           check_type?: string | null
           checker_id?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           employee_id?: string | null
           id?: string
           is_abnormal?: boolean | null
@@ -69,6 +73,8 @@ export type Database = {
           check_type?: string | null
           checker_id?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           employee_id?: string | null
           id?: string
           is_abnormal?: boolean | null
@@ -140,43 +146,150 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          metadata: Json | null
+          summary: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+          summary?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+          summary?: string | null
+        }
+        Relationships: []
+      }
       construction_records: {
         Row: {
           category: string | null
+          client_name: string | null
           construction_date: string
           construction_name: string
+          contract_amount: number | null
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           employee_id: string | null
+          end_date: string | null
+          equipment_types: string[] | null
           id: string
           location: string | null
           notes: string | null
           role: string | null
+          work_type: string | null
         }
         Insert: {
           category?: string | null
+          client_name?: string | null
           construction_date: string
           construction_name: string
+          contract_amount?: number | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           employee_id?: string | null
+          end_date?: string | null
+          equipment_types?: string[] | null
           id?: string
           location?: string | null
           notes?: string | null
           role?: string | null
+          work_type?: string | null
         }
         Update: {
           category?: string | null
+          client_name?: string | null
           construction_date?: string
           construction_name?: string
+          contract_amount?: number | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           employee_id?: string | null
+          end_date?: string | null
+          equipment_types?: string[] | null
           id?: string
           location?: string | null
           notes?: string | null
           role?: string | null
+          work_type?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "construction_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_damage_insurances: {
+        Row: {
+          agency: string | null
+          coverage_details: string | null
+          created_at: string | null
+          employee_id: string | null
+          id: string
+          insurance_company: string
+          insurance_name: string
+          insurance_type: string
+          notes: string | null
+          renewal_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          agency?: string | null
+          coverage_details?: string | null
+          created_at?: string | null
+          employee_id?: string | null
+          id?: string
+          insurance_company: string
+          insurance_name: string
+          insurance_type: string
+          notes?: string | null
+          renewal_date: string
+          updated_at?: string | null
+        }
+        Update: {
+          agency?: string | null
+          coverage_details?: string | null
+          created_at?: string | null
+          employee_id?: string | null
+          id?: string
+          insurance_company?: string
+          insurance_name?: string
+          insurance_type?: string
+          notes?: string | null
+          renewal_date?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_damage_insurances_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
@@ -230,6 +343,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "employee_family_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_life_insurances: {
+        Row: {
+          agency: string | null
+          created_at: string | null
+          employee_id: string | null
+          id: string
+          insurance_company: string
+          insurance_name: string
+          maturity_date: string
+          notes: string | null
+          payout_ratio: number | null
+          peak_date: string | null
+          start_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          agency?: string | null
+          created_at?: string | null
+          employee_id?: string | null
+          id?: string
+          insurance_company: string
+          insurance_name: string
+          maturity_date: string
+          notes?: string | null
+          payout_ratio?: number | null
+          peak_date?: string | null
+          start_date: string
+          updated_at?: string | null
+        }
+        Update: {
+          agency?: string | null
+          created_at?: string | null
+          employee_id?: string | null
+          id?: string
+          insurance_company?: string
+          insurance_name?: string
+          maturity_date?: string
+          notes?: string | null
+          payout_ratio?: number | null
+          peak_date?: string | null
+          start_date?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_life_insurances_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
@@ -314,6 +480,8 @@ export type Database = {
           commute_distance: number | null
           commute_time: number | null
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           email: string | null
           emp_insurance_no: string | null
           employee_number: string
@@ -349,6 +517,8 @@ export type Database = {
           commute_distance?: number | null
           commute_time?: number | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           email?: string | null
           emp_insurance_no?: string | null
           employee_number: string
@@ -384,6 +554,8 @@ export type Database = {
           commute_distance?: number | null
           commute_time?: number | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           email?: string | null
           emp_insurance_no?: string | null
           employee_number?: string
@@ -416,6 +588,8 @@ export type Database = {
           check_date: string
           check_type: string | null
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           employee_id: string | null
           height: number | null
           hospital_name: string | null
@@ -428,6 +602,8 @@ export type Database = {
           check_date: string
           check_type?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           employee_id?: string | null
           height?: number | null
           hospital_name?: string | null
@@ -440,6 +616,8 @@ export type Database = {
           check_date?: string
           check_type?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           employee_id?: string | null
           height?: number | null
           hospital_name?: string | null
@@ -458,55 +636,120 @@ export type Database = {
           },
         ]
       }
-      inspection_schedules: {
+      import_runs: {
         Row: {
-          address: string | null
-          assigned_employee_id: string | null
-          building_name: string
-          client_name: string
-          completed_date: string | null
-          created_at: string | null
+          created_at: string
+          error_rows: Json
+          failed_rows: number
+          finished_at: string | null
           id: string
-          inspection_type: string
-          notes: string | null
-          scheduled_date: string
+          import_kind: string
+          initiated_by: string | null
+          initiated_email: string | null
+          inserted_rows: number
+          skipped_rows: number
+          source_file_name: string | null
           status: string
-          updated_at: string | null
+          summary: string | null
+          total_rows: number
+          valid_rows: number
         }
         Insert: {
-          address?: string | null
-          assigned_employee_id?: string | null
-          building_name: string
-          client_name: string
-          completed_date?: string | null
-          created_at?: string | null
+          created_at?: string
+          error_rows?: Json
+          failed_rows?: number
+          finished_at?: string | null
           id?: string
-          inspection_type?: string
-          notes?: string | null
-          scheduled_date: string
-          status?: string
-          updated_at?: string | null
+          import_kind: string
+          initiated_by?: string | null
+          initiated_email?: string | null
+          inserted_rows?: number
+          skipped_rows?: number
+          source_file_name?: string | null
+          status: string
+          summary?: string | null
+          total_rows?: number
+          valid_rows?: number
         }
         Update: {
-          address?: string | null
-          assigned_employee_id?: string | null
-          building_name?: string
-          client_name?: string
-          completed_date?: string | null
-          created_at?: string | null
+          created_at?: string
+          error_rows?: Json
+          failed_rows?: number
+          finished_at?: string | null
           id?: string
-          inspection_type?: string
-          notes?: string | null
-          scheduled_date?: string
+          import_kind?: string
+          initiated_by?: string | null
+          initiated_email?: string | null
+          inserted_rows?: number
+          skipped_rows?: number
+          source_file_name?: string | null
           status?: string
-          updated_at?: string | null
+          summary?: string | null
+          total_rows?: number
+          valid_rows?: number
         }
         Relationships: [
           {
-            foreignKeyName: "inspection_schedules_assigned_employee_id_fkey"
-            columns: ["assigned_employee_id"]
+            foreignKeyName: "import_runs_initiated_by_fkey"
+            columns: ["initiated_by"]
             isOneToOne: false
-            referencedRelation: "employees"
+            referencedRelation: "user_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_runs: {
+        Row: {
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          job_key: string
+          job_label: string
+          metrics: Json
+          processed_items: number
+          started_at: string
+          status: string
+          total_items: number
+          trigger_type: string
+          triggered_by: string | null
+          triggered_email: string | null
+        }
+        Insert: {
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          job_key: string
+          job_label: string
+          metrics?: Json
+          processed_items?: number
+          started_at?: string
+          status: string
+          total_items?: number
+          trigger_type: string
+          triggered_by?: string | null
+          triggered_email?: string | null
+        }
+        Update: {
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          job_key?: string
+          job_label?: string
+          metrics?: Json
+          processed_items?: number
+          started_at?: string
+          status?: string
+          total_items?: number
+          trigger_type?: string
+          triggered_by?: string | null
+          triggered_email?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_runs_triggered_by_fkey"
+            columns: ["triggered_by"]
+            isOneToOne: false
+            referencedRelation: "user_roles"
             referencedColumns: ["id"]
           },
         ]
@@ -540,37 +783,37 @@ export type Database = {
       }
       training_history: {
         Row: {
-          id: string
-          employee_qualification_id: string
-          training_date: string
-          training_type: string
-          provider: string | null
           certificate_number: string | null
+          created_at: string | null
+          employee_qualification_id: string
+          id: string
           next_due_date: string | null
           notes: string | null
-          created_at: string | null
+          provider: string | null
+          training_date: string
+          training_type: string
         }
         Insert: {
-          id?: string
+          certificate_number?: string | null
+          created_at?: string | null
           employee_qualification_id: string
+          id?: string
+          next_due_date?: string | null
+          notes?: string | null
+          provider?: string | null
           training_date: string
           training_type?: string
-          provider?: string | null
-          certificate_number?: string | null
-          next_due_date?: string | null
-          notes?: string | null
-          created_at?: string | null
         }
         Update: {
-          id?: string
-          employee_qualification_id?: string
-          training_date?: string
-          training_type?: string
-          provider?: string | null
           certificate_number?: string | null
+          created_at?: string | null
+          employee_qualification_id?: string
+          id?: string
           next_due_date?: string | null
           notes?: string | null
-          created_at?: string | null
+          provider?: string | null
+          training_date?: string
+          training_type?: string
         }
         Relationships: [
           {
@@ -614,6 +857,8 @@ export type Database = {
       vehicles: {
         Row: {
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           id: string
           inspection_expiry: string | null
           liability_insurance_expiry: string | null
@@ -624,6 +869,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           inspection_expiry?: string | null
           liability_insurance_expiry?: string | null
@@ -634,6 +881,8 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           inspection_expiry?: string | null
           liability_insurance_expiry?: string | null
@@ -658,6 +907,10 @@ export type Database = {
     }
     Functions: {
       get_user_role: { Args: never; Returns: string }
+      soft_delete_employee: {
+        Args: { p_deleted_by: string; p_employee_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

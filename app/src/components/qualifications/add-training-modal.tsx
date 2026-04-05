@@ -40,6 +40,7 @@ const formSchema = z.object({
     training_type: z.string().min(1, "種別を選択してください"),
     provider: z.string().optional(),
     certificate_number: z.string().optional(),
+    next_due_date: z.string().optional(),
     notes: z.string().optional(),
 });
 
@@ -61,9 +62,28 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
             training_type: "初回",
             provider: "",
             certificate_number: "",
+            next_due_date: "",
             notes: "",
         },
     });
+
+    const resetForm = () => {
+        form.reset({
+            training_date: "",
+            training_type: "初回",
+            provider: "",
+            certificate_number: "",
+            next_due_date: "",
+            notes: "",
+        });
+    };
+
+    const handleOpenChange = (nextOpen: boolean) => {
+        setOpen(nextOpen);
+        if (!nextOpen) {
+            resetForm();
+        }
+    };
 
     async function onSubmit(values: FormValues) {
         setIsSubmitting(true);
@@ -76,6 +96,7 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
                 training_type: values.training_type,
                 provider: values.provider || null,
                 certificate_number: values.certificate_number || null,
+                next_due_date: values.next_due_date || null,
                 notes: values.notes || null,
             }]);
 
@@ -91,13 +112,13 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
         } else {
             toast.success("講習履歴を登録しました");
             setOpen(false);
-            form.reset();
+            resetForm();
             router.refresh();
         }
     }
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger
                 render={<Button><Plus className="mr-2 h-4 w-4" />講習履歴を追加</Button>}
             />
@@ -145,6 +166,14 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
                             <FormItem>
                                 <FormLabel>修了証番号</FormLabel>
                                 <FormControl><Input placeholder="例: 第12345号" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+
+                        <FormField control={form.control} name="next_due_date" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>次回期限</FormLabel>
+                                <FormControl><Input type="date" {...field} /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )} />

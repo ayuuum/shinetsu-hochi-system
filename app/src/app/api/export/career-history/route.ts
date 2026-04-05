@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { getTodayInTokyo } from "@/lib/date";
 import { getSupabaseEnv } from "@/lib/supabase-env";
 
 export async function GET() {
@@ -30,7 +31,9 @@ export async function GET() {
 
     const { data: records, error } = await supabase
         .from("construction_records")
-        .select("*, employees(name, branch)")
+        .select("*, employees!inner(name, branch)")
+        .is("deleted_at", null)
+        .is("employees.deleted_at", null)
         .order("construction_date", { ascending: false });
 
     if (error) {
@@ -63,7 +66,7 @@ export async function GET() {
     ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
 
     const csv = "\uFEFF" + [headers.join(","), ...rows].join("\n");
-    const date = new Date().toISOString().slice(0, 10);
+    const date = getTodayInTokyo();
 
     return new NextResponse(csv, {
         headers: {

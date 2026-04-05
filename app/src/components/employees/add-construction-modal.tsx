@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import {
     Dialog,
     DialogContent,
@@ -31,19 +31,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, HardHat, Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-
-const formSchema = z.object({
-    construction_name: z.string().min(1, "物件名は必須です"),
-    construction_date: z.string().min(1, "施工日は必須です"),
-    category: z.string().optional(),
-    role: z.string().optional(),
-    location: z.string().optional(),
-    notes: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import { createProjectAction } from "@/app/actions/admin-record-actions";
+import { projectSchema, type ProjectValues } from "@/lib/validation/project";
 
 interface AddConstructionModalProps {
     employeeId: string;
@@ -53,40 +43,53 @@ interface AddConstructionModalProps {
 export function AddConstructionModal({ employeeId, onSuccess }: AddConstructionModalProps) {
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const router = useRouter();
 
-    const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
+    const form = useForm<ProjectValues>({
+        resolver: zodResolver(projectSchema),
         defaultValues: {
             construction_name: "",
+            category: "消防設備工事",
             construction_date: "",
-            category: "",
+            employee_id: employeeId,
             role: "",
             location: "",
             notes: "",
         },
     });
 
-    async function onSubmit(values: FormValues) {
+    async function onSubmit(values: ProjectValues) {
         setIsSubmitting(true);
-        const { error } = await supabase.from("construction_records").insert([{
+        const result = await createProjectAction({
+            ...values,
             employee_id: employeeId,
-            construction_name: values.construction_name,
-            construction_date: values.construction_date,
-            category: values.category || null,
-            role: values.role || null,
-            location: values.location || null,
-            notes: values.notes || null,
-        }]);
-
+        });
         setIsSubmitting(false);
 
-        if (error) {
-            toast.error("登録に失敗しました: " + error.message);
-        } else {
-            setOpen(false);
-            form.reset();
-            onSuccess?.();
+        if (!result.success) {
+            if (result.fieldErrors) {
+                for (const [field, message] of Object.entries(result.fieldErrors)) {
+                    if (!message) continue;
+                    form.setError(field as keyof ProjectValues, { type: "server", message });
+                }
+            }
+            toast.error(result.error);
+            return;
         }
+
+        toast.success("施工実績を登録しました");
+        setOpen(false);
+        form.reset({
+            construction_name: "",
+            category: "消防設備工事",
+            construction_date: "",
+            employee_id: employeeId,
+            role: "",
+            location: "",
+            notes: "",
+        });
+        onSuccess?.();
+        router.refresh();
     }
 
     return (
@@ -128,10 +131,10 @@ export function AddConstructionModal({ employeeId, onSuccess }: AddConstructionM
                                             <SelectTrigger><SelectValue placeholder="選択" /></SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            <SelectItem value="消防">消防</SelectItem>
-                                            <SelectItem value="セキュリティ">セキュリティ</SelectItem>
-                                            <SelectItem value="通信">通信</SelectItem>
-                                            <SelectItem value="複合">複合</SelectItem>
+                                            <SelectItem value="消防設備工事">消防設備工事</SelectItem>
+                                            <SelectItem value="電気設備工事">電気設備工事</SelectItem>
+                                            <SelectItem value="空調設備工事">空調設備工事</SelectItem>
+                                            <SelectItem value="その他">その他</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />

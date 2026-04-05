@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { BrandLogo } from "@/components/brand-logo";
 import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
 
@@ -93,11 +94,9 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
             <div className="w-full max-w-md space-y-6">
-                <div className="text-center space-y-2">
-                    <div className="mx-auto w-14 h-14 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg shadow-primary/20">
-                        信
-                    </div>
-                    <h1 className="text-2xl font-bold tracking-tight mt-4">信越報知</h1>
+                <div className="text-center space-y-3">
+                    <h1 className="sr-only">信越報知 社員・資格管理システム</h1>
+                    <BrandLogo priority className="mx-auto w-[240px] max-w-full" />
                     <p className="text-sm text-muted-foreground">社員・資格管理システム</p>
                 </div>
                 <Card className="shadow-xl border-0">

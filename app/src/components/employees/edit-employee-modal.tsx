@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import {
     Dialog,
     DialogContent,
@@ -30,31 +29,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Tables } from "@/types/supabase";
-
-const formSchema = z.object({
-    employee_number: z.string().min(1, "社員番号は必須です"),
-    name: z.string().min(1, "氏名は必須です"),
-    name_kana: z.string().min(1, "フリガナは必須です"),
-    birth_date: z.string().min(1, "生年月日は必須です"),
-    gender: z.string().optional(),
-    phone_number: z.string().optional(),
-    email: z.string().optional(),
-    address: z.string().optional(),
-    hire_date: z.string().optional(),
-    termination_date: z.string().optional(),
-    branch: z.string().optional(),
-    employment_type: z.string().optional(),
-    job_title: z.string().optional(),
-    position: z.string().optional(),
-    emp_insurance_no: z.string().optional(),
-    health_insurance_no: z.string().optional(),
-    pension_no: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import { UnsavedChangesDialog } from "@/components/shared/unsaved-changes-dialog";
+import { updateEmployeeAction } from "@/app/actions/admin-record-actions";
+import {
+    employeeUpdateSchema,
+    toEmployeeUpdateFormValues,
+    type EmployeeUpdateValues,
+} from "@/lib/validation/employee";
 
 interface EditEmployeeModalProps {
     employee: Tables<"employees">;
@@ -64,92 +47,69 @@ interface EditEmployeeModalProps {
 }
 
 export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: EditEmployeeModalProps) {
+    const [discardOpen, setDiscardOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            employee_number: employee.employee_number,
-            name: employee.name,
-            name_kana: employee.name_kana,
-            birth_date: employee.birth_date || "",
-            gender: employee.gender || "",
-            phone_number: employee.phone_number || "",
-            email: employee.email || "",
-            address: employee.address || "",
-            hire_date: employee.hire_date || "",
-            termination_date: employee.termination_date || "",
-            branch: employee.branch || "",
-            employment_type: employee.employment_type || "",
-            job_title: employee.job_title || "",
-            position: employee.position || "",
-            emp_insurance_no: employee.emp_insurance_no || "",
-            health_insurance_no: employee.health_insurance_no || "",
-            pension_no: employee.pension_no || "",
-        },
+    const form = useForm<EmployeeUpdateValues>({
+        resolver: zodResolver(employeeUpdateSchema),
+        defaultValues: toEmployeeUpdateFormValues(employee),
     });
+    const { isDirty } = form.formState;
 
     useEffect(() => {
         if (open) {
-            form.reset({
-                employee_number: employee.employee_number,
-                name: employee.name,
-                name_kana: employee.name_kana,
-                birth_date: employee.birth_date || "",
-                gender: employee.gender || "",
-                phone_number: employee.phone_number || "",
-                email: employee.email || "",
-                address: employee.address || "",
-                hire_date: employee.hire_date || "",
-                termination_date: employee.termination_date || "",
-                branch: employee.branch || "",
-                employment_type: employee.employment_type || "",
-                job_title: employee.job_title || "",
-                position: employee.position || "",
-                emp_insurance_no: employee.emp_insurance_no || "",
-                health_insurance_no: employee.health_insurance_no || "",
-                pension_no: employee.pension_no || "",
-            });
+            form.reset(toEmployeeUpdateFormValues(employee));
         }
     }, [open, employee, form]);
 
-    async function onSubmit(values: FormValues) {
-        setIsSubmitting(true);
-        const { error } = await supabase
-            .from("employees")
-            .update({
-                employee_number: values.employee_number,
-                name: values.name,
-                name_kana: values.name_kana,
-                birth_date: values.birth_date,
-                gender: values.gender || null,
-                phone_number: values.phone_number || null,
-                email: values.email || null,
-                address: values.address || null,
-                hire_date: values.hire_date || null,
-                termination_date: values.termination_date || null,
-                branch: values.branch || null,
-                employment_type: values.employment_type || null,
-                job_title: values.job_title || null,
-                position: values.position || null,
-                emp_insurance_no: values.emp_insurance_no || null,
-                health_insurance_no: values.health_insurance_no || null,
-                pension_no: values.pension_no || null,
-            })
-            .eq("id", employee.id);
+    const handleOpenChange = (nextOpen: boolean) => {
+        if (nextOpen) {
+            onOpenChange(true);
+            return;
+        }
 
+        if (isSubmitting) return;
+
+        if (isDirty) {
+            setDiscardOpen(true);
+            return;
+        }
+
+        form.reset(toEmployeeUpdateFormValues(employee));
+        onOpenChange(false);
+    };
+
+    const handleDiscard = () => {
+        form.reset(toEmployeeUpdateFormValues(employee));
+        setDiscardOpen(false);
+        onOpenChange(false);
+    };
+
+    async function onSubmit(values: EmployeeUpdateValues) {
+        setIsSubmitting(true);
+        const result = await updateEmployeeAction(employee.id, values);
         setIsSubmitting(false);
 
-        if (error) {
-            toast.error("更新に失敗しました: " + error.message);
-        } else {
-            onOpenChange(false);
-            onSuccess?.();
+        if (!result.success) {
+            if (result.fieldErrors) {
+                for (const [field, message] of Object.entries(result.fieldErrors)) {
+                    if (!message) continue;
+                    form.setError(field as keyof EmployeeUpdateValues, { type: "server", message });
+                }
+            }
+            toast.error(result.error);
+            return;
         }
+
+        toast.success("社員情報を更新しました");
+        form.reset(values);
+        onOpenChange(false);
+        onSuccess?.();
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>社員情報の編集</DialogTitle>
@@ -160,7 +120,7 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
                         <FormField control={form.control} name="employee_number" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>社員番号 *</FormLabel>
-                                <FormControl><Input {...field} /></FormControl>
+                                <FormControl><Input autoComplete="off" spellCheck={false} {...field} /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )} />
@@ -169,14 +129,14 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
                             <FormField control={form.control} name="name" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>氏名 *</FormLabel>
-                                    <FormControl><Input {...field} /></FormControl>
+                                    <FormControl><Input autoComplete="name" {...field} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />
                             <FormField control={form.control} name="name_kana" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>フリガナ *</FormLabel>
-                                    <FormControl><Input {...field} /></FormControl>
+                                    <FormControl><Input autoComplete="off" spellCheck={false} {...field} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />
@@ -211,14 +171,14 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
                             <FormField control={form.control} name="phone_number" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>電話番号</FormLabel>
-                                    <FormControl><Input {...field} /></FormControl>
+                                    <FormControl><Input type="tel" inputMode="tel" autoComplete="tel" {...field} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />
                             <FormField control={form.control} name="email" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>メール</FormLabel>
-                                    <FormControl><Input type="email" {...field} /></FormControl>
+                                    <FormControl><Input type="email" autoComplete="email" spellCheck={false} {...field} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />
@@ -227,7 +187,7 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
                         <FormField control={form.control} name="address" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>住所</FormLabel>
-                                <FormControl><Input {...field} /></FormControl>
+                                <FormControl><Input autoComplete="street-address" {...field} /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )} />
@@ -324,7 +284,7 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
                         </div>
 
                         <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>キャンセル</Button>
+                            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>キャンセル</Button>
                             <Button type="submit" disabled={isSubmitting}>
                                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 保存する
@@ -334,5 +294,7 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
                 </Form>
             </DialogContent>
         </Dialog>
+        <UnsavedChangesDialog open={discardOpen} onOpenChange={setDiscardOpen} onDiscard={handleDiscard} />
+        </>
     );
 }

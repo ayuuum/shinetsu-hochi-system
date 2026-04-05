@@ -1,80 +1,83 @@
 "use client";
 
 import {
-    LayoutDashboard,
-    Users,
-    ScrollText,
-    Truck,
-    Wine,
-    ClipboardCheck,
-    Upload,
     LogOut,
 } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
 import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarGroupLabel,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuItem,
     SidebarMenuButton,
     SidebarRail,
+    SidebarSeparator,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
-
-const menuItems = [
-    { title: "ダッシュボード", icon: LayoutDashboard, url: "/" },
-    { title: "社員一覧", icon: Users, url: "/employees" },
-    { title: "資格・講習管理", icon: ScrollText, url: "/qualifications" },
-    { title: "車両・備品", icon: Truck, url: "/vehicles" },
-    { title: "点検スケジュール", icon: ClipboardCheck, url: "/inspections" },
-    { title: "アルコールチェック", icon: Wine, url: "/alcohol-checks" },
-    { title: "データインポート", icon: Upload, url: "/import" },
-];
+import { getGroupedAppNavigation, isAppNavActive } from "@/lib/app-navigation";
 
 export function AppSidebar() {
     const pathname = usePathname();
-    const { user, role, signOut } = useAuth();
+    const { user, role, signOut, isAdminOrHr } = useAuth();
 
     const displayName = user?.email?.split("@")[0] || "ユーザー";
     const roleLabel = role === "admin" ? "管理者" : role === "hr" ? "人事" : role === "technician" ? "技術者" : "";
+    const navigationSections = getGroupedAppNavigation(isAdminOrHr);
 
     return (
         <Sidebar collapsible="icon" className="border-r border-border bg-sidebar">
-            <SidebarHeader className="h-16 flex items-center justify-center border-b border-border/50 p-2">
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" className="pointer-events-none">
-                            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                                <span className="font-bold text-xs">信</span>
-                            </div>
-                            <div className="grid flex-1 text-left text-sm leading-tight ml-1">
-                                <span className="truncate font-bold text-lg tracking-wider">信越報知</span>
-                            </div>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
+            <SidebarHeader className="border-b border-border/50 px-4 py-4">
+                <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+                    <BrandLogo
+                        priority
+                        className="w-[170px] max-w-full group-data-[collapsible=icon]:hidden"
+                    />
+                    <BrandLogo
+                        variant="mark"
+                        className="hidden h-9 w-9 group-data-[collapsible=icon]:block"
+                    />
+                </div>
+                <p className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
+                    台帳・期限・安全記録を管理
+                </p>
             </SidebarHeader>
-            <SidebarContent className="py-2">
-                <SidebarMenu>
-                    {menuItems.map((item) => (
-                        <SidebarMenuItem key={item.title}>
-                            <SidebarMenuButton
-                                render={<Link href={item.url} />}
-                                isActive={pathname === item.url}
-                                tooltip={item.title}
-                                className="transition-all duration-200"
-                            >
-                                <item.icon className="w-4 h-4" />
-                                <span>{item.title}</span>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    ))}
-                </SidebarMenu>
+            <SidebarContent className="py-2.5">
+                {navigationSections.map((section, index) => (
+                    <div key={section.id} className="px-2.5">
+                        {index > 0 && <SidebarSeparator className="my-2.5" />}
+                        <SidebarGroup className="p-0">
+                            <SidebarGroupLabel className="px-1.5 mb-1.5 text-[11px] font-medium tracking-[0.04em] text-sidebar-foreground/52">
+                                {section.title}
+                            </SidebarGroupLabel>
+                            <SidebarGroupContent>
+                                <SidebarMenu>
+                                    {section.items.map((item) => (
+                                        <SidebarMenuItem key={item.title}>
+                                            <SidebarMenuButton
+                                                render={<Link href={item.url} />}
+                                                isActive={isAppNavActive(pathname, item.url)}
+                                                tooltip={item.title}
+                                                className="transition-[background-color,color,box-shadow] duration-200"
+                                            >
+                                                <item.icon className="w-4 h-4" />
+                                                <span>{item.title}</span>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    ))}
+                                </SidebarMenu>
+                            </SidebarGroupContent>
+                        </SidebarGroup>
+                    </div>
+                ))}
             </SidebarContent>
-            <SidebarFooter className="p-4 border-t border-border/50">
+            <SidebarFooter className="border-t border-border/50 p-4">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton tooltip="ログアウト" onClick={signOut}>
@@ -83,14 +86,9 @@ export function AppSidebar() {
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
-                <div className="mt-4 flex items-center gap-3 px-2 group-data-[collapsible=icon]:hidden">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold shrink-0">
-                        {displayName.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="text-xs overflow-hidden">
-                        <p className="font-bold truncate">{displayName}</p>
-                        <p className="text-muted-foreground italic">{roleLabel}</p>
-                    </div>
+                <div className="mt-3 px-1.5 text-xs group-data-[collapsible=icon]:hidden">
+                    <p className="truncate font-medium text-foreground/88">{displayName}</p>
+                    <p className="mt-0.5 truncate text-muted-foreground">{roleLabel}</p>
                 </div>
             </SidebarFooter>
             <SidebarRail />

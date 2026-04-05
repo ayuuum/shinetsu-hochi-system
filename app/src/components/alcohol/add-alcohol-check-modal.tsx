@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import {
     Dialog,
     DialogContent,
@@ -31,214 +30,233 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { Plus, Loader2, Beer, ShieldCheck, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { createAlcoholCheckAction } from "@/app/actions/admin-record-actions";
+import { alcoholCheckSchema, type AlcoholCheckValues } from "@/lib/validation/alcohol-check";
 
-const formSchema = z.object({
-    employee_id: z.string().min(1, "社員を選択してください"),
-    check_type: z.string().min(1, "検査種別を選択してください"),
-    check_datetime: z.string().min(1, "検査日時は必須です"),
-    checker_id: z.string().min(1, "確認者を選択してください"),
-    measured_value: z.string().optional(),
-    is_abnormal: z.string().min(1, "判定結果を選択してください"),
-    location: z.string().optional(),
-    notes: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
 type Employee = { id: string; name: string };
 
-export function AddAlcoholCheckModal({ employees }: { employees: Employee[] }) {
+function buildLocalDatetime(date?: string) {
+    const now = new Date();
+    const baseDate = date || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    return `${baseDate}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+}
+
+function getDefaultValues(initialEmployeeId?: string, initialDate?: string, initialLocation?: string): AlcoholCheckValues {
+    return {
+        employee_id: initialEmployeeId || "",
+        check_type: "出勤時",
+        check_datetime: buildLocalDatetime(initialDate),
+        checker_id: "",
+        measured_value: "0.00",
+        is_abnormal: "適正",
+        location: initialLocation || "",
+        notes: "",
+    };
+}
+
+export function AddAlcoholCheckModal({
+    employees,
+    initialEmployeeId,
+    initialDate,
+    initialLocation,
+}: {
+    employees: Employee[];
+    initialEmployeeId?: string;
+    initialDate?: string;
+    initialLocation?: string;
+}) {
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const router = useRouter();
 
-    const now = new Date();
-    const localDatetime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-
-    const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            employee_id: "",
-            check_type: "出勤時",
-            check_datetime: localDatetime,
-            checker_id: "",
-            measured_value: "",
-            is_abnormal: "適正",
-            location: "",
-            notes: "",
-        },
+    const form = useForm<AlcoholCheckValues>({
+        resolver: zodResolver(alcoholCheckSchema),
+        defaultValues: getDefaultValues(initialEmployeeId, initialDate, initialLocation),
     });
 
-    async function onSubmit(values: FormValues) {
+    const isAbnormal = form.watch("is_abnormal") === "不適正";
+
+    const handleOpenChange = (nextOpen: boolean) => {
+        setOpen(nextOpen);
+        if (nextOpen) {
+            form.reset(getDefaultValues(initialEmployeeId, initialDate, initialLocation));
+        }
+    };
+
+    async function onSubmit(values: AlcoholCheckValues) {
         if (values.is_abnormal === "不適正") {
-            const confirmed = window.confirm("不適正として記録します。よろしいですか？");
+            const confirmed = window.confirm("不適正（陽性）として記録します。よろしいですか？");
             if (!confirmed) return;
         }
 
         setIsSubmitting(true);
-        const { error } = await supabase.from("alcohol_checks").insert([{
-            employee_id: values.employee_id,
-            check_type: values.check_type,
-            check_datetime: values.check_datetime,
-            checker_id: values.checker_id,
-            measured_value: values.measured_value ? parseFloat(values.measured_value) : null,
-            is_abnormal: values.is_abnormal === "不適正",
-            location: values.location || null,
-            notes: values.notes || null,
-        }]);
+        const result = await createAlcoholCheckAction(values);
         setIsSubmitting(false);
 
-        if (error) {
-            console.error(error);
-            toast.error("記録に失敗しました: " + error.message);
-        } else {
-            if (values.is_abnormal === "不適正") {
-                toast.error("不適正として記録しました。安全運転管理者の指示を仰いでください。");
-            } else {
-                toast.success("記録しました");
+        if (!result.success) {
+            if (result.fieldErrors) {
+                for (const [field, message] of Object.entries(result.fieldErrors)) {
+                    if (!message) continue;
+                    form.setError(field as keyof AlcoholCheckValues, { type: "server", message });
+                }
             }
-            setOpen(false);
-            form.reset({
-                employee_id: "",
-                check_type: "出勤時",
-                check_datetime: localDatetime,
-                checker_id: "",
-                measured_value: "",
-                is_abnormal: "適正",
-                location: "",
-                notes: "",
-            });
-            router.refresh();
+            toast.error(result.error);
+            return;
         }
+
+        if (values.is_abnormal === "不適正") {
+            toast.error("不適正として記録しました。運転は禁止です！安全運転管理者の指示を仰いでください。", { duration: 8000 });
+        } else {
+            toast.success("アルコールチェックを記録しました");
+        }
+        
+        setOpen(false);
+        router.refresh();
     }
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger
-                render={<Button><Plus className="mr-2 h-4 w-4" />記録追加</Button>}
-            />
-            <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>アルコールチェック記録</DialogTitle>
-                    <DialogDescription>検査結果を入力してください。</DialogDescription>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+            <DialogTrigger render={<Button className="rounded-full shadow-sm"><Plus className="mr-2 h-4 w-4" />体調・アルコール記録</Button>} />
+            <DialogContent className="sm:max-w-[480px] max-h-[95vh] overflow-y-auto p-4 sm:p-6 bg-slate-50 dark:bg-slate-950">
+                <DialogHeader className="text-center space-y-2 mb-4">
+                    <DialogTitle className="text-2xl font-bold flex items-center justify-center gap-2">
+                        <Beer className="h-6 w-6 text-primary" />
+                        アルコールチェック
+                    </DialogTitle>
+                    <DialogDescription>
+                        入力はスマートフォンからのワンタップを想定しています。
+                    </DialogDescription>
                 </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField control={form.control} name="employee_id" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>対象社員 *</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger><SelectValue placeholder="社員を選択" /></SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        {employees.map(emp => (
-                                            <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField control={form.control} name="check_type" render={({ field }) => (
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                        {/* Section: Who & When */}
+                        <div className="bg-white dark:bg-card rounded-2xl p-4 shadow-sm border space-y-4">
+                            <FormField control={form.control} name="employee_id" render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>検査種別 *</FormLabel>
+                                    <FormLabel className="text-muted-foreground font-semibold">👤 対象社員</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl>
-                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectTrigger className="h-12 text-base md:text-lg"><SelectValue placeholder="タップして社員を選択" /></SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            <SelectItem value="出勤時">出勤時</SelectItem>
-                                            <SelectItem value="退勤時">退勤時</SelectItem>
+                                            {employees.map(emp => (
+                                                <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
                                 </FormItem>
                             )} />
+                            
+                            <FormField control={form.control} name="check_type" render={({ field }) => (
+                                <FormItem className="space-y-3">
+                                    <FormLabel className="text-muted-foreground font-semibold">⏱️ 検査タイミング</FormLabel>
+                                    <FormControl>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <Button
+                                                type="button"
+                                                variant={field.value === "出勤時" ? "default" : "outline"}
+                                                className={`h-14 text-base rounded-xl font-bold transition-all ${field.value === "出勤時" ? "shadow-md ring-2 ring-primary/20 ring-offset-1" : ""}`}
+                                                onClick={() => field.onChange("出勤時")}
+                                            >出勤時</Button>
+                                            <Button
+                                                type="button"
+                                                variant={field.value === "退勤時" ? "default" : "outline"}
+                                                className={`h-14 text-base rounded-xl font-bold transition-all ${field.value === "退勤時" ? "shadow-md ring-2 ring-primary/20 ring-offset-1" : ""}`}
+                                                onClick={() => field.onChange("退勤時")}
+                                            >退勤時</Button>
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+
                             <FormField control={form.control} name="check_datetime" render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>検査日時 *</FormLabel>
-                                    <FormControl><Input type="datetime-local" {...field} /></FormControl>
+                                    <FormLabel className="text-muted-foreground font-semibold">📅 検査日時</FormLabel>
+                                    <FormControl><Input type="datetime-local" className="h-12 text-base" {...field} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />
                         </div>
 
-                        <FormField control={form.control} name="checker_id" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>確認者（安全運転管理者） *</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
+                        {/* Section: Result */}
+                        <div className="bg-white dark:bg-card rounded-2xl p-4 shadow-sm border space-y-4">
+                            <FormField control={form.control} name="is_abnormal" render={({ field }) => (
+                                <FormItem className="space-y-3">
+                                    <FormLabel className="text-muted-foreground font-semibold">🔍 判定結果</FormLabel>
                                     <FormControl>
-                                        <SelectTrigger><SelectValue placeholder="確認者を選択" /></SelectTrigger>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <Button
+                                                type="button"
+                                                className={`h-20 text-xl md:text-2xl font-extrabold rounded-2xl transition-all ${field.value === "適正" ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg ring-2 ring-emerald-500 ring-offset-2 scale-[1.02]" : "bg-card text-muted-foreground hover:bg-muted border-2 border-border"}`}
+                                                onClick={() => field.onChange("適正")}
+                                            >
+                                                <ShieldCheck className="mr-2 h-6 w-6" /> 適正
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                className={`h-20 text-xl font-extrabold rounded-2xl transition-all ${field.value === "不適正" ? "bg-destructive hover:bg-destructive/90 text-white shadow-lg ring-2 ring-destructive ring-offset-2 scale-[1.02]" : "bg-card text-muted-foreground hover:bg-muted border-2 border-border"}`}
+                                                onClick={() => field.onChange("不適正")}
+                                            >
+                                                <AlertTriangle className="mr-2 h-6 w-6" /> 不適正
+                                            </Button>
+                                        </div>
                                     </FormControl>
-                                    <SelectContent>
-                                        {employees.map(emp => (
-                                            <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField control={form.control} name="measured_value" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>検知器の値 (mg/L)</FormLabel>
-                                    <FormControl><Input type="number" step="0.001" placeholder="0.000" {...field} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />
-                            <FormField control={form.control} name="is_abnormal" render={({ field }) => (
+
+                            {isAbnormal && (
+                                <div className="p-3 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 rounded-xl text-sm font-semibold border border-red-200 dark:border-red-900 flex items-start gap-2">
+                                    <AlertTriangle className="h-5 w-5 shrink-0" />
+                                    <p>不適正として記録されます。作業員は絶対に運転を開業しないでください。</p>
+                                </div>
+                            )}
+
+                            <FormField control={form.control} name="checker_id" render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>判定結果 *</FormLabel>
+                                    <FormLabel className="text-muted-foreground font-semibold">👮 安全運転管理者</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl>
-                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectTrigger className="h-12 text-base"><SelectValue placeholder="タップして確認者を選択" /></SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            <SelectItem value="適正">適正</SelectItem>
-                                            <SelectItem value="不適正">不適正</SelectItem>
+                                            {employees.map(emp => (
+                                                <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
                                 </FormItem>
                             )} />
+                            
+                            <FormField control={form.control} name="measured_value" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-muted-foreground font-semibold">メーター値（任意）</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" step="0.01" className="h-12 text-base" placeholder="0.00" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
                         </div>
 
-                        <FormField control={form.control} name="location" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>拠点</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger><SelectValue placeholder="選択" /></SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="本社">本社</SelectItem>
-                                        <SelectItem value="塩尻">塩尻営業所</SelectItem>
-                                        <SelectItem value="白馬">白馬営業所</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-
-                        <FormField control={form.control} name="notes" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>備考</FormLabel>
-                                <FormControl><Input placeholder="特記事項" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-
-                        <DialogFooter>
-                            <Button type="submit" disabled={isSubmitting} className="w-full">
-                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                記録する
+                        <DialogFooter className="pt-2 pb-4">
+                            <Button 
+                                type="submit" 
+                                disabled={isSubmitting} 
+                                className={`w-full h-16 text-lg md:text-xl font-bold rounded-2xl shadow-md ${isAbnormal ? 'bg-destructive hover:bg-destructive/90 text-white' : ''}`}
+                            >
+                                {isSubmitting ? (
+                                    <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                                ) : (
+                                    <Beer className="mr-2 h-6 w-6" />
+                                )}
+                                {isAbnormal ? "不適正として記録" : "記録を保存する"}
                             </Button>
                         </DialogFooter>
                     </form>

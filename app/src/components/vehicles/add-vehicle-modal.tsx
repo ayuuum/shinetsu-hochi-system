@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import {
     Dialog,
     DialogContent,
@@ -32,19 +31,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-
-const formSchema = z.object({
-    plate_number: z.string().min(1, "ナンバーは必須です"),
-    vehicle_name: z.string().optional(),
-    primary_user_id: z.string().optional(),
-    inspection_expiry: z.string().optional(),
-    liability_insurance_expiry: z.string().optional(),
-    voluntary_insurance_expiry: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import { createVehicleAction } from "@/app/actions/admin-record-actions";
+import { vehicleSchema, type VehicleValues } from "@/lib/validation/vehicle";
 
 type Employee = { id: string; name: string };
 
@@ -53,8 +42,8 @@ export function AddVehicleModal({ employees }: { employees: Employee[] }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const router = useRouter();
 
-    const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
+    const form = useForm<VehicleValues>({
+        resolver: zodResolver(vehicleSchema),
         defaultValues: {
             plate_number: "",
             vehicle_name: "",
@@ -64,27 +53,42 @@ export function AddVehicleModal({ employees }: { employees: Employee[] }) {
             voluntary_insurance_expiry: "",
         },
     });
+    const employeeOptions = employees.map((employee) => ({
+        value: employee.id,
+        label: employee.name,
+    }));
 
-    async function onSubmit(values: FormValues) {
+    async function submitData(values: VehicleValues, continuous: boolean) {
         setIsSubmitting(true);
-        const { error } = await supabase.from("vehicles").insert([{
-            plate_number: values.plate_number,
-            vehicle_name: values.vehicle_name || null,
-            primary_user_id: values.primary_user_id || null,
-            inspection_expiry: values.inspection_expiry || null,
-            liability_insurance_expiry: values.liability_insurance_expiry || null,
-            voluntary_insurance_expiry: values.voluntary_insurance_expiry || null,
-        }]);
+        const result = await createVehicleAction(values);
         setIsSubmitting(false);
 
-        if (error) {
-            console.error(error);
-            toast.error("登録に失敗しました: " + error.message);
+        if (!result.success) {
+            if (result.fieldErrors) {
+                for (const [field, message] of Object.entries(result.fieldErrors)) {
+                    if (!message) continue;
+                    form.setError(field as keyof VehicleValues, { type: "server", message });
+                }
+            }
+            toast.error(result.error);
+            return;
+        }
+
+        toast.success("車両を登録しました");
+        if (continuous) {
+            form.reset({
+                plate_number: "",
+                vehicle_name: "",
+                primary_user_id: values.primary_user_id, // 組織の同担当者の連続登録などを考慮し残す可能性もあるがデフォで戻す
+                inspection_expiry: "",
+                liability_insurance_expiry: "",
+                voluntary_insurance_expiry: "",
+            });
         } else {
             setOpen(false);
             form.reset();
-            router.refresh();
         }
+        router.refresh();
     }
 
     return (
@@ -98,7 +102,7 @@ export function AddVehicleModal({ employees }: { employees: Employee[] }) {
                     <DialogDescription>車両情報と期限を入力してください。</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <form onSubmit={form.handleSubmit((v) => submitData(v, false))} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <FormField control={form.control} name="plate_number" render={({ field }) => (
                                 <FormItem>
@@ -119,7 +123,7 @@ export function AddVehicleModal({ employees }: { employees: Employee[] }) {
                         <FormField control={form.control} name="primary_user_id" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>主使用者</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
+                                <Select items={employeeOptions} onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
                                         <SelectTrigger><SelectValue placeholder="選択" /></SelectTrigger>
                                     </FormControl>
@@ -157,10 +161,19 @@ export function AddVehicleModal({ employees }: { employees: Employee[] }) {
                             )} />
                         </div>
 
-                        <DialogFooter>
-                            <Button type="submit" disabled={isSubmitting} className="w-full">
+                        <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
+                            <Button 
+                                type="button" 
+                                variant="outline" 
+                                onClick={form.handleSubmit((v) => submitData(v, true))} 
+                                disabled={isSubmitting} 
+                            >
+                                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                                保存して続けて追加
+                            </Button>
+                            <Button type="submit" disabled={isSubmitting}>
                                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                登録する
+                                保存して閉じる
                             </Button>
                         </DialogFooter>
                     </form>

@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import {
     Dialog,
     DialogContent,
@@ -32,30 +31,22 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-
-const formSchema = z.object({
-    employee_id: z.string().min(1, "対象社員を選択してください"),
-    check_date: z.string().min(1, "受診日は必須です"),
-    check_type: z.string().min(1, "種別を選択してください"),
-    hospital_name: z.string().optional(),
-    is_normal: z.string().min(1, "結果を選択してください"),
-    height: z.string().optional(),
-    weight: z.string().optional(),
-    notes: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import { createHealthCheckAction } from "@/app/actions/admin-record-actions";
+import { healthCheckSchema, type HealthCheckValues } from "@/lib/validation/health-check";
 type Employee = { id: string; name: string };
 
 export function AddHealthCheckModal({ employees }: { employees: Employee[] }) {
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const router = useRouter();
+    const employeeOptions = employees.map((employee) => ({
+        value: employee.id,
+        label: employee.name,
+    }));
 
-    const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
+    const form = useForm<HealthCheckValues>({
+        resolver: zodResolver(healthCheckSchema),
         defaultValues: {
             employee_id: "",
             check_date: "",
@@ -68,28 +59,35 @@ export function AddHealthCheckModal({ employees }: { employees: Employee[] }) {
         },
     });
 
-    async function onSubmit(values: FormValues) {
+    async function onSubmit(values: HealthCheckValues) {
         setIsSubmitting(true);
-        const { error } = await supabase.from("health_checks").insert([{
-            employee_id: values.employee_id,
-            check_date: values.check_date,
-            check_type: values.check_type,
-            hospital_name: values.hospital_name || null,
-            is_normal: values.is_normal === "true",
-            height: values.height ? parseFloat(values.height) : null,
-            weight: values.weight ? parseFloat(values.weight) : null,
-            notes: values.notes || null,
-        }]);
+        const result = await createHealthCheckAction(values);
         setIsSubmitting(false);
 
-        if (error) {
-            console.error(error);
-            toast.error("登録に失敗しました: " + error.message);
-        } else {
-            setOpen(false);
-            form.reset();
-            router.refresh();
+        if (!result.success) {
+            if (result.fieldErrors) {
+                for (const [field, message] of Object.entries(result.fieldErrors)) {
+                    if (!message) continue;
+                    form.setError(field as keyof HealthCheckValues, { type: "server", message });
+                }
+            }
+            toast.error(result.error);
+            return;
         }
+
+        toast.success("健康診断記録を登録しました");
+        setOpen(false);
+        form.reset({
+            employee_id: "",
+            check_date: "",
+            check_type: "定期健康診断",
+            hospital_name: "",
+            is_normal: "true",
+            height: "",
+            weight: "",
+            notes: "",
+        });
+        router.refresh();
     }
 
     return (
@@ -107,7 +105,7 @@ export function AddHealthCheckModal({ employees }: { employees: Employee[] }) {
                         <FormField control={form.control} name="employee_id" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>対象社員 *</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
+                                <Select items={employeeOptions} onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
                                         <SelectTrigger><SelectValue placeholder="選択" /></SelectTrigger>
                                     </FormControl>

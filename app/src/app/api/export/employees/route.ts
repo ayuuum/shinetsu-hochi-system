@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { getTodayInTokyo } from "@/lib/date";
 import { getSupabaseEnv } from "@/lib/supabase-env";
 
 export async function GET() {
@@ -31,6 +32,7 @@ export async function GET() {
     const { data: employees, error } = await supabase
         .from("employees")
         .select("*")
+        .is("deleted_at", null)
         .order("employee_number", { ascending: true });
 
     if (error) {
@@ -66,7 +68,7 @@ export async function GET() {
     return new NextResponse(csv, {
         headers: {
             "Content-Type": "text/csv; charset=utf-8",
-            "Content-Disposition": `attachment; filename="employees_${new Date().toISOString().slice(0, 10)}.csv"`,
+            "Content-Disposition": `attachment; filename="employees_${getTodayInTokyo()}.csv"`,
         },
     });
 }

@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import {
     Dialog,
     DialogContent,
@@ -31,20 +30,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Tables } from "@/types/supabase";
-
-const formSchema = z.object({
-    plate_number: z.string().min(1, "ナンバーは必須です"),
-    vehicle_name: z.string().optional(),
-    primary_user_id: z.string().optional(),
-    inspection_expiry: z.string().optional(),
-    liability_insurance_expiry: z.string().optional(),
-    voluntary_insurance_expiry: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import { updateVehicleAction } from "@/app/actions/admin-record-actions";
+import { toVehicleFormValues, vehicleSchema, type VehicleValues } from "@/lib/validation/vehicle";
 
 interface EditVehicleModalProps {
     vehicle: Tables<"vehicles">;
@@ -57,54 +46,40 @@ export function EditVehicleModal({ vehicle, employees, open, onOpenChange }: Edi
     const [isSubmitting, setIsSubmitting] = useState(false);
     const router = useRouter();
 
-    const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            plate_number: vehicle.plate_number,
-            vehicle_name: vehicle.vehicle_name || "",
-            primary_user_id: vehicle.primary_user_id || "",
-            inspection_expiry: vehicle.inspection_expiry || "",
-            liability_insurance_expiry: vehicle.liability_insurance_expiry || "",
-            voluntary_insurance_expiry: vehicle.voluntary_insurance_expiry || "",
-        },
+    const form = useForm<VehicleValues>({
+        resolver: zodResolver(vehicleSchema),
+        defaultValues: toVehicleFormValues(vehicle),
     });
+    const employeeOptions = employees.map((employee) => ({
+        value: employee.id,
+        label: employee.name,
+    }));
 
     useEffect(() => {
         if (open) {
-            form.reset({
-                plate_number: vehicle.plate_number,
-                vehicle_name: vehicle.vehicle_name || "",
-                primary_user_id: vehicle.primary_user_id || "",
-                inspection_expiry: vehicle.inspection_expiry || "",
-                liability_insurance_expiry: vehicle.liability_insurance_expiry || "",
-                voluntary_insurance_expiry: vehicle.voluntary_insurance_expiry || "",
-            });
+            form.reset(toVehicleFormValues(vehicle));
         }
     }, [open, vehicle, form]);
 
-    async function onSubmit(values: FormValues) {
+    async function onSubmit(values: VehicleValues) {
         setIsSubmitting(true);
-        const { error } = await supabase
-            .from("vehicles")
-            .update({
-                plate_number: values.plate_number,
-                vehicle_name: values.vehicle_name || null,
-                primary_user_id: values.primary_user_id || null,
-                inspection_expiry: values.inspection_expiry || null,
-                liability_insurance_expiry: values.liability_insurance_expiry || null,
-                voluntary_insurance_expiry: values.voluntary_insurance_expiry || null,
-            })
-            .eq("id", vehicle.id);
-
+        const result = await updateVehicleAction(vehicle.id, values);
         setIsSubmitting(false);
 
-        if (error) {
-            toast.error("更新に失敗しました: " + error.message);
-        } else {
-            toast.success("車両情報を更新しました");
-            onOpenChange(false);
-            router.refresh();
+        if (!result.success) {
+            if (result.fieldErrors) {
+                for (const [field, message] of Object.entries(result.fieldErrors)) {
+                    if (!message) continue;
+                    form.setError(field as keyof VehicleValues, { type: "server", message });
+                }
+            }
+            toast.error(result.error);
+            return;
         }
+
+        toast.success("車両情報を更新しました");
+        onOpenChange(false);
+        router.refresh();
     }
 
     return (
@@ -136,7 +111,7 @@ export function EditVehicleModal({ vehicle, employees, open, onOpenChange }: Edi
                         <FormField control={form.control} name="primary_user_id" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>主使用者</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
+                                <Select items={employeeOptions} onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
                                         <SelectTrigger><SelectValue placeholder="選択" /></SelectTrigger>
                                     </FormControl>

@@ -48,7 +48,6 @@ src/
 │   │   ├── employees/          # 社員一覧 + 詳細 (ページネーション対応)
 │   │   ├── qualifications/     # 資格・講習管理
 │   │   ├── vehicles/           # 車両・備品管理
-│   │   ├── inspections/        # 点検スケジュール
 │   │   ├── alcohol-checks/     # アルコールチェック
 │   │   └── import/             # データインポート
 │   └── api/
@@ -61,7 +60,6 @@ src/
 │   ├── shared/                 # 共有コンポーネント (DeleteConfirmDialog, TableSkeleton)
 │   ├── employees/              # 社員関連モーダル・クライアント (CRUD完備)
 │   ├── vehicles/               # 車両関連 (追加・編集・削除)
-│   ├── inspections/            # 点検関連 (追加・編集・削除)
 │   ├── alcohol/                # アルコール関連 (追加・編集・削除)
 │   ├── qualifications/         # 資格関連クライアント
 │   ├── app-sidebar.tsx         # サイドバーナビ (認証連動)

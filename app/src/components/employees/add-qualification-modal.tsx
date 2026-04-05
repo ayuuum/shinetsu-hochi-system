@@ -69,6 +69,10 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
             is_initial: false,
         },
     });
+    const qualificationOptions = masters.map((master) => ({
+        value: master.id,
+        label: `[${master.category}] ${master.name}`,
+    }));
 
     const fetchMasters = useCallback(async () => {
         setLoadingMasters(true);
@@ -122,7 +126,7 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
         form.setValue("expiry_date", expiry ? format(expiry, "yyyy-MM-dd") : "");
     };
 
-    async function onSubmit(values: FormValues) {
+    async function submitData(values: FormValues, continuous: boolean) {
         setIsSubmitting(true);
 
         let certificateUrl: string | null = null;
@@ -161,10 +165,23 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                 return;
             }
 
-            setOpen(false);
-            form.reset();
-            setCertificateFile(null);
-            onSuccess?.();
+            toast.success("資格を登録しました");
+
+            if (continuous) {
+                form.reset({
+                    qualification_id: "",
+                    acquired_date: values.acquired_date,
+                    expiry_date: "",
+                    is_initial: false,
+                });
+                setCertificateFile(null);
+                onSuccess?.();
+            } else {
+                setOpen(false);
+                form.reset();
+                setCertificateFile(null);
+                onSuccess?.();
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -195,7 +212,7 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <form onSubmit={form.handleSubmit((v) => submitData(v, false))} className="space-y-4">
                         {mastersError && (
                             <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
                                 <p>{mastersError}</p>
@@ -218,6 +235,7 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                                 <FormItem>
                                     <FormLabel>資格名</FormLabel>
                                     <Select
+                                        items={qualificationOptions}
                                         onValueChange={(val) => {
                                             if (val) {
                                                 field.onChange(val);
@@ -325,10 +343,19 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                             </div>
                         </div>
 
-                        <DialogFooter>
-                            <Button type="submit" disabled={isSubmitting || loadingMasters || !!mastersError || masters.length === 0} className="w-full">
-                                {(isSubmitting || loadingMasters) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                保存する
+                        <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
+                            <Button 
+                                type="button" 
+                                variant="outline" 
+                                onClick={form.handleSubmit((v) => submitData(v, true))} 
+                                disabled={isSubmitting || loadingMasters || !!mastersError || masters.length === 0} 
+                            >
+                                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                                保存して続けて追加
+                            </Button>
+                            <Button type="submit" disabled={isSubmitting || loadingMasters || !!mastersError || masters.length === 0}>
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                保存して閉じる
                             </Button>
                         </DialogFooter>
                     </form>

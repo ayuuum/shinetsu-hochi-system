@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { getTodayInTokyo } from "@/lib/date";
 import { getSupabaseEnv } from "@/lib/supabase-env";
 import { Tables } from "@/types/supabase";
 
@@ -41,6 +42,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
         .from("alcohol_checks")
         .select("*, employee:employees!alcohol_checks_employee_id_fkey(name), checker:employees!alcohol_checks_checker_id_fkey(name)")
+        .is("deleted_at", null)
         .order("check_datetime", { ascending: false });
 
     if (from) query = query.gte("check_datetime", from);
@@ -73,7 +75,7 @@ export async function GET(request: NextRequest) {
     return new NextResponse(csv, {
         headers: {
             "Content-Type": "text/csv; charset=utf-8",
-            "Content-Disposition": `attachment; filename="alcohol_checks_${new Date().toISOString().slice(0, 10)}.csv"`,
+            "Content-Disposition": `attachment; filename="alcohol_checks_${getTodayInTokyo()}.csv"`,
         },
     });
 }

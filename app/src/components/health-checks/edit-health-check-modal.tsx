@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import {
     Dialog,
     DialogContent,
@@ -31,22 +30,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Tables } from "@/types/supabase";
-
-const formSchema = z.object({
-    employee_id: z.string().min(1, "対象社員を選択してください"),
-    check_date: z.string().min(1, "受診日は必須です"),
-    check_type: z.string().min(1, "種別を選択してください"),
-    hospital_name: z.string().optional(),
-    is_normal: z.string().min(1, "結果を選択してください"),
-    height: z.string().optional(),
-    weight: z.string().optional(),
-    notes: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import { updateHealthCheckAction } from "@/app/actions/admin-record-actions";
+import { healthCheckSchema, toHealthCheckFormValues, type HealthCheckValues } from "@/lib/validation/health-check";
 
 interface EditHealthCheckModalProps {
     healthCheck: Tables<"health_checks">;
@@ -58,61 +45,41 @@ interface EditHealthCheckModalProps {
 export function EditHealthCheckModal({ healthCheck, employees, open, onOpenChange }: EditHealthCheckModalProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const router = useRouter();
+    const employeeOptions = employees.map((employee) => ({
+        value: employee.id,
+        label: employee.name,
+    }));
 
-    const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            employee_id: healthCheck.employee_id || "",
-            check_date: healthCheck.check_date,
-            check_type: healthCheck.check_type || "定期健康診断",
-            hospital_name: healthCheck.hospital_name || "",
-            is_normal: healthCheck.is_normal === false ? "false" : "true",
-            height: healthCheck.height != null ? String(healthCheck.height) : "",
-            weight: healthCheck.weight != null ? String(healthCheck.weight) : "",
-            notes: healthCheck.notes || "",
-        },
+    const form = useForm<HealthCheckValues>({
+        resolver: zodResolver(healthCheckSchema),
+        defaultValues: toHealthCheckFormValues(healthCheck),
     });
 
     useEffect(() => {
         if (open) {
-            form.reset({
-                employee_id: healthCheck.employee_id || "",
-                check_date: healthCheck.check_date,
-                check_type: healthCheck.check_type || "定期健康診断",
-                hospital_name: healthCheck.hospital_name || "",
-                is_normal: healthCheck.is_normal === false ? "false" : "true",
-                height: healthCheck.height != null ? String(healthCheck.height) : "",
-                weight: healthCheck.weight != null ? String(healthCheck.weight) : "",
-                notes: healthCheck.notes || "",
-            });
+            form.reset(toHealthCheckFormValues(healthCheck));
         }
     }, [open, healthCheck, form]);
 
-    async function onSubmit(values: FormValues) {
+    async function onSubmit(values: HealthCheckValues) {
         setIsSubmitting(true);
-        const { error } = await supabase
-            .from("health_checks")
-            .update({
-                employee_id: values.employee_id,
-                check_date: values.check_date,
-                check_type: values.check_type,
-                hospital_name: values.hospital_name || null,
-                is_normal: values.is_normal === "true",
-                height: values.height ? parseFloat(values.height) : null,
-                weight: values.weight ? parseFloat(values.weight) : null,
-                notes: values.notes || null,
-            })
-            .eq("id", healthCheck.id);
-
+        const result = await updateHealthCheckAction(healthCheck.id, values);
         setIsSubmitting(false);
 
-        if (error) {
-            toast.error("更新に失敗しました: " + error.message);
-        } else {
-            toast.success("健康診断記録を更新しました");
-            onOpenChange(false);
-            router.refresh();
+        if (!result.success) {
+            if (result.fieldErrors) {
+                for (const [field, message] of Object.entries(result.fieldErrors)) {
+                    if (!message) continue;
+                    form.setError(field as keyof HealthCheckValues, { type: "server", message });
+                }
+            }
+            toast.error(result.error);
+            return;
         }
+
+        toast.success("健康診断記録を更新しました");
+        onOpenChange(false);
+        router.refresh();
     }
 
     return (
@@ -127,7 +94,7 @@ export function EditHealthCheckModal({ healthCheck, employees, open, onOpenChang
                         <FormField control={form.control} name="employee_id" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>対象社員 *</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
+                                <Select items={employeeOptions} onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
                                         <SelectTrigger><SelectValue placeholder="選択" /></SelectTrigger>
                                     </FormControl>

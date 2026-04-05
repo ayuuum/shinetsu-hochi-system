@@ -3,10 +3,13 @@ import { Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 
-const noto = Noto_Sans_JP({ subsets: ["latin"], weight: ["400", "700"] });
+const noto = Noto_Sans_JP({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
 export const metadata: Metadata = {
-    title: "信越報知 社員・資格管理システム",
+    title: {
+        template: "%s | 信越報知システム",
+        default: "信越報知システム",
+    },
     description: "消防・電気設備のプロフェッショナル管理ツール",
 };
 

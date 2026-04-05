@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import {
     Dialog,
     DialogContent,
@@ -31,22 +30,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { AlcoholCheckRow } from "./alcohol-client";
-
-const formSchema = z.object({
-    employee_id: z.string().min(1, "社員を選択してください"),
-    check_type: z.string().min(1, "検査種別を選択してください"),
-    check_datetime: z.string().min(1, "検査日時は必須です"),
-    checker_id: z.string().min(1, "確認者を選択してください"),
-    measured_value: z.string().optional(),
-    is_abnormal: z.string().min(1, "判定結果を選択してください"),
-    location: z.string().optional(),
-    notes: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import { updateAlcoholCheckAction } from "@/app/actions/admin-record-actions";
+import { alcoholCheckSchema, toAlcoholCheckFormValues, type AlcoholCheckValues } from "@/lib/validation/alcohol-check";
 
 interface EditAlcoholCheckModalProps {
     check: AlcoholCheckRow;
@@ -58,61 +45,41 @@ interface EditAlcoholCheckModalProps {
 export function EditAlcoholCheckModal({ check, employees, open, onOpenChange }: EditAlcoholCheckModalProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const router = useRouter();
+    const employeeOptions = employees.map((employee) => ({
+        value: employee.id,
+        label: employee.name,
+    }));
 
-    const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            employee_id: check.employee_id || "",
-            check_type: check.check_type || "出勤時",
-            check_datetime: check.check_datetime?.slice(0, 16) || "",
-            checker_id: check.checker_id || "",
-            measured_value: check.measured_value != null ? String(check.measured_value) : "",
-            is_abnormal: check.is_abnormal ? "不適正" : "適正",
-            location: check.location || "",
-            notes: check.notes || "",
-        },
+    const form = useForm<AlcoholCheckValues>({
+        resolver: zodResolver(alcoholCheckSchema),
+        defaultValues: toAlcoholCheckFormValues(check),
     });
 
     useEffect(() => {
         if (open) {
-            form.reset({
-                employee_id: check.employee_id || "",
-                check_type: check.check_type || "出勤時",
-                check_datetime: check.check_datetime?.slice(0, 16) || "",
-                checker_id: check.checker_id || "",
-                measured_value: check.measured_value != null ? String(check.measured_value) : "",
-                is_abnormal: check.is_abnormal ? "不適正" : "適正",
-                location: check.location || "",
-                notes: check.notes || "",
-            });
+            form.reset(toAlcoholCheckFormValues(check));
         }
     }, [open, check, form]);
 
-    async function onSubmit(values: FormValues) {
+    async function onSubmit(values: AlcoholCheckValues) {
         setIsSubmitting(true);
-        const { error } = await supabase
-            .from("alcohol_checks")
-            .update({
-                employee_id: values.employee_id,
-                check_type: values.check_type,
-                check_datetime: values.check_datetime,
-                checker_id: values.checker_id,
-                measured_value: values.measured_value ? parseFloat(values.measured_value) : null,
-                is_abnormal: values.is_abnormal === "不適正",
-                location: values.location || null,
-                notes: values.notes || null,
-            })
-            .eq("id", check.id);
-
+        const result = await updateAlcoholCheckAction(check.id, values);
         setIsSubmitting(false);
 
-        if (error) {
-            toast.error("更新に失敗しました: " + error.message);
-        } else {
-            toast.success("記録を更新しました");
-            onOpenChange(false);
-            router.refresh();
+        if (!result.success) {
+            if (result.fieldErrors) {
+                for (const [field, message] of Object.entries(result.fieldErrors)) {
+                    if (!message) continue;
+                    form.setError(field as keyof AlcoholCheckValues, { type: "server", message });
+                }
+            }
+            toast.error(result.error);
+            return;
         }
+
+        toast.success("記録を更新しました");
+        onOpenChange(false);
+        router.refresh();
     }
 
     return (
@@ -127,7 +94,7 @@ export function EditAlcoholCheckModal({ check, employees, open, onOpenChange }: 
                         <FormField control={form.control} name="employee_id" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>対象社員 *</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
+                                <Select items={employeeOptions} onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
                                         <SelectTrigger><SelectValue placeholder="社員を選択" /></SelectTrigger>
                                     </FormControl>
@@ -169,7 +136,7 @@ export function EditAlcoholCheckModal({ check, employees, open, onOpenChange }: 
                         <FormField control={form.control} name="checker_id" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>確認者 *</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
+                                <Select items={employeeOptions} onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
                                         <SelectTrigger><SelectValue placeholder="確認者を選択" /></SelectTrigger>
                                     </FormControl>
