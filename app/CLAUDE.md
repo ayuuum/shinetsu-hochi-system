@@ -1,8 +1,8 @@
-# CLAUDE.md — 信越報知 社員・資格管理システム
+# CLAUDE.md — 株式会社信越報知 社員・資格管理システム
 
 ## プロジェクト概要
 
-消防・電気設備会社「信越報知」の社員・資格・車両管理システム。
+消防・電気設備会社「株式会社信越報知」の社員・資格・車両管理システム。
 認証（Supabase Auth + RLS）実装済み。
 
 ## スタック
@@ -151,6 +151,22 @@ toast.error("保存に失敗しました");
 - RLS: SELECT = 全認証ユーザー, INSERT/UPDATE/DELETE = admin + hr のみ
 - `useAuth()` フック: user, role, isAdmin, isAdminOrHr, signOut
 - マイグレーション: `supabase/migrations/20260326_auth_roles.sql`
+
+### Auth CLI（認証確認・共有用デモユーザー）
+
+`app/.env.local` に `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` を設定。ユーザー作成には `SUPABASE_SERVICE_ROLE_KEY` も必要。
+
+```bash
+cd app
+# ログイン可否（Supabase Auth へ直接 signIn）
+npm run auth:verify -- you@example.com 'your-password'
+
+# 共有用アカウント（Auth にユーザーを作り user_roles にロールを付与）
+# 第4引数: admin | hr | technician（省略時 technician）
+npm run auth:create-demo -- demo@client.example.jp 'InitialPassword123!' hr
+```
+
+手動運用: Supabase ダッシュボードの Authentication でユーザーを追加し、Table Editor の `user_roles` に同じ UUID で `role` を 1 行挿入してもよい。
 
 ## 既知の制約
 

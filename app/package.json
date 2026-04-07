@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "auth:verify": "node --env-file=.env.local scripts/auth-cli.mjs verify",
+    "auth:create-demo": "node --env-file=.env.local scripts/auth-cli.mjs create-demo",
     "test": "vitest run",
     "test:watch": "vitest"
   },

@@ -7,10 +7,10 @@ const noto = Noto_Sans_JP({ subsets: ["latin"], weight: ["400", "500", "600", "7
 
 export const metadata: Metadata = {
     title: {
-        template: "%s | 信越報知システム",
-        default: "信越報知システム",
+        template: "%s | 株式会社信越報知",
+        default: "株式会社信越報知 社員・資格管理システム",
     },
-    description: "消防・電気設備のプロフェッショナル管理ツール",
+    description: "株式会社信越報知 社員・資格・車両などの管理ツール",
 };
 
 export default function RootLayout({

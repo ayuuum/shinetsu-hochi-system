@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
                         Authorization: `Bearer ${resendKey}`,
                     },
                     body: JSON.stringify({
-                        from: "信越報知 管理システム <noreply@resend.dev>",
+                        from: "株式会社信越報知 社員・資格管理 <noreply@resend.dev>",
                         to: emailTo.split(",").map((e: string) => e.trim()),
                         subject,
                         html: body,
@@ -185,7 +185,7 @@ function buildEmailBody(alerts: AlertItem[]): string {
                 <tbody>${rows}</tbody>
             </table>
             <p style="margin-top:16px;font-size:12px;color:#6b7280;">
-                このメールは信越報知 管理システムから自動送信されています。
+                このメールは株式会社信越報知の社員・資格管理システムから自動送信されています。
             </p>
         </div>
     `;

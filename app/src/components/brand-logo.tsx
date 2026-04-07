@@ -12,7 +12,7 @@ type BrandLogoProps = {
 };
 
 export function BrandLogo({
-    alt = "信越報知",
+    alt = "株式会社信越報知",
     className,
     priority = false,
     variant = "full",

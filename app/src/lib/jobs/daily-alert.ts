@@ -93,7 +93,7 @@ export async function executeDailyAlertJob(
                 Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
             },
             body: JSON.stringify({
-                from: "信越報知 管理システム <noreply@resend.dev>",
+                from: "株式会社信越報知 社員・資格管理 <noreply@resend.dev>",
                 to: process.env.ALERT_EMAIL_TO!.split(",").map((value) => value.trim()),
                 subject,
                 html: buildDailyAlertEmailHtml(emailAlerts),
@@ -145,6 +145,6 @@ function buildDailyAlertEmailHtml(alerts: EmailAlert[]): string {
             </tr></thead>
             <tbody>${rows}</tbody>
         </table>
-        <p style="margin-top:16px;font-size:12px;color:#6b7280">このメールは信越報知 管理システムから自動送信されています。</p>
+        <p style="margin-top:16px;font-size:12px;color:#6b7280">このメールは株式会社信越報知の社員・資格管理システムから自動送信されています。</p>
     </div>`;
 }

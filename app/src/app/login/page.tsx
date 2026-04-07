@@ -95,7 +95,7 @@ export default function LoginPage() {
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
             <div className="w-full max-w-md space-y-6">
                 <div className="text-center space-y-3">
-                    <h1 className="sr-only">信越報知 社員・資格管理システム</h1>
+                    <h1 className="sr-only">株式会社信越報知 社員・資格管理システム</h1>
                     <BrandLogo priority className="mx-auto w-[240px] max-w-full" />
                     <p className="text-sm text-muted-foreground">社員・資格管理システム</p>
                 </div>
@@ -106,9 +106,6 @@ export default function LoginPage() {
                         </Suspense>
                     </CardContent>
                 </Card>
-                <p className="text-center text-xs text-muted-foreground">
-                    &copy; 信越報知機器株式会社
-                </p>
             </div>
         </div>
     );
