@@ -37,8 +37,34 @@ function LoginForm() {
         setError("");
         setLoading(true);
 
+        const trimmedEmail = email.trim().toLowerCase();
+        if (
+            process.env.NODE_ENV === "development"
+            && trimmedEmail === "test@gmail.com"
+            && password === "test"
+        ) {
+            try {
+                const res = await fetch("/api/auth/ensure-dev-test-user", { method: "POST" });
+                if (!res.ok) {
+                    const body = (await res.json().catch(() => null)) as { error?: string } | null;
+                    const msg = body?.error ?? `HTTP ${res.status}`;
+                    console.warn("ensure-dev-test-user:", msg);
+                    if (res.status === 503) {
+                        setError(
+                            msg
+                            || "テスト用アカウントの準備に失敗しました。.env.local に SUPABASE_SERVICE_ROLE_KEY を設定するか、cd app && npm run auth:ensure-test を実行してください。",
+                        );
+                        setLoading(false);
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn("ensure-dev-test-user fetch failed:", e);
+            }
+        }
+
         const { error } = await supabase.auth.signInWithPassword({
-            email,
+            email: trimmedEmail || email.trim(),
             password,
         });
 

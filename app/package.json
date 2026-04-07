@@ -9,6 +9,8 @@
     "lint": "eslint",
     "auth:verify": "node --env-file=.env.local scripts/auth-cli.mjs verify",
     "auth:create-demo": "node --env-file=.env.local scripts/auth-cli.mjs create-demo",
+    "auth:ensure-test": "node --env-file=.env.local scripts/auth-cli.mjs ensure-test",
+    "auth:setup-test": "node scripts/auth-cli.mjs setup-test",
     "test": "vitest run",
     "test:watch": "vitest"
   },

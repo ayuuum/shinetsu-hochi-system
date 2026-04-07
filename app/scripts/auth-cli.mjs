@@ -18,6 +18,10 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
+import { access, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { createInterface } from "node:readline/promises";
+import { stdin as input, stdout as output } from "node:process";
 
 const [,, cmd, ...rest] = process.argv;
 
@@ -25,11 +29,16 @@ function norm(value) {
     return (value ?? "").trim();
 }
 
-const url = norm(process.env.NEXT_PUBLIC_SUPABASE_URL);
-const anonKey = norm(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-const serviceRoleKey = norm(process.env.SUPABASE_SERVICE_ROLE_KEY);
+function getRuntimeEnv() {
+    return {
+        url: norm(process.env.NEXT_PUBLIC_SUPABASE_URL),
+        anonKey: norm(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+        serviceRoleKey: norm(process.env.SUPABASE_SERVICE_ROLE_KEY),
+    };
+}
 
 async function verify(email, password) {
+    const { url, anonKey } = getRuntimeEnv();
     if (!url || !anonKey) {
         console.error("Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
         process.exit(1);
@@ -44,7 +53,26 @@ async function verify(email, password) {
     await supabase.auth.signOut();
 }
 
+async function findUserByEmail(admin, emailNorm) {
+    let page = 1;
+    for (;;) {
+        const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+        if (error) {
+            throw new Error(error.message);
+        }
+        const found = data.users.find((u) => (u.email ?? "").toLowerCase() === emailNorm);
+        if (found) {
+            return found;
+        }
+        if (data.users.length < 1000) {
+            return null;
+        }
+        page += 1;
+    }
+}
+
 async function createDemo(email, password, role) {
+    const { url, serviceRoleKey } = getRuntimeEnv();
     if (!url || !serviceRoleKey) {
         console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
         process.exit(1);
@@ -80,13 +108,113 @@ async function createDemo(email, password, role) {
     console.log("  user id:", uid);
 }
 
+/** ローカル用 test@gmail.com / test（admin）。既存ならパスワード更新 + user_roles upsert */
+async function ensureTestUser(overrideEnv = null) {
+    const env = overrideEnv ?? getRuntimeEnv();
+    const { url, serviceRoleKey } = env;
+    if (!url || !serviceRoleKey) {
+        console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+        process.exit(1);
+    }
+    const testEmail = "test@gmail.com";
+    const testPassword = "test";
+    const role = "admin";
+    const admin = createClient(url, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+    });
+    let userId;
+    try {
+        const existing = await findUserByEmail(admin, testEmail.toLowerCase());
+        if (!existing) {
+            const { data: created, error: createErr } = await admin.auth.admin.createUser({
+                email: testEmail,
+                password: testPassword,
+                email_confirm: true,
+            });
+            if (createErr) {
+                console.error("auth.admin.createUser failed:", createErr.message);
+                process.exit(1);
+            }
+            userId = created.user.id;
+        } else {
+            userId = existing.id;
+            const { error: updateErr } = await admin.auth.admin.updateUserById(userId, {
+                password: testPassword,
+                email_confirm: true,
+            });
+            if (updateErr) {
+                console.error("auth.admin.updateUserById failed:", updateErr.message);
+                process.exit(1);
+            }
+        }
+        const { error: roleErr } = await admin.from("user_roles").upsert(
+            { id: userId, role },
+            { onConflict: "id" },
+        );
+        if (roleErr) {
+            console.error("user_roles upsert failed:", roleErr.message);
+            process.exit(1);
+        }
+    } catch (e) {
+        console.error(e.message || e);
+        process.exit(1);
+    }
+    console.log("OK: test user ready (test@gmail.com / test, role admin)");
+    console.log("  user id:", userId);
+}
+
+async function setupTestUser() {
+    const envPath = path.resolve(process.cwd(), ".env.local");
+    let hasEnvFile = true;
+    try {
+        await access(envPath);
+    } catch {
+        hasEnvFile = false;
+    }
+
+    let env = getRuntimeEnv();
+    if (!hasEnvFile || !env.url || !env.anonKey || !env.serviceRoleKey) {
+        const rl = createInterface({ input, output });
+        try {
+            const url = env.url || norm(await rl.question("Supabase URL (https://xxxx.supabase.co): "));
+            const anonKey = env.anonKey || norm(await rl.question("Anon key: "));
+            const serviceRoleKey = env.serviceRoleKey || norm(await rl.question("Service role key: "));
+
+            if (!url || !anonKey || !serviceRoleKey) {
+                console.error("3つの値すべてが必要です。");
+                process.exit(1);
+            }
+
+            const content = [
+                `NEXT_PUBLIC_SUPABASE_URL=${url}`,
+                `NEXT_PUBLIC_SUPABASE_ANON_KEY=${anonKey}`,
+                `SUPABASE_SERVICE_ROLE_KEY=${serviceRoleKey}`,
+                "",
+            ].join("\n");
+            await writeFile(envPath, content, "utf8");
+            console.log("OK: .env.local を作成しました");
+            env = { url, anonKey, serviceRoleKey };
+        } finally {
+            rl.close();
+        }
+    }
+
+    await ensureTestUser(env);
+}
+
 function printUsage() {
     console.error(`Usage:
   verify:   node scripts/auth-cli.mjs verify <email> <password>
             or VERIFY_EMAIL=... VERIFY_PASSWORD=... node scripts/auth-cli.mjs verify
 
   create:   node scripts/auth-cli.mjs create-demo <email> <password> [admin|hr|technician]
-            default role: technician`);
+            default role: technician
+
+  ensure-test: node scripts/auth-cli.mjs ensure-test
+            test@gmail.com / test（admin）を作成または更新（本番・共有環境でも実行可）
+
+  setup-test: node scripts/auth-cli.mjs setup-test
+            .env.local が無ければ対話入力で自動作成し、そのまま test ユーザーを用意`);
 }
 
 (async () => {
@@ -110,6 +238,14 @@ function printUsage() {
                 process.exit(1);
             }
             await createDemo(email, password, role);
+            return;
+        }
+        if (cmd === "ensure-test") {
+            await ensureTestUser();
+            return;
+        }
+        if (cmd === "setup-test") {
+            await setupTestUser();
             return;
         }
         printUsage();
