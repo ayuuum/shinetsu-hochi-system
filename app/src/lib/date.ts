@@ -12,3 +12,20 @@ export function formatDateInTokyo(value: Date | string | number): string {
 export function getTodayInTokyo(): string {
     return formatDateInTokyo(new Date());
 }
+
+/** `todayYmd`（YYYY-MM-DD・東京日付）が属する暦月の開始日・終了日（同一形式） */
+export function getTokyoCalendarMonthBounds(todayYmd: string): { start: string; end: string } {
+    const [yStr, mStr] = todayYmd.split("-");
+    const y = Number(yStr);
+    const m = Number(mStr);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const start = `${yStr}-${mStr}-01`;
+    const lastDay = new Date(y, m, 0).getDate();
+    const end = `${yStr}-${mStr}-${pad(lastDay)}`;
+    return { start, end };
+}
+
+export function isYmdInInclusiveRange(value: string | null | undefined, start: string, end: string) {
+    if (!value) return false;
+    return value >= start && value <= end;
+}

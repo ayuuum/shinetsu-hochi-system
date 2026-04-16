@@ -32,6 +32,8 @@ import {
     Trash2,
     FileImage,
     Shield,
+    Printer,
+    Laptop,
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -40,10 +42,17 @@ import { EditEmployeeModal } from "@/components/employees/edit-employee-modal";
 import { AddConstructionModal } from "@/components/employees/add-construction-modal";
 import { AddLifeInsuranceModal } from "@/components/employees/add-life-insurance-modal";
 import { AddDamageInsuranceModal } from "@/components/employees/add-damage-insurance-modal";
+import { AddItAccountModal } from "@/components/employees/add-it-account-modal";
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { alertStyles } from "@/lib/alert-utils";
-import { deleteEmployeeAction, deleteProjectAction, deleteLifeInsuranceAction, deleteDamageInsuranceAction } from "@/app/actions/admin-record-actions";
+import {
+    deleteEmployeeAction,
+    deleteProjectAction,
+    deleteLifeInsuranceAction,
+    deleteDamageInsuranceAction,
+    deleteItAccountAction,
+} from "@/app/actions/admin-record-actions";
 
 type EmployeeQualification = Tables<"employee_qualifications"> & {
     qualification_master: Tables<"qualification_master"> | null;
@@ -56,9 +65,17 @@ export type EmployeeDetail = Tables<"employees"> & {
     health_checks: Tables<"health_checks">[];
     employee_life_insurances: Tables<"employee_life_insurances">[];
     employee_damage_insurances: Tables<"employee_damage_insurances">[];
+    employee_it_accounts: Tables<"employee_it_accounts">[];
 };
 
-export type EmployeeDetailTab = "basic" | "insurance" | "qualifications" | "construction" | "family" | "health";
+export type EmployeeDetailTab =
+    | "basic"
+    | "insurance"
+    | "it"
+    | "qualifications"
+    | "construction"
+    | "family"
+    | "health";
 
 function getExpiryBadge(expiryDate: string | null) {
     if (!expiryDate) return null;
@@ -77,6 +94,11 @@ function DetailItem({ label, value }: { label: string; value: string | null | nu
             <span className="col-span-2 font-medium text-sm">{value || "-"}</span>
         </div>
     );
+}
+
+function maskedEmploymentValue(isTechnicianSelf: boolean, value: string | null | number) {
+    if (!isTechnicianSelf) return value;
+    return "—";
 }
 
 export function EmployeeDetailClient({
@@ -98,8 +120,16 @@ export function EmployeeDetailClient({
     const [deletingConstructionId, setDeletingConstructionId] = useState<string | null>(null);
     const [deletingLifeInsuranceId, setDeletingLifeInsuranceId] = useState<string | null>(null);
     const [deletingDamageInsuranceId, setDeletingDamageInsuranceId] = useState<string | null>(null);
-    const { isAdminOrHr } = useAuth();
+    const [deletingItAccountId, setDeletingItAccountId] = useState<string | null>(null);
+    const { isAdminOrHr, role, linkedEmployeeId } = useAuth();
+    const isTechnicianSelf = role === "technician" && linkedEmployeeId === employee.id;
+
     const handleBack = () => {
+        if (isTechnicianSelf) {
+            router.push("/me");
+            return;
+        }
+
         if (typeof window !== "undefined" && document.referrer.startsWith(window.location.origin)) {
             router.back();
             return;
@@ -139,6 +169,18 @@ export function EmployeeDetailClient({
         if (result.success) {
             toast.success("削除しました");
             setDeletingDamageInsuranceId(null);
+            router.refresh();
+        } else {
+            toast.error(result.error);
+        }
+    };
+
+    const handleDeleteItAccount = async (accountId: string) => {
+        if (!isAdminOrHr) return;
+        const result = await deleteItAccountAction(accountId);
+        if (result.success) {
+            toast.success("削除しました");
+            setDeletingItAccountId(null);
             router.refresh();
         } else {
             toast.error(result.error);
@@ -199,7 +241,7 @@ export function EmployeeDetailClient({
             <div className="flex flex-col gap-4">
                 <Button variant="ghost" onClick={handleBack} className="w-fit -ml-2 text-muted-foreground">
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    一覧へ戻る
+                    {isTechnicianSelf ? "マイページへ戻る" : "一覧へ戻る"}
                 </Button>
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div className="flex items-center gap-4">
@@ -249,7 +291,7 @@ export function EmployeeDetailClient({
                         <DialogHeader>
                             <DialogTitle>社員の削除</DialogTitle>
                             <DialogDescription>
-                                {employee.name}（{employee.employee_number}）を削除します。この操作は取り消せません。関連する資格・施工実績・家族情報もすべて削除されます。
+                                {employee.name}（{employee.employee_number}）を削除します。この操作は取り消せません。関連する資格・施工実績・家族情報・IT利用情報もすべて削除されます。
                             </DialogDescription>
                         </DialogHeader>
                         <DialogFooter>
@@ -266,7 +308,15 @@ export function EmployeeDetailClient({
                 <div className="overflow-x-auto -mx-1 px-1">
                     <TabsList className="inline-flex min-w-full h-auto bg-muted/30 p-1 rounded-xl">
                         <TabsTrigger value="basic" className="flex-shrink-0 rounded-lg px-3 py-2 text-xs md:text-sm"><User className="mr-1 h-3.5 w-3.5 hidden md:inline" />基本情報</TabsTrigger>
-                        <TabsTrigger value="insurance" className="flex-shrink-0 rounded-lg px-3 py-2 text-xs md:text-sm"><Shield className="mr-1 h-3.5 w-3.5 hidden md:inline" />保険情報</TabsTrigger>
+                        {!isTechnicianSelf && (
+                            <TabsTrigger value="insurance" className="flex-shrink-0 rounded-lg px-3 py-2 text-xs md:text-sm"><Shield className="mr-1 h-3.5 w-3.5 hidden md:inline" />保険情報</TabsTrigger>
+                        )}
+                        {isAdminOrHr && (
+                            <TabsTrigger value="it" className="flex-shrink-0 rounded-lg px-3 py-2 text-xs md:text-sm">
+                                <Laptop className="mr-1 h-3.5 w-3.5 hidden md:inline" />
+                                IT・ライセンス
+                            </TabsTrigger>
+                        )}
                         <TabsTrigger value="qualifications" className="flex-shrink-0 rounded-lg px-3 py-2 text-xs md:text-sm"><Award className="mr-1 h-3.5 w-3.5 hidden md:inline" />保有資格</TabsTrigger>
                         <TabsTrigger value="construction" className="flex-shrink-0 rounded-lg px-3 py-2 text-xs md:text-sm"><HardHat className="mr-1 h-3.5 w-3.5 hidden md:inline" />施工実績</TabsTrigger>
                         <TabsTrigger value="family" className="flex-shrink-0 rounded-lg px-3 py-2 text-xs md:text-sm"><Users className="mr-1 h-3.5 w-3.5 hidden md:inline" />家族</TabsTrigger>
@@ -296,17 +346,18 @@ export function EmployeeDetailClient({
                             <CardContent className="space-y-0">
                                 <DetailItem label="役職" value={employee.position} />
                                 <DetailItem label="職種" value={employee.job_title} />
-                                <DetailItem label="雇用形態" value={employee.employment_type} />
+                                <DetailItem label="雇用形態" value={maskedEmploymentValue(isTechnicianSelf, employee.employment_type)} />
                                 <DetailItem label="入社年月日" value={employee.hire_date} />
                                 <DetailItem label="退職日" value={employee.termination_date} />
-                                <DetailItem label="健康保険番号" value={employee.health_insurance_no} />
-                                <DetailItem label="年金番号" value={employee.pension_no} />
-                                <DetailItem label="雇用保険番号" value={employee.emp_insurance_no} />
+                                <DetailItem label="健康保険番号" value={maskedEmploymentValue(isTechnicianSelf, employee.health_insurance_no)} />
+                                <DetailItem label="年金番号" value={maskedEmploymentValue(isTechnicianSelf, employee.pension_no)} />
+                                <DetailItem label="雇用保険番号" value={maskedEmploymentValue(isTechnicianSelf, employee.emp_insurance_no)} />
                             </CardContent>
                         </Card>
                     </div>
                 </TabsContent>
 
+                {!isTechnicianSelf && (
                 <TabsContent value="insurance" className="mt-6 space-y-4 animate-in fade-in duration-300">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-bold">法人契約保険・個人保険記録</h3>
@@ -389,11 +440,80 @@ export function EmployeeDetailClient({
                         </div>
                     )}
                 </TabsContent>
+                )}
+
+                {isAdminOrHr && (
+                    <TabsContent value="it" className="mt-6 space-y-4 animate-in fade-in duration-300">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-4">
+                            <div>
+                                <h3 className="text-lg font-bold">IT・ソフトウェア利用情報</h3>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Microsoft 365 や Canon ImageWARE など、PC入替時に必要なログインID・契約メモを登録します（総務・管理者のみ表示）。
+                                </p>
+                            </div>
+                            <AddItAccountModal employeeId={employee.id} onSuccess={() => router.refresh()} />
+                        </div>
+                        {employee.employee_it_accounts.length === 0 ? (
+                            <Card className="bg-muted/10 border-dashed">
+                                <CardContent className="py-10 text-center text-muted-foreground text-sm">
+                                    IT利用情報が登録されていません。
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                {employee.employee_it_accounts.map((row) => (
+                                    <Card key={row.id} className="shadow-sm border-border/50 relative overflow-hidden group">
+                                        <div className="absolute top-0 left-0 w-1.5 h-full bg-primary/60" />
+                                        <CardHeader className="pb-3 pl-6">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 w-fit">
+                                                    表示順 {row.sort_order}
+                                                </Badge>
+                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <AddItAccountModal
+                                                        employeeId={employee.id}
+                                                        existingRecord={row}
+                                                        onSuccess={() => router.refresh()}
+                                                    />
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setDeletingItAccountId(row.id)}
+                                                        className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                            <CardTitle className="text-xl mt-2">{row.service_name}</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-0 pl-6">
+                                            <DetailItem label="ログインID / メール" value={row.login_id} />
+                                            {row.notes ? (
+                                                <div className="mt-3 pt-3 border-t border-border/50 text-sm text-muted-foreground whitespace-pre-wrap">
+                                                    {row.notes}
+                                                </div>
+                                            ) : null}
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+                    </TabsContent>
+                )}
 
                 <TabsContent value="qualifications" className="mt-6 space-y-4">
-                    <div className="flex justify-between items-center mb-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                         <h3 className="text-lg font-bold">保有資格一覧</h3>
-                        {isAdminOrHr && <AddQualificationModal employeeId={employee.id} onSuccess={() => router.refresh()} />}
+                        <div className="flex flex-wrap items-center gap-2">
+                            {employee.employee_qualifications.some((q) => q.certificate_url) ? (
+                                <Button size="sm" variant="outline" render={<Link href={`/employees/${employee.id}/certificates/print`} />}>
+                                    <Printer className="mr-2 h-4 w-4" />
+                                    提出用シート（A4）
+                                </Button>
+                            ) : null}
+                            {isAdminOrHr && <AddQualificationModal employeeId={employee.id} onSuccess={() => router.refresh()} />}
+                        </div>
                     </div>
                     {employee.employee_qualifications.length === 0 ? (
                         <Card className="bg-muted/10 border-dashed"><CardContent className="py-10 text-center text-muted-foreground text-sm">資格情報が登録されていません。</CardContent></Card>
@@ -574,6 +694,16 @@ export function EmployeeDetailClient({
                     title="施工実績の削除"
                     description="この施工実績を削除します。この操作は取り消せません。"
                     onConfirm={() => handleDeleteConstruction(deletingConstructionId!)}
+                />
+            )}
+
+            {isAdminOrHr && (
+                <DeleteConfirmDialog
+                    open={!!deletingItAccountId}
+                    onOpenChange={(open) => !open && setDeletingItAccountId(null)}
+                    title="IT利用情報の削除"
+                    description="このIT利用情報を削除します。この操作は取り消せません。"
+                    onConfirm={() => handleDeleteItAccount(deletingItAccountId!)}
                 />
             )}
         </div>

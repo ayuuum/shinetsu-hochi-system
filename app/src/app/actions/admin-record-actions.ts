@@ -20,6 +20,12 @@ import {
     type VehicleValues,
 } from "@/lib/validation/vehicle";
 import {
+    equipmentSchema,
+    toEquipmentInsert,
+    toEquipmentUpdate,
+    type EquipmentValues,
+} from "@/lib/validation/equipment";
+import {
     projectSchema,
     toProjectInsert,
     toProjectUpdate,
@@ -47,6 +53,12 @@ import {
     toDamageInsuranceUpdate,
     type DamageInsuranceValues,
 } from "@/lib/validation/insurance";
+import {
+    employeeItAccountSchema,
+    toItAccountInsert,
+    toItAccountUpdate,
+    type EmployeeItAccountValues,
+} from "@/lib/validation/employee-it-account";
 
 type ActionResult<TField extends string> =
     | { success: true }
@@ -192,6 +204,28 @@ async function plateNumberTaken(plateNumber: string, excludeId?: string) {
         .from("vehicles")
         .select("id")
         .eq("plate_number", plateNumber)
+        .is("deleted_at", null)
+        .limit(1);
+
+    if (excludeId) {
+        query = query.neq("id", excludeId);
+    }
+
+    const { data, error } = await query.maybeSingle();
+
+    if (error) {
+        throw error;
+    }
+
+    return !!data;
+}
+
+async function equipmentManagementNumberTaken(managementNumber: string, excludeId?: string) {
+    const supabase = await createSupabaseServer();
+    let query = supabase
+        .from("equipment_items")
+        .select("id")
+        .eq("management_number", managementNumber)
         .is("deleted_at", null)
         .limit(1);
 
@@ -742,9 +776,17 @@ export async function updateHealthCheckAction(
 export async function createAlcoholCheckAction(
     values: AlcoholCheckValues
 ): Promise<ActionResult<keyof AlcoholCheckValues>> {
-    const auth = await requireAdminOrHr();
-    if (!auth.ok) {
-        return { success: false, error: auth.error };
+    const snap = await getAuthSnapshot();
+    if (!snap.user) {
+        return { success: false, error: "この操作を実行する権限がありません。" };
+    }
+
+    const isManager = snap.role === "admin" || snap.role === "hr";
+    const isTechnicianSelf =
+        snap.role === "technician" && !!snap.linkedEmployeeId;
+
+    if (!isManager && !isTechnicianSelf) {
+        return { success: false, error: "この操作を実行する権限がありません。" };
     }
 
     const parsed = alcoholCheckSchema.safeParse(values);
@@ -754,6 +796,22 @@ export async function createAlcoholCheckAction(
             error: "入力内容を確認してください。",
             fieldErrors: getFieldErrors<keyof AlcoholCheckValues>(parsed.error),
         };
+    }
+
+    if (isTechnicianSelf && snap.linkedEmployeeId) {
+        if (
+            parsed.data.employee_id !== snap.linkedEmployeeId
+            || parsed.data.checker_id !== snap.linkedEmployeeId
+        ) {
+            return {
+                success: false,
+                error: "入力内容を確認してください。",
+                fieldErrors: {
+                    employee_id: "技術者アカウントでは本人のみ記録できます。",
+                    checker_id: "確認者は本人を選択してください。",
+                },
+            };
+        }
     }
 
     try {
@@ -785,8 +843,8 @@ export async function createAlcoholCheckAction(
         }
 
         await recordAuditLog({
-            actorId: auth.user.id,
-            actorEmail: auth.user.email,
+            actorId: snap.user.id,
+            actorEmail: snap.user.email,
             entityType: "alcohol_check",
             entityId: data.id,
             action: "create",
@@ -937,6 +995,179 @@ export async function deleteVehicleAction(vehicleId: string): Promise<DeleteActi
     } catch (error) {
         console.error("Unexpected error while deleting vehicle:", error);
         return { success: false, error: "車両の削除に失敗しました。" };
+    }
+}
+
+export async function createEquipmentAction(
+    values: EquipmentValues
+): Promise<ActionResult<keyof EquipmentValues>> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) {
+        return { success: false, error: auth.error };
+    }
+
+    const parsed = equipmentSchema.safeParse(values);
+    if (!parsed.success) {
+        return {
+            success: false,
+            error: "入力内容を確認してください。",
+            fieldErrors: getFieldErrors<keyof EquipmentValues>(parsed.error),
+        };
+    }
+
+    try {
+        if (await equipmentManagementNumberTaken(parsed.data.management_number.trim())) {
+            return {
+                success: false,
+                error: "入力内容を確認してください。",
+                fieldErrors: { management_number: "この管理番号は既に登録されています。" },
+            };
+        }
+
+        const supabase = await createSupabaseServer();
+        const { data, error } = await supabase
+            .from("equipment_items")
+            .insert([toEquipmentInsert(parsed.data)])
+            .select("id")
+            .single();
+
+        if (error) {
+            console.error("Failed to create equipment:", error);
+            return { success: false, error: "備品の登録に失敗しました。" };
+        }
+
+        await recordAuditLog({
+            actorId: auth.user.id,
+            actorEmail: auth.user.email,
+            entityType: "equipment_item",
+            entityId: data.id,
+            action: "create",
+            summary: `${parsed.data.management_number.trim()} ${parsed.data.name.trim()} を登録`,
+            metadata: { management_number: parsed.data.management_number.trim() },
+        });
+        revalidateVehiclePaths();
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while creating equipment:", error);
+        return { success: false, error: "備品の登録に失敗しました。" };
+    }
+}
+
+export async function updateEquipmentAction(
+    equipmentId: string,
+    values: EquipmentValues
+): Promise<ActionResult<keyof EquipmentValues>> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) {
+        return { success: false, error: auth.error };
+    }
+
+    const parsed = equipmentSchema.safeParse(values);
+    if (!parsed.success) {
+        return {
+            success: false,
+            error: "入力内容を確認してください。",
+            fieldErrors: getFieldErrors<keyof EquipmentValues>(parsed.error),
+        };
+    }
+
+    try {
+        if (await equipmentManagementNumberTaken(parsed.data.management_number.trim(), equipmentId)) {
+            return {
+                success: false,
+                error: "入力内容を確認してください。",
+                fieldErrors: { management_number: "この管理番号は既に登録されています。" },
+            };
+        }
+
+        const supabase = await createSupabaseServer();
+        const { data, error } = await supabase
+            .from("equipment_items")
+            .update(toEquipmentUpdate(parsed.data))
+            .eq("id", equipmentId)
+            .is("deleted_at", null)
+            .select("id")
+            .maybeSingle();
+
+        if (error) {
+            console.error("Failed to update equipment:", error);
+            return { success: false, error: "備品情報の更新に失敗しました。" };
+        }
+        if (!data) {
+            return { success: false, error: "備品情報が見つかりません。" };
+        }
+
+        await recordAuditLog({
+            actorId: auth.user.id,
+            actorEmail: auth.user.email,
+            entityType: "equipment_item",
+            entityId: equipmentId,
+            action: "update",
+            summary: `${parsed.data.management_number.trim()} を更新`,
+            metadata: { management_number: parsed.data.management_number.trim() },
+        });
+        revalidateVehiclePaths();
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while updating equipment:", error);
+        return { success: false, error: "備品情報の更新に失敗しました。" };
+    }
+}
+
+export async function deleteEquipmentAction(equipmentId: string): Promise<DeleteActionResult> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) {
+        return { success: false, error: auth.error };
+    }
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: row, error: fetchError } = await supabase
+            .from("equipment_items")
+            .select("management_number, name")
+            .eq("id", equipmentId)
+            .is("deleted_at", null)
+            .maybeSingle();
+
+        if (fetchError || !row) {
+            console.error("Failed to load equipment before delete:", fetchError);
+            return { success: false, error: "備品情報が見つかりません。" };
+        }
+
+        const deletedAt = new Date().toISOString();
+        const { data: updated, error } = await supabase
+            .from("equipment_items")
+            .update({
+                deleted_at: deletedAt,
+                deleted_by: auth.user.id,
+            })
+            .eq("id", equipmentId)
+            .is("deleted_at", null)
+            .select("id")
+            .maybeSingle();
+
+        if (error) {
+            console.error("Failed to soft delete equipment:", error);
+            return { success: false, error: "備品の削除に失敗しました。" };
+        }
+        if (!updated) {
+            return { success: false, error: "備品情報が見つかりません。" };
+        }
+
+        await recordAuditLog({
+            actorId: auth.user.id,
+            actorEmail: auth.user.email,
+            entityType: "equipment_item",
+            entityId: equipmentId,
+            action: "delete",
+            summary: `${row.management_number} を削除`,
+            metadata: { management_number: row.management_number, name: row.name },
+        });
+        revalidateVehiclePaths();
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while deleting equipment:", error);
+        return { success: false, error: "備品の削除に失敗しました。" };
     }
 }
 
@@ -1495,5 +1726,163 @@ export async function deleteDamageInsuranceAction(insuranceId: string): Promise<
     } catch (error) {
         console.error("Unexpected error while deleting damage insurance:", error);
         return { success: false, error: "損害保険の削除に失敗しました。" };
+    }
+}
+
+export async function createItAccountAction(
+    values: EmployeeItAccountValues
+): Promise<ActionResult<keyof EmployeeItAccountValues>> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) {
+        return { success: false, error: auth.error };
+    }
+
+    const parsed = employeeItAccountSchema.safeParse(values);
+    if (!parsed.success) {
+        return {
+            success: false,
+            error: "入力内容を確認してください。",
+            fieldErrors: getFieldErrors<keyof EmployeeItAccountValues>(parsed.error),
+        };
+    }
+
+    try {
+        if (!(await employeeExists(parsed.data.employee_id))) {
+            return {
+                success: false,
+                error: "入力内容を確認してください。",
+                fieldErrors: { employee_id: "対象社員が見つかりません。" },
+            };
+        }
+
+        const supabase = await createSupabaseServer();
+        const { data, error } = await supabase
+            .from("employee_it_accounts")
+            .insert([toItAccountInsert(parsed.data)])
+            .select("id")
+            .single();
+
+        if (error) {
+            console.error("Failed to create IT account row:", error);
+            return { success: false, error: "IT利用情報の登録に失敗しました。" };
+        }
+
+        await recordAuditLog({
+            actorId: auth.user.id,
+            actorEmail: auth.user.email,
+            entityType: "employee_it_account",
+            entityId: data.id,
+            action: "create",
+            summary: `${parsed.data.service_name} を登録`,
+            metadata: { employee_id: parsed.data.employee_id },
+        });
+        revalidateEmployeePaths(parsed.data.employee_id);
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while creating IT account:", error);
+        return { success: false, error: "IT利用情報の登録に失敗しました。" };
+    }
+}
+
+export async function updateItAccountAction(
+    accountId: string,
+    values: EmployeeItAccountValues
+): Promise<ActionResult<keyof EmployeeItAccountValues>> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) {
+        return { success: false, error: auth.error };
+    }
+
+    const parsed = employeeItAccountSchema.safeParse(values);
+    if (!parsed.success) {
+        return {
+            success: false,
+            error: "入力内容を確認してください。",
+            fieldErrors: getFieldErrors<keyof EmployeeItAccountValues>(parsed.error),
+        };
+    }
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: existing, error: fetchError } = await supabase
+            .from("employee_it_accounts")
+            .select("id, employee_id")
+            .eq("id", accountId)
+            .maybeSingle();
+
+        if (fetchError || !existing) {
+            return { success: false, error: "IT利用情報が見つかりません。" };
+        }
+
+        if (existing.employee_id !== parsed.data.employee_id) {
+            return { success: false, error: "不正な操作です。" };
+        }
+
+        const { error } = await supabase
+            .from("employee_it_accounts")
+            .update(toItAccountUpdate(parsed.data))
+            .eq("id", accountId);
+
+        if (error) {
+            console.error("Failed to update IT account:", error);
+            return { success: false, error: "IT利用情報の更新に失敗しました。" };
+        }
+
+        await recordAuditLog({
+            actorId: auth.user.id,
+            actorEmail: auth.user.email,
+            entityType: "employee_it_account",
+            entityId: accountId,
+            action: "update",
+            summary: `${parsed.data.service_name} を更新`,
+            metadata: { employee_id: parsed.data.employee_id },
+        });
+        revalidateEmployeePaths(parsed.data.employee_id);
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while updating IT account:", error);
+        return { success: false, error: "IT利用情報の更新に失敗しました。" };
+    }
+}
+
+export async function deleteItAccountAction(accountId: string): Promise<DeleteActionResult> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) {
+        return { success: false, error: auth.error };
+    }
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: row, error: fetchError } = await supabase
+            .from("employee_it_accounts")
+            .select("service_name, employee_id")
+            .eq("id", accountId)
+            .maybeSingle();
+
+        if (fetchError || !row) {
+            return { success: false, error: "IT利用情報が見つかりません。" };
+        }
+
+        const { error } = await supabase.from("employee_it_accounts").delete().eq("id", accountId);
+
+        if (error) {
+            console.error("Failed to delete IT account:", error);
+            return { success: false, error: "IT利用情報の削除に失敗しました。" };
+        }
+
+        await recordAuditLog({
+            actorId: auth.user.id,
+            actorEmail: auth.user.email,
+            entityType: "employee_it_account",
+            entityId: accountId,
+            action: "delete",
+            summary: `${row.service_name} を削除`,
+            metadata: { employee_id: row.employee_id },
+        });
+        revalidateEmployeePaths(row.employee_id);
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while deleting IT account:", error);
+        return { success: false, error: "IT利用情報の削除に失敗しました。" };
     }
 }

@@ -110,8 +110,9 @@ export function AlcoholClient({
     const [deletingItem, setDeletingItem] = useState<AlcoholCheckRow | null>(null);
     const router = useRouter();
     const pathname = usePathname();
-    const { isAdminOrHr } = useAuth();
+    const { isAdminOrHr, role, linkedEmployeeId } = useAuth();
     const showActions = isAdminOrHr;
+    const canRecordAlcohol = isAdminOrHr || (role === "technician" && !!linkedEmployeeId);
     const columnCount = showActions ? 9 : 8;
     const employeeOptions = employees.map((employee) => ({
         value: employee.id,
@@ -202,7 +203,7 @@ export function AlcoholClient({
                         <Download className="mr-2 h-4 w-4" />
                         CSV出力
                     </Button>
-                    {isAdminOrHr && (
+                    {canRecordAlcohol && (
                         <AddAlcoholCheckModal
                             employees={employees}
                             initialEmployeeId={currentEmployee}

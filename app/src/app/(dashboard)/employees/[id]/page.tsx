@@ -1,5 +1,6 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
+import { getAuthSnapshot } from "@/lib/auth-server";
 import { EmployeeDetailClient, type EmployeeDetail, type EmployeeDetailTab } from "@/components/employees/employee-detail-client";
 import { Tables } from "@/types/supabase";
 
@@ -14,7 +15,7 @@ type EmployeePageRow = Tables<"employees"> & {
     employee_damage_insurances: Tables<"employee_damage_insurances">[] | null;
 };
 
-const VALID_TABS: EmployeeDetailTab[] = ["basic", "qualifications", "construction", "family", "health"];
+const VALID_TABS: EmployeeDetailTab[] = ["basic", "insurance", "it", "qualifications", "construction", "family", "health"];
 
 export default async function EmployeeDetailPage({
     params,
@@ -25,8 +26,21 @@ export default async function EmployeeDetailPage({
 }) {
     const { id } = await params;
     const { tab } = await searchParams;
+    const auth = await getAuthSnapshot();
+    if (auth.role === "technician") {
+        if (!auth.linkedEmployeeId || auth.linkedEmployeeId !== id) {
+            redirect(auth.linkedEmployeeId ? `/employees/${auth.linkedEmployeeId}` : "/me");
+        }
+    }
+
     const supabase = await createSupabaseServer();
-    const currentTab = VALID_TABS.includes(tab as EmployeeDetailTab) ? (tab as EmployeeDetailTab) : "basic";
+    let currentTab: EmployeeDetailTab = VALID_TABS.includes(tab as EmployeeDetailTab) ? (tab as EmployeeDetailTab) : "basic";
+    if (auth.role === "technician" && currentTab === "insurance") {
+        currentTab = "basic";
+    }
+    if ((auth.role !== "admin" && auth.role !== "hr") && currentTab === "it") {
+        currentTab = "basic";
+    }
 
     const [employeeResult, constructionResult, healthResult] = await Promise.all([
         supabase
@@ -74,12 +88,28 @@ export default async function EmployeeDetailPage({
         console.error("Failed to load health checks:", healthResult.error);
     }
 
+    let employee_it_accounts: Tables<"employee_it_accounts">[] = [];
+    if (auth.role === "admin" || auth.role === "hr") {
+        const itResult = await supabase
+            .from("employee_it_accounts")
+            .select("*")
+            .eq("employee_id", id)
+            .order("sort_order", { ascending: true })
+            .order("created_at", { ascending: true });
+        if (itResult.error) {
+            console.error("Failed to load employee IT accounts:", itResult.error);
+        } else {
+            employee_it_accounts = itResult.data ?? [];
+        }
+    }
+
     const employee: EmployeeDetail = {
         ...employeeRow,
         employee_qualifications: employeeRow.employee_qualifications ?? [],
         employee_family: employeeRow.employee_family ?? [],
         employee_life_insurances: employeeRow.employee_life_insurances ?? [],
         employee_damage_insurances: employeeRow.employee_damage_insurances ?? [],
+        employee_it_accounts,
         construction_records: constructionResult.data || [],
         health_checks: healthResult.data || [],
     };

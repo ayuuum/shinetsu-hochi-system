@@ -23,7 +23,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil } from "lucide-react";
+import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, FileImage, Tags } from "lucide-react";
 import { differenceInDays } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { alertStyles, getAlertLevel, type AlertLevel } from "@/lib/alert-utils";
@@ -97,7 +97,7 @@ export function QualificationsClient({
     const pathname = usePathname();
     const { isAdminOrHr } = useAuth();
     const showActions = isAdminOrHr;
-    const columnCount = showActions ? 9 : 8;
+    const columnCount = showActions ? 10 : 9;
     const levelLabels: Record<string, string> = {
         danger: "期限切れ",
         urgent: "14日以内",
@@ -182,9 +182,22 @@ export function QualificationsClient({
 
     return (
         <div className="space-y-6 animate-in fade-in duration-200">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">資格・講習管理</h1>
-                <p className="text-muted-foreground mt-2">全従業員の資格・免状の期限と更新予定を一元管理します。</p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">資格・講習管理</h1>
+                    <p className="text-muted-foreground mt-2">全従業員の資格・免状の期限と更新予定を一元管理します。</p>
+                </div>
+                {isAdminOrHr && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0"
+                        render={<Link href="/qualifications/masters" />}
+                    >
+                        <Tags className="mr-2 h-4 w-4" />
+                        資格マスタ
+                    </Button>
+                )}
             </div>
 
             {/* Summary Cards */}
@@ -428,6 +441,12 @@ export function QualificationsClient({
                                         {q.qualification_master?.category ? (
                                             <Badge variant="outline">{q.qualification_master.category}</Badge>
                                         ) : null}
+                                        {q.certificate_url ? (
+                                            <Badge variant="outline" className="gap-1">
+                                                <FileImage className="h-3 w-3" aria-hidden />
+                                                証書あり
+                                            </Badge>
+                                        ) : null}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -448,6 +467,7 @@ export function QualificationsClient({
                             <TableHead>有効期限</TableHead>
                             <TableHead>ステータス</TableHead>
                             <TableHead>申込状況</TableHead>
+                            <TableHead className="w-[52px] text-center">証書</TableHead>
                             {showActions && <TableHead className="w-[80px]">操作</TableHead>}
                         </TableRow>
                     </TableHeader>
@@ -493,6 +513,15 @@ export function QualificationsClient({
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-sm text-muted-foreground">{q.status || "未着手"}</TableCell>
+                                        <TableCell className="text-center">
+                                            {q.certificate_url ? (
+                                                <span className="inline-flex text-primary" title="証書画像あり">
+                                                    <FileImage className="h-4 w-4" aria-label="証書画像あり" />
+                                                </span>
+                                            ) : (
+                                                <span className="text-muted-foreground">—</span>
+                                            )}
+                                        </TableCell>
                                         {showActions && (
                                             <TableCell>
                                                 <Button

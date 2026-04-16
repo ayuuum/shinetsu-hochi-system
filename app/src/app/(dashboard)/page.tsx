@@ -4,6 +4,8 @@ import {
     AlertCircle,
     ArrowRight,
     Calendar,
+    HeartPulse,
+    ScrollText,
     ShieldAlert,
     ShieldCheck,
     Truck,
@@ -15,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAlertLevel, getDaysRemaining, alertStyles, type AlertLevel } from "@/lib/alert-utils";
-import { getTodayInTokyo } from "@/lib/date";
+import { getTodayInTokyo, getTokyoCalendarMonthBounds, isYmdInInclusiveRange } from "@/lib/date";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { Tables } from "@/types/supabase";
 
@@ -38,6 +40,26 @@ type QualificationAlertRow = Pick<Tables<"employee_qualifications">, "id" | "emp
 type DashboardEmployeeRow = Pick<Tables<"employees">, "id" | "name" | "hire_date" | "branch" | "termination_date">;
 
 type DashboardVehicleRow = Pick<Tables<"vehicles">, "plate_number" | "vehicle_name" | "inspection_expiry">;
+
+type DashboardVehicleMonthRow = Pick<
+    Tables<"vehicles">,
+    "id" | "plate_number" | "vehicle_name" | "inspection_expiry" | "liability_insurance_expiry" | "voluntary_insurance_expiry"
+>;
+
+type DashboardHealthMonthRow = Pick<Tables<"health_checks">, "id" | "check_date" | "check_type" | "hospital_name"> & {
+    employees: Pick<Tables<"employees">, "name" | "branch"> | null;
+};
+
+type MonthScheduleItem = {
+    id: string;
+    date: string;
+    category: string;
+    categoryPriority: number;
+    title: string;
+    subtitle: string;
+    href: string;
+    icon: LucideIcon;
+};
 
 type DashboardAlcoholRow = Pick<Tables<"alcohol_checks">, "id" | "employee_id" | "is_abnormal" | "check_datetime" | "location"> & {
     employee: Pick<Tables<"employees">, "name" | "branch"> | null;
@@ -115,15 +137,126 @@ function getTaskPriority(base: number, offset: number) {
     return base * 1000 + offset;
 }
 
+const monthScheduleCategoryPriority: Record<string, number> = {
+    健診: 0,
+    車検: 1,
+    自賠責: 2,
+    任意保険: 3,
+    資格: 4,
+};
+
+function buildMonthScheduleItems({
+    todayYmd,
+    qualifications,
+    vehicles,
+    healthRows,
+}: {
+    todayYmd: string;
+    qualifications: QualificationAlertRow[];
+    vehicles: DashboardVehicleMonthRow[];
+    healthRows: DashboardHealthMonthRow[];
+}): MonthScheduleItem[] {
+    const { start: monthStart, end: monthEnd } = getTokyoCalendarMonthBounds(todayYmd);
+    const items: MonthScheduleItem[] = [];
+
+    for (const v of vehicles) {
+        const href = `/vehicles?q=${encodeURIComponent(v.plate_number)}`;
+        const namePart = v.vehicle_name || "車両";
+
+        if (isYmdInInclusiveRange(v.inspection_expiry, monthStart, monthEnd)) {
+            items.push({
+                id: `vehicle-inspection-${v.id}`,
+                date: v.inspection_expiry!,
+                category: "車検",
+                categoryPriority: monthScheduleCategoryPriority.車検,
+                title: v.plate_number,
+                subtitle: `${namePart}・車検満了`,
+                href,
+                icon: Truck,
+            });
+        }
+        if (isYmdInInclusiveRange(v.liability_insurance_expiry, monthStart, monthEnd)) {
+            items.push({
+                id: `vehicle-liability-${v.id}`,
+                date: v.liability_insurance_expiry!,
+                category: "自賠責",
+                categoryPriority: monthScheduleCategoryPriority.自賠責,
+                title: v.plate_number,
+                subtitle: `${namePart}・自賠責満期`,
+                href,
+                icon: Truck,
+            });
+        }
+        if (isYmdInInclusiveRange(v.voluntary_insurance_expiry, monthStart, monthEnd)) {
+            items.push({
+                id: `vehicle-voluntary-${v.id}`,
+                date: v.voluntary_insurance_expiry!,
+                category: "任意保険",
+                categoryPriority: monthScheduleCategoryPriority.任意保険,
+                title: v.plate_number,
+                subtitle: `${namePart}・任意保険満期`,
+                href,
+                icon: Truck,
+            });
+        }
+    }
+
+    for (const q of qualifications) {
+        if (!q.expiry_date || !q.id) continue;
+        if (!isYmdInInclusiveRange(q.expiry_date, monthStart, monthEnd)) continue;
+        const empName = q.employees?.name || "社員";
+        const branch = q.employees?.branch;
+        items.push({
+            id: `qualification-${q.id}`,
+            date: q.expiry_date,
+            category: "資格",
+            categoryPriority: monthScheduleCategoryPriority.資格,
+            title: q.qualification_master?.name || "資格",
+            subtitle: branch ? `${empName}（${branch}）` : empName,
+            href: `/qualifications/${q.id}`,
+            icon: ScrollText,
+        });
+    }
+
+    for (const h of healthRows) {
+        if (!h.check_date) continue;
+        const empName = h.employees?.name || "社員";
+        const branch = h.employees?.branch;
+        const typeLabel = h.check_type?.trim() || "健康診断";
+        items.push({
+            id: `health-${h.id}`,
+            date: h.check_date,
+            category: "健診",
+            categoryPriority: monthScheduleCategoryPriority.健診,
+            title: typeLabel,
+            subtitle: [empName, branch, h.hospital_name].filter(Boolean).join(" / "),
+            href: "/health-checks",
+            icon: HeartPulse,
+        });
+    }
+
+    items.sort((a, b) => {
+        const byDate = a.date.localeCompare(b.date);
+        if (byDate !== 0) return byDate;
+        const byCat = a.categoryPriority - b.categoryPriority;
+        if (byCat !== 0) return byCat;
+        return a.title.localeCompare(b.title, "ja");
+    });
+
+    return items.slice(0, 40);
+}
+
 export default async function Home() {
     const supabase = await createSupabaseServer();
     const today = getTodayInTokyo();
+    const { start: monthStart, end: monthEnd } = getTokyoCalendarMonthBounds(today);
 
     const [
         { data: employees },
         { data: qualifications },
         { data: vehicles },
         { data: alcoholChecks },
+        { data: healthThisMonth },
     ] = await Promise.all([
         supabase.from("employees").select("id, name, hire_date, branch, termination_date").is("deleted_at", null),
         supabase.from("employee_qualifications").select(`
@@ -133,7 +266,11 @@ export default async function Home() {
             employees!inner(id, name, branch),
             qualification_master(name, category)
         `).is("employees.deleted_at", null).not("expiry_date", "is", null).order("expiry_date", { ascending: true }),
-        supabase.from("vehicles").select("plate_number, vehicle_name, inspection_expiry").is("deleted_at", null).order("inspection_expiry", { ascending: true }),
+        supabase
+            .from("vehicles")
+            .select("id, plate_number, vehicle_name, inspection_expiry, liability_insurance_expiry, voluntary_insurance_expiry")
+            .is("deleted_at", null)
+            .order("inspection_expiry", { ascending: true }),
         supabase.from("alcohol_checks").select(`
             id,
             employee_id,
@@ -142,6 +279,20 @@ export default async function Home() {
             location,
             employee:employees!alcohol_checks_employee_id_fkey(name, branch)
         `).is("deleted_at", null).gte("check_datetime", `${today}T00:00:00`).lte("check_datetime", `${today}T23:59:59`),
+        supabase
+            .from("health_checks")
+            .select(`
+                id,
+                check_date,
+                check_type,
+                hospital_name,
+                employees(name, branch)
+            `)
+            .is("deleted_at", null)
+            .gte("check_date", monthStart)
+            .lte("check_date", monthEnd)
+            .order("check_date", { ascending: true })
+            .limit(100),
     ]);
 
     const employeeRows = (employees || []) as DashboardEmployeeRow[];
@@ -158,6 +309,13 @@ export default async function Home() {
     const warningCount = alerts.filter((alert) => alert.level === "warning").length;
     const infoCount = alerts.filter((alert) => alert.level === "info").length;
     const urgentAlertCount = expiredCount + urgentCount;
+
+    const monthScheduleItems = buildMonthScheduleItems({
+        todayYmd: today,
+        qualifications: (qualifications || []) as QualificationAlertRow[],
+        vehicles: (vehicles || []) as DashboardVehicleMonthRow[],
+        healthRows: (healthThisMonth || []) as DashboardHealthMonthRow[],
+    });
 
     const vehicleTasks = ((vehicles || []) as DashboardVehicleRow[])
         .filter((vehicle) => !!vehicle.inspection_expiry && isBefore(new Date(vehicle.inspection_expiry), addDays(now, 30)))
@@ -215,7 +373,7 @@ export default async function Home() {
             eyebrow: "要確認",
         },
         {
-            title: "本日のアルコール",
+            title: "本日のアルコールチェック",
             value: pendingAlcoholCount,
             href: buildAlcoholChecksHref({ date: today, status: abnormalAlcohol > 0 ? "abnormal" : undefined }),
             description: abnormalAlcohol > 0
@@ -303,7 +461,7 @@ export default async function Home() {
         ...missingAlcoholEmployees.map((employee, index) => ({
             id: `alcohol-missing-${employee.id}`,
             title: employee.name,
-            subtitle: `${employee.branch || "拠点未設定"} / 本日のアルコール記録が未入力`,
+            subtitle: `${employee.branch || "拠点未設定"} / 本日のアルコールチェックが未入力`,
             href: buildAlcoholChecksHref({
                 date: today,
                 employee: employee.id,
@@ -326,7 +484,7 @@ export default async function Home() {
         : abnormalAlcohol > 0
             ? `本日のアルコールチェックで不適正が ${countFormatter.format(abnormalAlcohol)}件あります。確認者と対応内容を記録し、運転可否を先に判断してください。`
             : missingAlcoholEmployees.length > 0
-                ? `本日のアルコール記録が未入力の社員が ${countFormatter.format(missingAlcoholEmployees.length)}名います。対象者ごとの記録追加へそのまま進めます。`
+                ? `本日のアルコールチェックが未入力の社員が ${countFormatter.format(missingAlcoholEmployees.length)}名います。対象者ごとの記録追加へそのまま進めます。`
                 : urgentCount > 0
                     ? `14日以内に期限を迎える資格が ${countFormatter.format(urgentCount)}件あります。今週中に講習日程と申込状況を確定すると安全です。`
                     : vehicleTasks.length > 0
@@ -350,8 +508,8 @@ export default async function Home() {
             href: "/vehicles",
         },
         {
-            title: "アルコール",
-            description: "本日の記録と未対応を確認",
+            title: "アルコールチェック",
+            description: "本日のチェック記録と未対応を確認",
             href: buildAlcoholChecksHref({ date: today }),
         },
     ];
@@ -374,7 +532,7 @@ export default async function Home() {
                                 車両期限を確認
                             </Button>
                             <Button className="w-full sm:w-auto" variant="outline" render={<Link href={buildAlcoholChecksHref({ date: today })} />}>
-                                本日のアルコールを見る
+                                本日のアルコールチェックを見る
                             </Button>
                         </div>
                         {dashboardTasks[0] ? (
@@ -453,6 +611,58 @@ export default async function Home() {
                 </div>
             </section>
 
+            <section className="rounded-[20px] border border-border/60 bg-card p-5 shadow-[0_1px_2px_rgba(38,42,46,0.035),0_8px_18px_rgba(38,42,46,0.04)] md:p-6">
+                <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl flex items-center gap-2">
+                            <Calendar className="h-5 w-5 text-muted-foreground" />
+                            今月の予定・期限
+                        </h2>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            健診の受診日・車両の期限・資格の有効期限が今月中のものです（最大40件）。
+                        </p>
+                    </div>
+                </div>
+                <div className="mt-4">
+                    {monthScheduleItems.length === 0 ? (
+                        <div className="rounded-[18px] border border-dashed border-border/70 bg-muted/25 px-4 py-10 text-center text-sm text-muted-foreground">
+                            今月中に該当する予定・期限はありません。
+                        </div>
+                    ) : (
+                        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                            {monthScheduleItems.map((item) => {
+                                const Icon = item.icon;
+                                return (
+                                    <li key={item.id}>
+                                        <Link
+                                            href={item.href}
+                                            className="group flex gap-3 rounded-[16px] border border-border/60 bg-background/60 p-3.5 transition-[border-color,background-color,box-shadow] duration-200 hover:border-primary/15 hover:bg-background/90 hover:shadow-[0_1px_2px_rgba(38,42,46,0.04),0_8px_18px_rgba(38,42,46,0.05)]"
+                                        >
+                                            <div className="flex size-9 shrink-0 items-center justify-center rounded-[14px] bg-muted/80 text-muted-foreground">
+                                                <Icon className="h-4 w-4" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <span className="text-xs font-medium tabular-nums text-muted-foreground">
+                                                        {item.date}
+                                                    </span>
+                                                    <Badge variant="outline" className="text-[10px] font-normal">
+                                                        {item.category}
+                                                    </Badge>
+                                                </div>
+                                                <p className="mt-1 truncate text-sm font-semibold">{item.title}</p>
+                                                <p className="truncate text-xs text-muted-foreground">{item.subtitle}</p>
+                                            </div>
+                                            <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100" />
+                                        </Link>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )}
+                </div>
+            </section>
+
             <div className="grid gap-4 xl:grid-cols-[1.35fr_0.95fr]">
                 <Card className="border-border/60">
                     <CardHeader>
@@ -461,7 +671,7 @@ export default async function Home() {
                             本日の未対応タスク
                         </CardTitle>
                         <CardDescription>
-                            資格、車両、アルコール記録を横断して、直接処理できる順で並べています。
+                            資格、車両、アルコールチェックを横断して、直接処理できる順で並べています。
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -655,7 +865,7 @@ export default async function Home() {
                     <span className={`font-medium tabular-nums ${alertStyles.urgent.strong}`}>14日以内 {countFormatter.format(urgentCount)}</span>
                     <span className={`font-medium tabular-nums ${alertStyles.warning.strong}`}>30日以内 {countFormatter.format(warningCount)}</span>
                     <span className={`font-medium tabular-nums ${alertStyles.info.strong}`}>60日以内 {countFormatter.format(infoCount)}</span>
-                    <span className={`font-medium tabular-nums ${alcoholTone?.strong || "text-foreground"}`}>アルコール未記録 {countFormatter.format(missingAlcoholEmployees.length)}</span>
+                    <span className={`font-medium tabular-nums ${alcoholTone?.strong || "text-foreground"}`}>アルコールチェック未記録 {countFormatter.format(missingAlcoholEmployees.length)}</span>
                 </div>
             </div>
         </div>

@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
+import { getAuthSnapshot } from "@/lib/auth-server";
 import { HealthChecksClient, type HealthCheckWithEmployee } from "@/components/health-checks/health-checks-client";
 
 const PAGE_SIZE = 50;
@@ -17,6 +19,11 @@ export default async function HealthChecksPage({
 }: {
     searchParams: Promise<{ page?: string; q?: string; type?: string; result?: string }>;
 }) {
+    const auth = await getAuthSnapshot();
+    if (auth.role === "technician") {
+        redirect("/me");
+    }
+
     const params = await searchParams;
     const currentPage = parsePageParam(params.page);
     const from = (currentPage - 1) * PAGE_SIZE;

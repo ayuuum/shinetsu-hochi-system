@@ -7,6 +7,7 @@ import type { AuthUser, UserRole } from "@/lib/auth-types";
 interface AuthState {
     user: AuthUser;
     role: UserRole;
+    linkedEmployeeId: string | null;
     isAdmin: boolean;
     isAdminOrHr: boolean;
     loading: boolean;
@@ -15,10 +16,10 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
-async function fetchRole(userId: string): Promise<UserRole> {
+async function fetchRoleAndLink(userId: string): Promise<{ role: UserRole; linkedEmployeeId: string | null }> {
     const { data, error } = await supabase
         .from("user_roles")
-        .select("role")
+        .select("role, employee_id")
         .eq("id", userId)
         .maybeSingle();
 
@@ -26,13 +27,23 @@ async function fetchRole(userId: string): Promise<UserRole> {
         throw error;
     }
 
-    return (data?.role as UserRole) ?? null;
+    return {
+        role: (data?.role as UserRole) ?? null,
+        linkedEmployeeId: data?.employee_id ?? null,
+    };
 }
 
-function buildAuthState(user: AuthUser, role: UserRole, loading: boolean, signOut: () => Promise<void>): AuthState {
+function buildAuthState(
+    user: AuthUser,
+    role: UserRole,
+    linkedEmployeeId: string | null,
+    loading: boolean,
+    signOut: () => Promise<void>
+): AuthState {
     return {
         user,
         role,
+        linkedEmployeeId,
         isAdmin: role === "admin",
         isAdminOrHr: role === "admin" || role === "hr",
         loading,
@@ -43,14 +54,17 @@ function buildAuthState(user: AuthUser, role: UserRole, loading: boolean, signOu
 export function AuthProvider({
     initialUser,
     initialRole,
+    initialLinkedEmployeeId,
     children,
 }: {
     initialUser: AuthUser;
     initialRole: UserRole;
+    initialLinkedEmployeeId: string | null;
     children: React.ReactNode;
 }) {
     const [user, setUser] = useState<AuthUser>(initialUser);
     const [role, setRole] = useState<UserRole>(initialRole);
+    const [linkedEmployeeId, setLinkedEmployeeId] = useState<string | null>(initialLinkedEmployeeId);
     const [loading, setLoading] = useState(false);
     const userRef = useRef<AuthUser>(initialUser);
     const roleRef = useRef<UserRole>(initialRole);
@@ -70,16 +84,20 @@ export function AuthProvider({
 
             if (!nextUser) {
                 setRole(null);
+                setLinkedEmployeeId(null);
                 setLoading(false);
                 return;
             }
 
             setLoading(true);
             try {
-                setRole(await fetchRole(nextUser.id));
+                const next = await fetchRoleAndLink(nextUser.id);
+                setRole(next.role);
+                setLinkedEmployeeId(next.linkedEmployeeId);
             } catch (error) {
                 console.error("Failed to refresh auth role:", error);
                 setRole(null);
+                setLinkedEmployeeId(null);
             } finally {
                 setLoading(false);
             }
@@ -112,8 +130,8 @@ export function AuthProvider({
     }, []);
 
     const value = useMemo(
-        () => buildAuthState(user, role, loading, signOut),
-        [loading, role, signOut, user]
+        () => buildAuthState(user, role, linkedEmployeeId, loading, signOut),
+        [linkedEmployeeId, loading, role, signOut, user]
     );
 
     return createElement(AuthContext.Provider, { value }, children);

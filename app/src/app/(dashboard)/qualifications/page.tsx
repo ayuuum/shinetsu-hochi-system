@@ -1,5 +1,7 @@
 import { addDays } from "date-fns";
+import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
+import { getAuthSnapshot } from "@/lib/auth-server";
 import { QualificationsClient, type QualificationRow } from "@/components/qualifications/qualifications-client";
 import { formatDateInTokyo, getTodayInTokyo } from "@/lib/date";
 import { getAlertLevel, type AlertLevel } from "@/lib/alert-utils";
@@ -28,6 +30,11 @@ export default async function QualificationsPage({
 }: {
     searchParams: Promise<{ page?: string; q?: string; category?: string; level?: AlertLevel | "all" }>;
 }) {
+    const auth = await getAuthSnapshot();
+    if (auth.role === "technician") {
+        redirect("/me");
+    }
+
     const params = await searchParams;
     const currentPage = parsePageParam(params.page);
     const from = (currentPage - 1) * PAGE_SIZE;

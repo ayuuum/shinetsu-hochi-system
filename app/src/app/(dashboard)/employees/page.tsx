@@ -1,5 +1,7 @@
+import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { EmployeesClient, type EmployeeWithQualCount } from "@/components/employees/employees-client";
+import { getAuthSnapshot } from "@/lib/auth-server";
 import { Tables } from "@/types/supabase";
 
 const PAGE_SIZE = 50;
@@ -14,6 +16,11 @@ export default async function EmployeesPage({
 }: {
     searchParams: Promise<{ page?: string; q?: string; branch?: string; qualification?: string }>;
 }) {
+    const auth = await getAuthSnapshot();
+    if (auth.role === "technician") {
+        redirect(auth.linkedEmployeeId ? `/employees/${auth.linkedEmployeeId}` : "/me");
+    }
+
     const params = await searchParams;
     const page = parsePageParam(params.page);
     const from = (page - 1) * PAGE_SIZE;

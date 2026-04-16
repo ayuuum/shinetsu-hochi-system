@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -34,6 +34,7 @@ import { Plus, Loader2, Beer, ShieldCheck, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { createAlcoholCheckAction } from "@/app/actions/admin-record-actions";
 import { alcoholCheckSchema, type AlcoholCheckValues } from "@/lib/validation/alcohol-check";
+import { useAuth } from "@/hooks/use-auth";
 
 type Employee = { id: string; name: string };
 
@@ -70,6 +71,7 @@ export function AddAlcoholCheckModal({
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const router = useRouter();
+    const { role } = useAuth();
 
     const form = useForm<AlcoholCheckValues>({
         resolver: zodResolver(alcoholCheckSchema),
@@ -77,6 +79,13 @@ export function AddAlcoholCheckModal({
     });
 
     const isAbnormal = form.watch("is_abnormal") === "不適正";
+
+    useEffect(() => {
+        if (!open || role !== "technician" || employees.length !== 1) return;
+        const onlyId = employees[0].id;
+        form.setValue("employee_id", onlyId);
+        form.setValue("checker_id", onlyId);
+    }, [open, role, employees, form]);
 
     const handleOpenChange = (nextOpen: boolean) => {
         setOpen(nextOpen);

@@ -92,12 +92,14 @@ export function VehiclesClient({
     currentSearch,
     currentPage,
     totalPages,
+    hidePageHeading = false,
 }: {
     initialVehicles: VehicleWithUser[];
     employees: { id: string; name: string }[];
     currentSearch: string;
     currentPage: number;
     totalPages: number;
+    hidePageHeading?: boolean;
 }) {
     const [search, setSearch] = useState(currentSearch);
     const [editingVehicle, setEditingVehicle] = useState<VehicleWithUser | null>(null);
@@ -160,13 +162,21 @@ export function VehiclesClient({
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">車両・備品</h1>
-                    <p className="text-muted-foreground mt-2">社用車の車検・保険および重要備品を管理します。</p>
+            {hidePageHeading ? (
+                isAdminOrHr ? (
+                    <div className="flex justify-end">
+                        <AddVehicleModal employees={employees} />
+                    </div>
+                ) : null
+            ) : (
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-2xl font-bold tracking-tight">車両</h2>
+                        <p className="text-muted-foreground mt-2">社用車の車検・保険期限を管理します。</p>
+                    </div>
+                    {isAdminOrHr && <AddVehicleModal employees={employees} />}
                 </div>
-                {isAdminOrHr && <AddVehicleModal employees={employees} />}
-            </div>
+            )}
 
             <div className="relative max-w-xl">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

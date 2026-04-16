@@ -4,12 +4,15 @@ import {
     HeartPulse,
     LayoutDashboard,
     ScrollText,
+    Tags,
     Truck,
     Upload,
+    UserCircle,
     Users,
     Wine,
     type LucideIcon,
 } from "lucide-react";
+import type { UserRole } from "@/lib/auth-types";
 
 export type AppNavSectionId = "overview" | "people" | "operations" | "safety" | "admin";
 
@@ -21,6 +24,10 @@ export type AppNavItem = {
     section: AppNavSectionId;
     keywords: string[];
     managerOnly?: boolean;
+    /** 技術者ロールではサイドバー・検索から除外 */
+    hideForTechnician?: boolean;
+    /** 技術者ロールのみ表示（例: マイプロフィール） */
+    technicianOnly?: boolean;
 };
 
 type AppNavSectionMeta = {
@@ -67,12 +74,22 @@ export const appNavItems: AppNavItem[] = [
         keywords: ["top", "home", "summary", "alert"],
     },
     {
+        title: "マイプロフィール",
+        description: "自分の社員情報・資格を確認",
+        url: "/me",
+        icon: UserCircle,
+        section: "people",
+        keywords: ["profile", "me", "自分", "マイページ"],
+        technicianOnly: true,
+    },
+    {
         title: "社員一覧",
         description: "社員台帳と基本情報を確認",
         url: "/employees",
         icon: Users,
         section: "people",
         keywords: ["employee", "member", "staff", "person"],
+        hideForTechnician: true,
     },
     {
         title: "資格・講習管理",
@@ -81,6 +98,16 @@ export const appNavItems: AppNavItem[] = [
         icon: ScrollText,
         section: "people",
         keywords: ["license", "training", "certificate", "expiry"],
+        hideForTechnician: true,
+    },
+    {
+        title: "資格マスタ",
+        description: "資格の種類（マスタ）を追加・編集",
+        url: "/qualifications/masters",
+        icon: Tags,
+        section: "people",
+        keywords: ["master", "qualification", "category", "license"],
+        managerOnly: true,
     },
     {
         title: "工事経歴",
@@ -89,14 +116,16 @@ export const appNavItems: AppNavItem[] = [
         icon: BriefcaseBusiness,
         section: "operations",
         keywords: ["project", "construction", "history", "career"],
+        hideForTechnician: true,
     },
     {
         title: "車両・備品",
-        description: "車検・保険・備品情報を確認",
+        description: "車検・保険と備品台帳（管理番号・購入情報）",
         url: "/vehicles",
         icon: Truck,
         section: "operations",
         keywords: ["vehicle", "car", "equipment", "insurance"],
+        hideForTechnician: true,
     },
     {
         title: "健康診断",
@@ -105,6 +134,7 @@ export const appNavItems: AppNavItem[] = [
         icon: HeartPulse,
         section: "safety",
         keywords: ["health", "checkup", "medical"],
+        hideForTechnician: true,
     },
     {
         title: "アルコールチェック",
@@ -134,22 +164,70 @@ export const appNavItems: AppNavItem[] = [
     },
 ];
 
-export function isAppNavActive(pathname: string, url: string) {
+function navItemMatches(pathname: string, url: string) {
     if (url === "/") {
         return pathname === "/";
     }
     return pathname === url || pathname.startsWith(`${url}/`);
 }
 
-export function getVisibleAppNavItems(isAdminOrHr: boolean) {
-    return appNavItems.filter((item) => !item.managerOnly || isAdminOrHr);
+export function getBestMatchingNavUrl(pathname: string, candidateUrls: string[]) {
+    const candidates = candidateUrls.filter((url) => navItemMatches(pathname, url));
+    if (candidates.length === 0) {
+        return null;
+    }
+    return candidates.reduce((a, b) => (a.length >= b.length ? a : b));
 }
 
-export function getGroupedAppNavigation(isAdminOrHr: boolean) {
-    const visibleItems = getVisibleAppNavItems(isAdminOrHr);
+/** サイドバーでは `isAdminOrHr` を渡し、表示中メニューだけで最長一致させる */
+export function isAppNavActive(
+    pathname: string,
+    url: string,
+    isAdminOrHr?: boolean,
+    role: UserRole | null = null,
+    linkedEmployeeId: string | null = null
+) {
+    if (url === "/me" && role === "technician" && linkedEmployeeId) {
+        if (pathname === "/me") return true;
+        if (pathname === `/employees/${linkedEmployeeId}`) return true;
+        if (pathname.startsWith(`/employees/${linkedEmployeeId}/`)) return true;
+        return false;
+    }
+
+    const urls = (isAdminOrHr === undefined
+        ? appNavItems
+        : getVisibleAppNavItems(isAdminOrHr, role, linkedEmployeeId)
+    ).map((item) => item.url);
+    const best = getBestMatchingNavUrl(pathname, urls);
+    return best === url;
+}
+
+export function getVisibleAppNavItems(
+    isAdminOrHr: boolean,
+    role: UserRole | null = null,
+    linkedEmployeeId: string | null = null
+) {
+    return appNavItems.filter((item) => {
+        if (item.managerOnly && !isAdminOrHr) return false;
+        if (item.technicianOnly) {
+            return role === "technician" && !!linkedEmployeeId;
+        }
+        if (role === "technician" && item.hideForTechnician) return false;
+        return true;
+    });
+}
+
+export function getGroupedAppNavigation(
+    isAdminOrHr: boolean,
+    role: UserRole | null = null,
+    linkedEmployeeId: string | null = null
+) {
+    const visibleItems = getVisibleAppNavItems(isAdminOrHr, role, linkedEmployeeId);
     const order: AppNavSectionId[] = isAdminOrHr
         ? ["overview", "people", "operations", "safety", "admin"]
-        : ["overview", "operations", "people", "safety"];
+        : role === "technician"
+            ? ["overview", "people", "safety"]
+            : ["overview", "operations", "people", "safety"];
 
     return order
         .map((sectionId) => ({
@@ -159,8 +237,25 @@ export function getGroupedAppNavigation(isAdminOrHr: boolean) {
         .filter((section) => section.items.length > 0);
 }
 
-export function findAppNavItem(pathname: string) {
-    return appNavItems.find((item) => isAppNavActive(pathname, item.url)) || appNavItems[0];
+export function findAppNavItem(
+    pathname: string,
+    opts?: { role: UserRole; linkedEmployeeId: string | null }
+) {
+    if (opts?.role === "technician" && opts.linkedEmployeeId) {
+        if (
+            pathname === "/me"
+            || pathname === `/employees/${opts.linkedEmployeeId}`
+            || pathname.startsWith(`/employees/${opts.linkedEmployeeId}/`)
+        ) {
+            return appNavItems.find((item) => item.url === "/me") || appNavItems[0];
+        }
+    }
+
+    const best = getBestMatchingNavUrl(pathname, appNavItems.map((item) => item.url));
+    if (!best) {
+        return appNavItems[0];
+    }
+    return appNavItems.find((item) => item.url === best) || appNavItems[0];
 }
 
 export function findAppNavItemByUrl(url: string) {

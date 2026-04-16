@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,7 +30,8 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { QualificationRow } from "@/components/qualifications/qualifications-client";
@@ -54,7 +55,11 @@ interface EditQualificationModalProps {
 
 export function EditQualificationModal({ qualification, open, onOpenChange }: EditQualificationModalProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [certificateFile, setCertificateFile] = useState<File | null>(null);
+    const [removeCertificate, setRemoveCertificate] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
+    const employeeId = qualification.employees?.id;
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -82,28 +87,78 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
         }
     }, [open, qualification, form]);
 
+    useEffect(() => {
+        if (!open) {
+            setCertificateFile(null);
+            setRemoveCertificate(false);
+        }
+    }, [open]);
+
     async function onSubmit(values: FormValues) {
         setIsSubmitting(true);
-        const { error } = await supabase
-            .from("employee_qualifications")
-            .update({
+
+        const previousPath = qualification.certificate_url;
+        let uploadedPath: string | null = null;
+
+        try {
+            let nextCertificateUrl: string | null | undefined = undefined;
+
+            if (certificateFile) {
+                if (!employeeId) {
+                    toast.error("社員情報が取得できないため証書をアップロードできません。");
+                    return;
+                }
+                const ext = certificateFile.name.split(".").pop();
+                const filePath = `${employeeId}/${crypto.randomUUID()}.${ext}`;
+                const { error: uploadError } = await supabase.storage
+                    .from("certificates")
+                    .upload(filePath, certificateFile);
+
+                if (uploadError) {
+                    toast.error("証書画像のアップロードに失敗しました: " + uploadError.message);
+                    return;
+                }
+                uploadedPath = filePath;
+                nextCertificateUrl = filePath;
+            } else if (removeCertificate) {
+                nextCertificateUrl = null;
+            }
+
+            const updatePayload: Record<string, unknown> = {
                 acquired_date: values.acquired_date || null,
                 expiry_date: values.expiry_date || null,
                 certificate_number: values.certificate_number || null,
                 issuing_authority: values.issuing_authority || null,
                 status: values.status,
                 notes: values.notes || null,
-            })
-            .eq("id", qualification.id);
+            };
 
-        setIsSubmitting(false);
+            if (nextCertificateUrl !== undefined) {
+                updatePayload.certificate_url = nextCertificateUrl;
+            }
 
-        if (error) {
-            toast.error("更新に失敗しました: " + error.message);
-        } else {
+            const { error } = await supabase
+                .from("employee_qualifications")
+                .update(updatePayload)
+                .eq("id", qualification.id);
+
+            if (error) {
+                if (uploadedPath) {
+                    await supabase.storage.from("certificates").remove([uploadedPath]);
+                }
+                toast.error("更新に失敗しました: " + error.message);
+                return;
+            }
+
+            if (nextCertificateUrl !== undefined && previousPath && previousPath !== nextCertificateUrl) {
+                await supabase.storage.from("certificates").remove([previousPath]);
+            }
+
             toast.success("資格情報を更新しました");
             onOpenChange(false);
             router.refresh();
+        } finally {
+            setIsSubmitting(false);
         }
     }
 
@@ -177,6 +232,79 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
                                 <FormMessage />
                             </FormItem>
                         )} />
+
+                        <div className="space-y-3 rounded-lg border border-border/60 p-4">
+                            <p className="text-sm font-medium">証書画像（任意）</p>
+                            <p className="text-xs text-muted-foreground">
+                                スキャンした免状・証書を保存できます。差し替える場合は新しい画像を選択してください。
+                            </p>
+                            {qualification.certificate_url && !removeCertificate && !certificateFile ? (
+                                <p className="text-xs text-muted-foreground">現在、証書画像が登録されています。</p>
+                            ) : null}
+                            {certificateFile ? (
+                                <p className="text-xs text-foreground">選択中: {certificateFile.name}</p>
+                            ) : null}
+                            <div className="flex flex-wrap items-center gap-3">
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/*,.pdf"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        const f = e.target.files?.[0];
+                                        setCertificateFile(f ?? null);
+                                        if (f) setRemoveCertificate(false);
+                                    }}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => fileInputRef.current?.click()}
+                                >
+                                    <Upload className="mr-2 h-4 w-4" />
+                                    {qualification.certificate_url ? "画像を差し替え" : "画像をアップロード"}
+                                </Button>
+                                {certificateFile ? (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            setCertificateFile(null);
+                                            if (fileInputRef.current) fileInputRef.current.value = "";
+                                        }}
+                                    >
+                                        選択をクリア
+                                    </Button>
+                                ) : qualification.certificate_url && !removeCertificate ? (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setRemoveCertificate(true)}
+                                    >
+                                        登録画像を削除
+                                    </Button>
+                                ) : null}
+                            </div>
+                            {qualification.certificate_url ? (
+                                <label className="flex cursor-pointer items-center gap-2 text-sm">
+                                    <Checkbox
+                                        checked={removeCertificate}
+                                        onCheckedChange={(c) => {
+                                            const on = c === true;
+                                            setRemoveCertificate(on);
+                                            if (on) {
+                                                setCertificateFile(null);
+                                                if (fileInputRef.current) fileInputRef.current.value = "";
+                                            }
+                                        }}
+                                    />
+                                    <span>登録済みの証書画像を削除する</span>
+                                </label>
+                            ) : null}
+                        </div>
 
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>キャンセル</Button>

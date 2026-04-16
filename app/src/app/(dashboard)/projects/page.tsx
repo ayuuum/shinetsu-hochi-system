@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
+import { getAuthSnapshot } from "@/lib/auth-server";
 import { ProjectsClient, type ConstructionWithEmployee } from "@/components/projects/projects-client";
 
 const PAGE_SIZE = 50;
@@ -17,6 +19,11 @@ export default async function ProjectsPage({
 }: {
     searchParams: Promise<{ page?: string; q?: string; category?: string }>;
 }) {
+    const auth = await getAuthSnapshot();
+    if (auth.role === "technician") {
+        redirect("/me");
+    }
+
     const params = await searchParams;
     const currentPage = parsePageParam(params.page);
     const from = (currentPage - 1) * PAGE_SIZE;

@@ -49,11 +49,11 @@ export function CommandSearch({
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const router = useRouter();
     const pathname = usePathname();
-    const { isAdminOrHr } = useAuth();
+    const { isAdminOrHr, role, linkedEmployeeId } = useAuth();
 
     const actionItems = useMemo(
         () =>
-            getVisibleAppNavItems(isAdminOrHr)
+            getVisibleAppNavItems(isAdminOrHr, role, linkedEmployeeId)
                 .filter((item) => item.url !== pathname)
                 .map<SearchResult>((item) => ({
                     id: item.url,
@@ -62,20 +62,28 @@ export function CommandSearch({
                     subtitle: item.description,
                     href: item.url,
                 })),
-        [isAdminOrHr, pathname]
+        [isAdminOrHr, linkedEmployeeId, pathname, role]
     );
 
     const visibleRecentItems = recentItems.filter((item) => {
         if (item.type !== "action") return true;
         const navItem = findAppNavItemByUrl(item.href);
-        return !!navItem && (!navItem.managerOnly || isAdminOrHr);
+        if (!navItem) return false;
+        if (navItem.managerOnly && !isAdminOrHr) return false;
+        if (navItem.hideForTechnician && role === "technician") return false;
+        if (navItem.technicianOnly && role !== "technician") return false;
+        return true;
     });
 
     const filteredActionItems = query.trim().length === 0
         ? actionItems.slice(0, 6)
         : actionItems.filter((item) => {
             const navItem = findAppNavItemByUrl(item.href);
-            const haystack = [item.title, item.subtitle, ...(navItem?.keywords || [])]
+            if (!navItem) return false;
+            if (navItem.managerOnly && !isAdminOrHr) return false;
+            if (navItem.hideForTechnician && role === "technician") return false;
+            if (navItem.technicianOnly && role !== "technician") return false;
+            const haystack = [item.title, item.subtitle, ...(navItem.keywords || [])]
                 .join(" ")
                 .toLowerCase();
             return haystack.includes(query.trim().toLowerCase());

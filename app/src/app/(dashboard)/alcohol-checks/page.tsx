@@ -1,4 +1,5 @@
 import { createSupabaseServer } from "@/lib/supabase-server";
+import { getAuthSnapshot } from "@/lib/auth-server";
 import { AlcoholClient, type AlcoholCheckRow } from "@/components/alcohol/alcohol-client";
 import { getTodayInTokyo } from "@/lib/date";
 
@@ -28,6 +29,7 @@ export default async function AlcoholChecksPage({
     let totalPages = 1;
 
     try {
+        const auth = await getAuthSnapshot();
         const supabase = await createSupabaseServer();
         const dateStart = `${currentDate}T00:00:00`;
         const dateEnd = `${currentDate}T23:59:59`;
@@ -56,13 +58,19 @@ export default async function AlcoholChecksPage({
             checksQuery = checksQuery.eq("employee_id", currentEmployee);
         }
 
+        let employeesQuery = supabase
+            .from("employees")
+            .select("id, name")
+            .is("deleted_at", null)
+            .order("name");
+
+        if (auth.role === "technician" && auth.linkedEmployeeId) {
+            employeesQuery = employeesQuery.eq("id", auth.linkedEmployeeId);
+        }
+
         const [checksResult, empResult] = await Promise.all([
             checksQuery,
-            supabase
-                .from("employees")
-                .select("id, name")
-                .is("deleted_at", null)
-                .order("name"),
+            employeesQuery,
         ]);
         checksData = (checksResult.data as AlcoholCheckRow[]) || [];
         empData = empResult.data || [];

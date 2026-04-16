@@ -350,6 +350,47 @@ export type Database = {
           },
         ]
       }
+      employee_it_accounts: {
+        Row: {
+          created_at: string | null
+          employee_id: string
+          id: string
+          login_id: string | null
+          notes: string | null
+          service_name: string
+          sort_order: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          employee_id: string
+          id?: string
+          login_id?: string | null
+          notes?: string | null
+          service_name: string
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          employee_id?: string
+          id?: string
+          login_id?: string | null
+          notes?: string | null
+          service_name?: string
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_it_accounts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_life_insurances: {
         Row: {
           agency: string | null
@@ -468,6 +509,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      equipment_items: {
+        Row: {
+          branch: string | null
+          category: string | null
+          created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          management_number: string
+          name: string
+          notes: string | null
+          purchase_amount: number | null
+          purchase_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          branch?: string | null
+          category?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          management_number: string
+          name: string
+          notes?: string | null
+          purchase_amount?: number | null
+          purchase_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          branch?: string | null
+          category?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          management_number?: string
+          name?: string
+          notes?: string | null
+          purchase_amount?: number | null
+          purchase_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       employees: {
         Row: {

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
 import { SearchTrigger } from "@/components/search-trigger";
 import { findAppNavItem, getAppNavSectionMeta } from "@/lib/app-navigation";
+import { useAuth } from "@/hooks/use-auth";
 import { usePathname } from "next/navigation";
 import { PanelLeftIcon } from "lucide-react";
 
@@ -16,12 +17,13 @@ const headerDateFormatter = new Intl.DateTimeFormat("ja-JP", {
 export function DashboardHeader() {
     const pathname = usePathname();
     const { state, toggleSidebar, isMobile } = useSidebar();
-    const activeItem = findAppNavItem(pathname);
+    const { role, linkedEmployeeId } = useAuth();
+    const activeItem = findAppNavItem(pathname, { role, linkedEmployeeId });
     const section = getAppNavSectionMeta(activeItem.section);
     const sidebarActionLabel = isMobile ? "メニュー" : state === "expanded" ? "サイドバーを閉じる" : "サイドバーを開く";
 
     return (
-        <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border/40 supports-[backdrop-filter]:bg-background/80">
+        <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border/40 supports-[backdrop-filter]:bg-background/80 print:hidden">
             <div className="mx-auto max-w-7xl px-3 md:px-6 h-14 flex items-center justify-between gap-4">
                 <div className="flex min-w-0 items-center gap-2 md:gap-4">
                     <Button

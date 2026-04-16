@@ -1,5 +1,6 @@
 import { createSupabaseServer } from "@/lib/supabase-server";
-import { notFound } from "next/navigation";
+import { getAuthSnapshot } from "@/lib/auth-server";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +13,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileImage } from "lucide-react";
 import { AddTrainingModal } from "@/components/qualifications/add-training-modal";
 import { alertStyles } from "@/lib/alert-utils";
 
@@ -33,6 +34,7 @@ function DetailField({ label, value, tone = "default" }: { label: string; value:
 
 export default async function QualificationDetailPage({ params }: PageProps) {
     const { id } = await params;
+    const auth = await getAuthSnapshot();
     const supabase = await createSupabaseServer();
 
     const { data: qualification, error } = await supabase
@@ -48,6 +50,23 @@ export default async function QualificationDetailPage({ params }: PageProps) {
 
     if (error || !qualification) {
         notFound();
+    }
+
+    const qualEmployeeId = qualification.employee_id as string | null;
+    if (auth.role === "technician") {
+        if (!auth.linkedEmployeeId || qualEmployeeId !== auth.linkedEmployeeId) {
+            redirect(auth.linkedEmployeeId ? `/employees/${auth.linkedEmployeeId}` : "/me");
+        }
+    }
+
+    let certificateSignedUrl: string | null = null;
+    if (qualification.certificate_url) {
+        const { data: signed, error: signError } = await supabase.storage
+            .from("certificates")
+            .createSignedUrl(qualification.certificate_url, 3600);
+        if (!signError && signed?.signedUrl) {
+            certificateSignedUrl = signed.signedUrl;
+        }
     }
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -172,6 +191,24 @@ export default async function QualificationDetailPage({ params }: PageProps) {
                                 />
                             </div>
                         )}
+                        {certificateSignedUrl ? (
+                            <div className="sm:col-span-2">
+                                <DetailField
+                                    label="証書画像"
+                                    value={
+                                        <a
+                                            href={certificateSignedUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                                        >
+                                            <FileImage className="h-4 w-4 shrink-0" />
+                                            証書画像を表示
+                                        </a>
+                                    }
+                                />
+                            </div>
+                        ) : null}
                     </CardContent>
                 </Card>
 

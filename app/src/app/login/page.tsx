@@ -5,6 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { BrandLogo } from "@/components/brand-logo";
 import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
@@ -29,8 +37,14 @@ function LoginForm() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [resetOpen, setResetOpen] = useState(false);
+    const [resetEmail, setResetEmail] = useState("");
+    const [resetLoading, setResetLoading] = useState(false);
+    const [resetMessage, setResetMessage] = useState("");
+    const [resetError, setResetError] = useState("");
     const router = useRouter();
     const searchParams = useSearchParams();
+    const authError = searchParams.get("authError");
 
     async function handleLogin(e: React.FormEvent) {
         e.preventDefault();
@@ -80,8 +94,46 @@ function LoginForm() {
         }
     }
 
+    async function handlePasswordReset(e: React.FormEvent) {
+        e.preventDefault();
+        setResetError("");
+        setResetMessage("");
+        const trimmed = resetEmail.trim().toLowerCase();
+        if (!trimmed) {
+            setResetError("メールアドレスを入力してください。");
+            return;
+        }
+
+        setResetLoading(true);
+        const origin = window.location.origin;
+        const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent("/auth/update-password")}`;
+        const { error: resetErr } = await supabase.auth.resetPasswordForEmail(trimmed, {
+            redirectTo,
+        });
+        setResetLoading(false);
+
+        if (resetErr) {
+            setResetError(
+                resetErr.message.includes("rate")
+                    ? "しばらく時間をおいてから再度お試しください。"
+                    : "送信に失敗しました。メールアドレスをご確認ください。",
+            );
+            return;
+        }
+
+        setResetMessage(
+            "パスワード再設定用のメールを送信しました。届いたリンクから手続きを完了してください。",
+        );
+    }
+
     return (
+        <>
         <form onSubmit={handleLogin} className="space-y-4">
+            {authError === "callback" && (
+                <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
+                    認証リンクの処理に失敗しました。リンクの有効期限が切れている可能性があります。再度「パスワードを忘れた場合」からお試しください。
+                </p>
+            )}
             <div className="space-y-2">
                 <label htmlFor="email" className="text-sm font-medium">メールアドレス</label>
                 <Input
@@ -112,7 +164,62 @@ function LoginForm() {
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 ログイン
             </Button>
+            <p className="text-center text-sm">
+                <button
+                    type="button"
+                    className="text-primary underline-offset-4 hover:underline"
+                    onClick={() => {
+                        setResetOpen(true);
+                        setResetEmail(email.trim());
+                        setResetError("");
+                        setResetMessage("");
+                    }}
+                >
+                    パスワードを忘れた場合
+                </button>
+            </p>
         </form>
+
+        <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>パスワードの再設定</DialogTitle>
+                    <DialogDescription>
+                        登録済みのメールアドレスに、再設定用のリンクを送信します。
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handlePasswordReset} className="space-y-4">
+                    <div className="space-y-2">
+                        <label htmlFor="reset-email" className="text-sm font-medium">メールアドレス</label>
+                        <Input
+                            id="reset-email"
+                            type="email"
+                            value={resetEmail}
+                            onChange={(e) => setResetEmail(e.target.value)}
+                            placeholder="example@shinetsu-hochi.co.jp"
+                            required
+                            autoComplete="email"
+                        />
+                    </div>
+                    {resetError && (
+                        <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">{resetError}</p>
+                    )}
+                    {resetMessage && (
+                        <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">{resetMessage}</p>
+                    )}
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button type="button" variant="outline" onClick={() => setResetOpen(false)}>
+                            閉じる
+                        </Button>
+                        <Button type="submit" disabled={resetLoading}>
+                            {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            送信する
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+        </>
     );
 }
 

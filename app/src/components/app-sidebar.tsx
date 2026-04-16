@@ -25,14 +25,14 @@ import { getGroupedAppNavigation, isAppNavActive } from "@/lib/app-navigation";
 
 export function AppSidebar() {
     const pathname = usePathname();
-    const { user, role, signOut, isAdminOrHr } = useAuth();
+    const { user, role, signOut, isAdminOrHr, linkedEmployeeId } = useAuth();
 
     const displayName = user?.email?.split("@")[0] || "ユーザー";
     const roleLabel = role === "admin" ? "管理者" : role === "hr" ? "人事" : role === "technician" ? "技術者" : "";
-    const navigationSections = getGroupedAppNavigation(isAdminOrHr);
+    const navigationSections = getGroupedAppNavigation(isAdminOrHr, role, linkedEmployeeId);
 
     return (
-        <Sidebar collapsible="icon" className="border-r border-border bg-sidebar">
+        <Sidebar collapsible="icon" className="border-r border-border bg-sidebar print:hidden">
             <SidebarHeader className="border-b border-border/50 px-4 py-4">
                 <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
                     <BrandLogo
@@ -62,7 +62,7 @@ export function AppSidebar() {
                                         <SidebarMenuItem key={item.title}>
                                             <SidebarMenuButton
                                                 render={<Link href={item.url} />}
-                                                isActive={isAppNavActive(pathname, item.url)}
+                                                isActive={isAppNavActive(pathname, item.url, isAdminOrHr, role, linkedEmployeeId)}
                                                 tooltip={item.title}
                                                 className="transition-[background-color,color,box-shadow] duration-200"
                                             >

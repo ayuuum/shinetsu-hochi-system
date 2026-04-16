@@ -3,7 +3,11 @@ import { cache } from "react";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import type { AuthUser, UserRole } from "@/lib/auth-types";
 
-export const getAuthSnapshot = cache(async (): Promise<{ user: AuthUser; role: UserRole }> => {
+export const getAuthSnapshot = cache(async (): Promise<{
+    user: AuthUser;
+    role: UserRole;
+    linkedEmployeeId: string | null;
+}> => {
     const supabase = await createSupabaseServer();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -12,12 +16,12 @@ export const getAuthSnapshot = cache(async (): Promise<{ user: AuthUser; role: U
     }
 
     if (!user) {
-        return { user: null, role: null };
+        return { user: null, role: null, linkedEmployeeId: null };
     }
 
     const { data: roleRow, error: roleError } = await supabase
         .from("user_roles")
-        .select("role")
+        .select("role, employee_id")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -31,5 +35,6 @@ export const getAuthSnapshot = cache(async (): Promise<{ user: AuthUser; role: U
             email: user.email ?? null,
         },
         role: (roleRow?.role as UserRole) ?? null,
+        linkedEmployeeId: roleRow?.employee_id ?? null,
     };
 });
