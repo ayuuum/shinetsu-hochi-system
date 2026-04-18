@@ -20,6 +20,17 @@ interface AddDamageInsuranceModalProps {
     onSuccess?: () => void;
 }
 
+function applyDamageInsuranceFieldErrors(
+    form: ReturnType<typeof useForm<DamageInsuranceValues>>,
+    fieldErrors: Partial<Record<keyof DamageInsuranceValues, string>>
+) {
+    for (const [field, message] of Object.entries(fieldErrors) as [keyof DamageInsuranceValues, string | undefined][]) {
+        if (message) {
+            form.setError(field, { message });
+        }
+    }
+}
+
 export function AddDamageInsuranceModal({ employeeId, existingRecord, onSuccess }: AddDamageInsuranceModalProps) {
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,9 +78,7 @@ export function AddDamageInsuranceModal({ employeeId, existingRecord, onSuccess 
                 }
             } else {
                 if ('fieldErrors' in result && result.fieldErrors) {
-                    Object.entries(result.fieldErrors).forEach(([field, message]) => {
-                        form.setError(field as any, { message: message as string });
-                    });
+                    applyDamageInsuranceFieldErrors(form, result.fieldErrors);
                 } else {
                     toast.error(result.error);
                 }

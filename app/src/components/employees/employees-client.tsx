@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { TableCellLink } from "@/components/shared/table-cell-link";
 import { ActiveFilters } from "@/components/shared/active-filters";
 import { MobileFiltersSheet } from "@/components/shared/mobile-filters-sheet";
+import { formatDisplayDate } from "@/lib/date";
 
 export type EmployeeWithQualCount = Tables<"employees"> & {
     qualification_count: number;
@@ -85,6 +86,9 @@ export function EmployeesClient({
     totalPages = 1,
 }: EmployeesClientProps) {
     const [search, setSearch] = useState(currentSearch);
+    const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+    const [mobileBranch, setMobileBranch] = useState(currentBranch);
+    const [mobileQualification, setMobileQualification] = useState(currentQualification);
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
     const pathname = usePathname();
@@ -133,6 +137,12 @@ export function EmployeesClient({
     }, [currentSearch]);
 
     useEffect(() => {
+        if (isMobileFiltersOpen) return;
+        setMobileBranch(currentBranch);
+        setMobileQualification(currentQualification);
+    }, [currentBranch, currentQualification, isMobileFiltersOpen]);
+
+    useEffect(() => {
         const timer = window.setTimeout(() => {
             if (search === currentSearch) return;
 
@@ -172,6 +182,26 @@ export function EmployeesClient({
         });
     };
 
+    const handleMobileFiltersOpenChange = (open: boolean) => {
+        if (open) {
+            setMobileBranch(currentBranch);
+            setMobileQualification(currentQualification);
+        }
+        setIsMobileFiltersOpen(open);
+    };
+
+    const applyMobileFilters = () => {
+        setIsMobileFiltersOpen(false);
+        startTransition(() => {
+            router.replace(buildEmployeesHref(pathname, {
+                search,
+                branch: mobileBranch,
+                qualification: mobileQualification,
+                page: 1,
+            }), { scroll: false });
+        });
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in duration-200">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -202,14 +232,25 @@ export function EmployeesClient({
                 <MobileFiltersSheet
                     title="社員を絞り込む"
                     description="拠点や資格で対象者を絞り込みます。"
+                    summary="拠点・資格"
                     activeCount={activeFilters.length}
-                    onClearAll={clearFilters}
+                    onClearAll={() => {
+                        clearFilters();
+                        setIsMobileFiltersOpen(false);
+                    }}
+                    open={isMobileFiltersOpen}
+                    onOpenChange={handleMobileFiltersOpenChange}
+                    footer={(
+                        <Button type="button" className="w-full" onClick={applyMobileFilters}>
+                            条件を適用
+                        </Button>
+                    )}
                 >
                     <div className="space-y-2">
                         <p className="text-sm font-medium">拠点</p>
                         <Select
-                            value={currentBranch || undefined}
-                            onValueChange={(value) => updateFilters({ branch: value && value !== "all" ? value : "", page: 1 })}
+                            value={mobileBranch || undefined}
+                            onValueChange={(value) => setMobileBranch(value && value !== "all" ? value : "")}
                         >
                             <SelectTrigger className="w-full">
                                 <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -227,8 +268,8 @@ export function EmployeesClient({
                         <p className="text-sm font-medium">資格</p>
                         <Select
                             items={qualificationOptions}
-                            value={currentQualification || undefined}
-                            onValueChange={(value) => updateFilters({ qualification: value && value !== "all" ? value : "", page: 1 })}
+                            value={mobileQualification || undefined}
+                            onValueChange={(value) => setMobileQualification(value && value !== "all" ? value : "")}
                         >
                             <SelectTrigger className="w-full">
                                 <Award className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -322,12 +363,12 @@ export function EmployeesClient({
                                     </div>
                                     <div className="grid grid-cols-2 gap-3 text-sm">
                                         <div className="space-y-1">
-                                            <p className="text-xs text-muted-foreground">役職</p>
+                                            <p className="text-sm text-muted-foreground">役職</p>
                                             <p className="font-medium">{emp.job_title || "-"}</p>
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="text-xs text-muted-foreground">入社日</p>
-                                            <p className="font-medium">{emp.hire_date || "-"}</p>
+                                            <p className="text-sm text-muted-foreground">入社日</p>
+                                            <p className="font-medium tabular-nums">{formatDisplayDate(emp.hire_date)}</p>
                                         </div>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
@@ -394,8 +435,8 @@ export function EmployeesClient({
                                         </TableCellLink>
                                     </TableCell>
                                     <TableCell className="text-sm">
-                                        <TableCellLink href={`/employees/${emp.id}`} className="text-sm hover:text-foreground">
-                                            {emp.hire_date || "-"}
+                                        <TableCellLink href={`/employees/${emp.id}`} className="text-sm tabular-nums hover:text-foreground">
+                                            {formatDisplayDate(emp.hire_date)}
                                         </TableCellLink>
                                     </TableCell>
                                     <TableCell className="text-center">

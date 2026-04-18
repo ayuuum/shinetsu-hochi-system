@@ -32,7 +32,10 @@ import { TableCellLink } from "@/components/shared/table-cell-link";
 import { ActiveFilters } from "@/components/shared/active-filters";
 import { MobileFiltersSheet } from "@/components/shared/mobile-filters-sheet";
 import { deleteProjectAction } from "@/app/actions/admin-record-actions";
-import { EQUIPMENT_OPTIONS, WORK_TYPE_OPTIONS } from "@/lib/validation/project";
+import { EQUIPMENT_OPTIONS } from "@/lib/validation/project";
+import { formatDisplayDate } from "@/lib/date";
+import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 export type ConstructionWithEmployee = Tables<"construction_records"> & {
     employees: { id: string; name: string; branch: string | null } | null;
@@ -83,6 +86,8 @@ export function ProjectsClient({
     const [search, setSearch] = useState(currentSearch);
     const [editingItem, setEditingItem] = useState<ConstructionWithEmployee | null>(null);
     const [deletingItem, setDeletingItem] = useState<ConstructionWithEmployee | null>(null);
+    const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+    const [mobileCategory, setMobileCategory] = useState(currentCategory);
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
     const pathname = usePathname();
@@ -114,6 +119,11 @@ export function ProjectsClient({
     useEffect(() => {
         setSearch(currentSearch);
     }, [currentSearch]);
+
+    useEffect(() => {
+        if (isMobileFiltersOpen) return;
+        setMobileCategory(currentCategory);
+    }, [currentCategory, isMobileFiltersOpen]);
 
     useEffect(() => {
         const timer = window.setTimeout(() => {
@@ -163,6 +173,24 @@ export function ProjectsClient({
         });
     };
 
+    const handleMobileFiltersOpenChange = (open: boolean) => {
+        if (open) {
+            setMobileCategory(currentCategory);
+        }
+        setIsMobileFiltersOpen(open);
+    };
+
+    const applyMobileFilters = () => {
+        setIsMobileFiltersOpen(false);
+        startTransition(() => {
+            router.replace(buildProjectsHref(pathname, {
+                search,
+                category: mobileCategory,
+                page: 1,
+            }), { scroll: false });
+        });
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -183,7 +211,7 @@ export function ProjectsClient({
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                         aria-label="工事名・発注者・担当者で検索"
-                        placeholder="物件名・発注者・場所..."
+                        placeholder="物件名・発注者・場所で検索…"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="h-11 pl-9 rounded-2xl"
@@ -192,14 +220,25 @@ export function ProjectsClient({
                 <MobileFiltersSheet
                     title="工事記録を絞り込む"
                     description="項目で施工実績を絞り込みます。"
+                    summary="設備種別"
                     activeCount={activeFilters.length}
-                    onClearAll={clearFilters}
+                    onClearAll={() => {
+                        clearFilters();
+                        setIsMobileFiltersOpen(false);
+                    }}
+                    open={isMobileFiltersOpen}
+                    onOpenChange={handleMobileFiltersOpenChange}
+                    footer={(
+                        <Button type="button" className="w-full" onClick={applyMobileFilters}>
+                            条件を適用
+                        </Button>
+                    )}
                 >
                     <div className="space-y-2">
                         <p className="text-sm font-medium">設備種別</p>
                         <Select
-                            value={currentCategory || undefined}
-                            onValueChange={(value) => updateFilters({ category: value && value !== "all" ? value : "", page: 1 })}
+                            value={mobileCategory || undefined}
+                            onValueChange={(value) => setMobileCategory(value && value !== "all" ? value : "")}
                         >
                             <SelectTrigger className="w-full">
                                 <SelectValue placeholder="全ての種別" />
@@ -220,7 +259,7 @@ export function ProjectsClient({
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                         aria-label="工事名・場所・担当者で検索"
-                        placeholder="物件名・発注者・場所で検索..."
+                        placeholder="物件名・発注者・場所で検索…"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="pl-9 rounded-full shadow-sm"
@@ -264,14 +303,16 @@ export function ProjectsClient({
                                         </div>
                                     </div>
                                     {showActions ? (
-                                        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-full p-1 border">
-                                            <Button variant="ghost" size="icon-sm" className="rounded-full" onClick={() => setEditingItem(record)}>
+                                        <RecordActionsMenu label={record.construction_name}>
+                                            <DropdownMenuItem onClick={() => setEditingItem(record)}>
                                                 <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon-sm" className="rounded-full text-destructive hover:text-destructive hover:bg-red-100 dark:hover:bg-red-900/40" onClick={() => setDeletingItem(record)}>
+                                                編集
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem variant="destructive" onClick={() => setDeletingItem(record)}>
                                                 <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
+                                                削除
+                                            </DropdownMenuItem>
+                                        </RecordActionsMenu>
                                     ) : null}
                                 </div>
                                 <div className="flex flex-wrap gap-2 mt-1">
@@ -286,17 +327,17 @@ export function ProjectsClient({
                                 </div>
                                 <div className="grid grid-cols-2 gap-y-4 gap-x-3 text-sm mt-2 rounded-2xl bg-slate-50 dark:bg-slate-900/50 p-4 border">
                                     <div className="space-y-1">
-                                        <p className="text-xs font-medium text-muted-foreground">工期</p>
-                                        <p className="font-semibold">{record.construction_date} 〜 {record.end_date || <span className="text-primary font-bold">施工中</span>}</p>
+                                        <p className="text-sm font-medium text-muted-foreground">工期</p>
+                                        <p className="font-semibold tabular-nums">{formatDisplayDate(record.construction_date)} 〜 {record.end_date ? formatDisplayDate(record.end_date) : <span className="text-primary font-bold">施工中</span>}</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-xs font-medium text-muted-foreground">契約金額</p>
+                                        <p className="text-sm font-medium text-muted-foreground">契約金額</p>
                                         <p className="font-semibold text-emerald-600 dark:text-emerald-400">
                                             {record.contract_amount ? `¥${record.contract_amount.toLocaleString()}` : "-"}
                                         </p>
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-xs font-medium text-muted-foreground">担当技術者</p>
+                                        <p className="text-sm font-medium text-muted-foreground">担当技術者</p>
                                         {record.employees?.id ? (
                                             <TableCellLink href={`/employees/${record.employees.id}`} className="font-semibold text-primary hover:underline">
                                                 {record.employees.name}
@@ -307,7 +348,7 @@ export function ProjectsClient({
                                         )}
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-xs font-medium text-muted-foreground">施工場所</p>
+                                        <p className="text-sm font-medium text-muted-foreground">施工場所</p>
                                         <p className="font-semibold line-clamp-1 flex items-center gap-1">
                                             <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
                                             {record.location || "-"}
@@ -365,8 +406,8 @@ export function ProjectsClient({
                                     </TableCell>
                                     <TableCell>
                                         <div className="space-y-1 text-sm font-medium">
-                                            <p className="text-muted-foreground">着工: <span className="text-foreground">{record.construction_date}</span></p>
-                                            <p className="text-muted-foreground">完工: {record.end_date ? <span className="text-foreground">{record.end_date}</span> : <span className="text-emerald-600 dark:text-emerald-400 font-bold">施工中</span>}</p>
+                                            <p className="text-muted-foreground">着工: <span className="text-foreground tabular-nums">{formatDisplayDate(record.construction_date)}</span></p>
+                                            <p className="text-muted-foreground">完工: {record.end_date ? <span className="text-foreground tabular-nums">{formatDisplayDate(record.end_date)}</span> : <span className="text-emerald-600 dark:text-emerald-400 font-bold">施工中</span>}</p>
                                         </div>
                                     </TableCell>
                                     <TableCell>
@@ -386,14 +427,16 @@ export function ProjectsClient({
                                     </TableCell>
                                     {showActions && (
                                         <TableCell>
-                                            <div className="flex items-center justify-center gap-1">
-                                                <Button variant="ghost" size="icon-sm" className="rounded-full hover:bg-slate-200 dark:hover:bg-slate-700" aria-label={`${record.construction_name}を編集`} onClick={() => setEditingItem(record)}>
-                                                    <Pencil className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon-sm" className="rounded-full hover:bg-red-100 dark:hover:bg-red-900/40 text-destructive hover:text-destructive" aria-label={`${record.construction_name}を削除`} onClick={() => setDeletingItem(record)}>
+                                            <RecordActionsMenu label={record.construction_name}>
+                                                <DropdownMenuItem onClick={() => setEditingItem(record)}>
+                                                    <Pencil className="h-4 w-4" />
+                                                    編集
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem variant="destructive" onClick={() => setDeletingItem(record)}>
                                                     <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
+                                                    削除
+                                                </DropdownMenuItem>
+                                            </RecordActionsMenu>
                                         </TableCell>
                                     )}
                                 </TableRow>
@@ -451,7 +494,7 @@ export function ProjectsClient({
                     open={!!deletingItem}
                     onOpenChange={(open) => !open && setDeletingItem(null)}
                     title="施工記録の削除"
-                    description={`${deletingItem?.construction_name} の施工記録を削除します。この操作は取り消せません。`}
+                    description={`${deletingItem?.construction_name} の施工記録を一覧から非表示にします。監査履歴は保持され、後から確認できます。`}
                     onConfirm={handleDelete}
                 />
             )}

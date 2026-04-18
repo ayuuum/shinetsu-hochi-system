@@ -479,18 +479,6 @@ export default async function Home() {
         .sort((a, b) => a.priority - b.priority)
         .slice(0, 10);
 
-    const heroMessage = expiredCount > 0
-        ? `資格期限切れが ${countFormatter.format(expiredCount)}件あります。対象者ごとに詳細へ移動して、更新手配から先に進めてください。`
-        : abnormalAlcohol > 0
-            ? `本日のアルコールチェックで不適正が ${countFormatter.format(abnormalAlcohol)}件あります。確認者と対応内容を記録し、運転可否を先に判断してください。`
-            : missingAlcoholEmployees.length > 0
-                ? `本日のアルコールチェックが未入力の社員が ${countFormatter.format(missingAlcoholEmployees.length)}名います。対象者ごとの記録追加へそのまま進めます。`
-                : urgentCount > 0
-                    ? `14日以内に期限を迎える資格が ${countFormatter.format(urgentCount)}件あります。今週中に講習日程と申込状況を確定すると安全です。`
-                    : vehicleTasks.length > 0
-                        ? `30日以内に車検期限を迎える車両が ${countFormatter.format(vehicleTasks.length)}件あります。予約状況と運用計画を先に調整できます。`
-                        : "今日の緊急対応はありません。資格更新、車両期限、日次記録の抜け漏れを横断で確認できます。";
-
     const quickLinks = [
         {
             title: "社員台帳",
@@ -516,7 +504,7 @@ export default async function Home() {
 
     return (
         <div className="space-y-5 animate-in fade-in duration-200">
-            <section className="rounded-[20px] border border-border/60 bg-card p-5 shadow-[0_1px_2px_rgba(38,42,46,0.035),0_8px_18px_rgba(38,42,46,0.04)] md:p-6">
+            <section className="rounded-[22px] border border-border/60 bg-card p-5 shadow-[0_1px_2px_rgba(38,42,46,0.035),0_8px_18px_rgba(38,42,46,0.04)] md:p-6">
                 <div className="relative grid gap-5 xl:grid-cols-[minmax(0,1.22fr)_minmax(320px,0.88fr)]">
                     <div className="space-y-4">
                         <div className="space-y-1.5">
@@ -585,11 +573,11 @@ export default async function Home() {
                                 <Link
                                     key={card.title}
                                     href={card.href}
-                                    className="group rounded-[18px] border border-border/60 bg-background/55 p-3.5 transition-[border-color,background-color] duration-200 hover:border-primary/12 hover:bg-background/80"
+                                className="group rounded-[20px] border border-border/60 bg-background/55 p-4 transition-[border-color,background-color] duration-200 hover:border-primary/12 hover:bg-background/80"
                                 >
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0">
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                                                 {card.eyebrow}
                                             </p>
                                             <p className={`mt-2.5 text-[1.9rem] font-semibold tabular-nums ${card.valueClassName}`}>
@@ -601,7 +589,7 @@ export default async function Home() {
                                             <Icon className="h-[18px] w-[18px]" />
                                         </div>
                                     </div>
-                                    <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
                                         {card.description}
                                     </p>
                                 </Link>
@@ -681,7 +669,7 @@ export default async function Home() {
                                     <ShieldCheck className="h-6 w-6" />
                                 </div>
                                 <p className="text-sm font-medium">今日の未対応タスクはありません</p>
-                                <p className="mt-1 text-xs text-muted-foreground">
+                                <p className="mt-1 text-sm text-muted-foreground">
                                     重要度の高い更新や未記録は見つかっていません。
                                 </p>
                             </div>
@@ -707,13 +695,13 @@ export default async function Home() {
                                                     <p className="truncate text-sm text-muted-foreground">
                                                         {task.subtitle}
                                                     </p>
-                                                    <p className="text-xs text-muted-foreground">
+                                                    <p className="text-sm text-muted-foreground">
                                                         {task.meta}
                                                     </p>
                                                 </div>
                                             </div>
                                             <div className="flex w-full items-center justify-between sm:ml-4 sm:w-auto sm:justify-start sm:gap-2">
-                                                <Badge variant="secondary" className={`${task.badgeClassName} text-xs`}>
+                                                <Badge variant="secondary" className={`${task.badgeClassName} text-sm`}>
                                                     {task.badgeLabel}
                                                 </Badge>
                                                 <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5" />
@@ -744,7 +732,7 @@ export default async function Home() {
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
                                             <p className="text-sm font-medium">{link.title}</p>
-                                            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                                            <p className="mt-1 text-sm leading-6 text-muted-foreground">
                                                 {link.description}
                                             </p>
                                         </div>
@@ -770,12 +758,12 @@ export default async function Home() {
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium">資格アラート</p>
-                                        <p className="text-xs text-muted-foreground">期限切れ / 14日以内 / 30日以内</p>
+                                        <p className="text-sm text-muted-foreground">期限切れ / 14日以内 / 30日以内</p>
                                     </div>
                                 </div>
                                 <div className="text-right tabular-nums">
                                     <p className={`text-lg font-semibold ${qualificationSummaryTone?.strong || "text-foreground"}`}>{countFormatter.format(urgentAlertCount)}</p>
-                                    <p className="text-xs text-muted-foreground">緊急 {countFormatter.format(expiredCount)}件</p>
+                                    <p className="text-sm text-muted-foreground">緊急 {countFormatter.format(expiredCount)}件</p>
                                 </div>
                             </div>
                             <div className={`flex flex-col gap-3 rounded-[20px] px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${vehicleTone?.subtle || neutralSurfaceClassName}`}>
@@ -785,12 +773,12 @@ export default async function Home() {
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium">車検期限</p>
-                                        <p className="text-xs text-muted-foreground">30日以内の対象件数</p>
+                                        <p className="text-sm text-muted-foreground">30日以内の対象件数</p>
                                     </div>
                                 </div>
                                 <div className="text-right tabular-nums">
                                     <p className={`text-lg font-semibold ${vehicleTone?.strong || "text-foreground"}`}>{countFormatter.format(vehicleTasks.length)}</p>
-                                    <p className="text-xs text-muted-foreground">{vehicleTasks[0]?.inspection_expiry ? `最短 ${vehicleTasks[0].inspection_expiry}` : "直近予定なし"}</p>
+                                    <p className="text-sm text-muted-foreground">{vehicleTasks[0]?.inspection_expiry ? `最短 ${vehicleTasks[0].inspection_expiry}` : "直近予定なし"}</p>
                                 </div>
                             </div>
                             <div className={`flex flex-col gap-3 rounded-[20px] px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${alcoholTone?.subtle || neutralSurfaceClassName}`}>
@@ -800,12 +788,12 @@ export default async function Home() {
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium">アルコールチェック</p>
-                                        <p className="text-xs text-muted-foreground">不適正と未記録の件数</p>
+                                        <p className="text-sm text-muted-foreground">不適正と未記録の件数</p>
                                     </div>
                                 </div>
                                 <div className="text-right tabular-nums">
                                     <p className={`text-lg font-semibold ${alcoholTone?.strong || "text-foreground"}`}>{countFormatter.format(pendingAlcoholCount)}</p>
-                                    <p className="text-xs text-muted-foreground">不適正 {countFormatter.format(abnormalAlcohol)}件 / 未記録 {countFormatter.format(missingAlcoholEmployees.length)}名</p>
+                                    <p className="text-sm text-muted-foreground">不適正 {countFormatter.format(abnormalAlcohol)}件 / 未記録 {countFormatter.format(missingAlcoholEmployees.length)}名</p>
                                 </div>
                             </div>
                         </CardContent>

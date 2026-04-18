@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarIcon, Loader2, Plus, Edit } from "lucide-react";
-import { format } from "date-fns";
+import { Loader2, Plus, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -19,6 +18,17 @@ interface AddLifeInsuranceModalProps {
     employeeId: string;
     existingRecord?: Tables<"employee_life_insurances">;
     onSuccess?: () => void;
+}
+
+function applyLifeInsuranceFieldErrors(
+    form: ReturnType<typeof useForm<LifeInsuranceValues>>,
+    fieldErrors: Partial<Record<keyof LifeInsuranceValues, string>>
+) {
+    for (const [field, message] of Object.entries(fieldErrors) as [keyof LifeInsuranceValues, string | undefined][]) {
+        if (message) {
+            form.setError(field, { message });
+        }
+    }
 }
 
 export function AddLifeInsuranceModal({ employeeId, existingRecord, onSuccess }: AddLifeInsuranceModalProps) {
@@ -70,9 +80,7 @@ export function AddLifeInsuranceModal({ employeeId, existingRecord, onSuccess }:
                 }
             } else {
                 if ('fieldErrors' in result && result.fieldErrors) {
-                    Object.entries(result.fieldErrors).forEach(([field, message]) => {
-                        form.setError(field as any, { message: message as string });
-                    });
+                    applyLifeInsuranceFieldErrors(form, result.fieldErrors);
                 } else {
                     toast.error(result.error);
                 }

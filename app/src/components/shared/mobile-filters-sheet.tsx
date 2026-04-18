@@ -17,20 +17,28 @@ import { cn } from "@/lib/utils";
 export function MobileFiltersSheet({
     title,
     description,
+    summary,
     activeCount = 0,
     onClearAll,
+    footer,
     children,
     className,
+    open,
+    onOpenChange,
 }: {
     title: string;
     description?: string;
+    summary?: string;
     activeCount?: number;
     onClearAll?: () => void;
+    footer?: ReactNode;
     children: ReactNode;
     className?: string;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }) {
     return (
-        <Sheet>
+        <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetTrigger
                 render={
                     <Button
@@ -45,14 +53,19 @@ export function MobileFiltersSheet({
             >
                 <span className="inline-flex items-center gap-2">
                     <SlidersHorizontal className="h-4 w-4" />
-                    絞り込み
+                    <span className="flex flex-col items-start leading-none">
+                        <span>絞り込み</span>
+                        <span className="mt-1 text-[11px] font-normal text-muted-foreground">
+                            {summary || "条件を選択"}
+                        </span>
+                    </span>
                 </span>
                 {activeCount > 0 ? (
                     <Badge variant="secondary" className="rounded-full px-2.5 py-0.5 text-[11px]">
                         {activeCount}件適用中
                     </Badge>
                 ) : (
-                    <span className="text-xs text-muted-foreground">条件なし</span>
+                    <span className="text-xs text-muted-foreground">未設定</span>
                 )}
             </SheetTrigger>
             <SheetContent
@@ -64,14 +77,21 @@ export function MobileFiltersSheet({
                     <SheetTitle>{title}</SheetTitle>
                     {description ? <SheetDescription>{description}</SheetDescription> : null}
                 </SheetHeader>
-                <div className="space-y-4 overflow-y-auto px-4 pb-5">
+                <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-5">
                     {children}
-                    {onClearAll && activeCount > 0 ? (
-                        <Button type="button" variant="ghost" className="w-full" onClick={onClearAll}>
-                            条件をクリア
-                        </Button>
-                    ) : null}
                 </div>
+                {(footer || (onClearAll && activeCount > 0)) ? (
+                    <div className="border-t bg-background/95 px-4 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/85">
+                        <div className="flex flex-col gap-3">
+                            {onClearAll && activeCount > 0 ? (
+                                <Button type="button" variant="ghost" className="w-full" onClick={onClearAll}>
+                                    条件をクリア
+                                </Button>
+                            ) : null}
+                            {footer}
+                        </div>
+                    </div>
+                ) : null}
             </SheetContent>
         </Sheet>
     );

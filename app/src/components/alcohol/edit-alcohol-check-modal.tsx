@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import type { AlcoholCheckRow } from "./alcohol-client";
 import { updateAlcoholCheckAction } from "@/app/actions/admin-record-actions";
 import { alcoholCheckSchema, toAlcoholCheckFormValues, type AlcoholCheckValues } from "@/lib/validation/alcohol-check";
+import { formatDisplayDate } from "@/lib/date";
 
 interface EditAlcoholCheckModalProps {
     check: AlcoholCheckRow;
@@ -87,7 +88,7 @@ export function EditAlcoholCheckModal({ check, employees, open, onOpenChange }: 
             <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>アルコールチェック記録の編集</DialogTitle>
-                    <DialogDescription>{check.employee?.name} - {check.check_datetime?.slice(0, 10)}</DialogDescription>
+                    <DialogDescription>{check.employee?.name} - {formatDisplayDate(check.check_datetime)}</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

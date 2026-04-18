@@ -4,14 +4,8 @@ import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useEffect } from "react";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveModal } from "@/components/shared/responsive-modal";
+import { useHaptics } from "@/hooks/use-haptics";
 import {
     Form,
     FormControl,
@@ -52,6 +46,7 @@ export function EditProjectModal({
 }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const router = useRouter();
+    const { triggerHaptic } = useHaptics();
 
     const form = useForm<ProjectValues>({
         resolver: zodResolver(projectSchema),
@@ -70,6 +65,7 @@ export function EditProjectModal({
         setIsSubmitting(false);
 
         if (!result.success) {
+            triggerHaptic("error");
             if (result.fieldErrors) {
                 for (const [field, message] of Object.entries(result.fieldErrors)) {
                     if (!message) continue;
@@ -80,23 +76,21 @@ export function EditProjectModal({
             return;
         }
 
+        triggerHaptic("success");
         toast.success("施工記録を更新しました");
         onOpenChange(false);
         router.refresh();
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle className="text-xl flex items-center gap-2"><Building className="h-5 w-5 text-primary" /> 施工記録の編集</DialogTitle>
-                    <DialogDescription>
-                        施工実績の内容を修正します。
-                    </DialogDescription>
-                </DialogHeader>
-
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
+        <ResponsiveModal 
+            open={open} 
+            onOpenChange={onOpenChange}
+            title={<span className="flex items-center gap-2"><Building className="h-5 w-5 text-primary" /> 施工記録の編集</span>}
+            description="施工実績の内容を修正します。"
+        >
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
                         <div className="space-y-4">
                             <FormField control={form.control} name="construction_name" render={({ field }) => (
                                 <FormItem>
@@ -236,11 +230,11 @@ export function EditProjectModal({
                             )} />
                         </div>
 
-                        <DialogFooter className="pt-4 border-t gap-2">
-                            <Button type="button" variant="outline" className="font-bold rounded-full" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+                        <div className="flex-col sm:flex-row flex justify-end gap-2 pt-4 border-t mt-6">
+                            <Button type="button" variant="outline" className="font-bold rounded-full w-full sm:w-auto" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                                 キャンセル
                             </Button>
-                            <Button type="submit" disabled={isSubmitting} className="font-bold rounded-full shadow-sm">
+                            <Button type="submit" disabled={isSubmitting} className="font-bold rounded-full shadow-sm w-full sm:w-auto">
                                 {isSubmitting ? (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 ) : (
@@ -248,10 +242,9 @@ export function EditProjectModal({
                                 )}
                                 変更を保存
                             </Button>
-                        </DialogFooter>
+                        </div>
                     </form>
                 </Form>
-            </DialogContent>
-        </Dialog>
+        </ResponsiveModal>
     );
 }

@@ -4,15 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
+import { ResponsiveModal } from "@/components/shared/responsive-modal";
 import {
     Form,
     FormControl,
@@ -103,15 +95,14 @@ export function AddProjectModal({ employees, initialEmployeeId }: { employees: E
     }
 
     return (
-        <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogTrigger render={<Button className="rounded-full shadow-sm"><Plus className="mr-2 h-4 w-4" />新規登録</Button>} />
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle className="text-xl flex items-center gap-2"><Building className="h-5 w-5 text-primary" /> 施工記録の新規追加</DialogTitle>
-                    <DialogDescription>
-                        新しい施工実績（工事・点検）を記録します。
-                    </DialogDescription>
-                </DialogHeader>
+        <>
+            <Button onClick={() => setOpen(true)} className="rounded-full shadow-sm"><Plus className="mr-2 h-4 w-4" />新規登録</Button>
+            <ResponsiveModal 
+                open={open} 
+                onOpenChange={handleOpenChange}
+                title={<span className="flex items-center gap-2"><Building className="h-5 w-5 text-primary" /> 施工記録の新規追加</span>}
+                description="新しい施工実績（工事・点検）を記録します。"
+            >
 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
@@ -254,8 +245,8 @@ export function AddProjectModal({ employees, initialEmployeeId }: { employees: E
                             )} />
                         </div>
 
-                        <DialogFooter className="flex-col sm:flex-row gap-3 pt-4 border-t">
-                            <div className="flex items-center space-x-2 px-2 py-1 bg-muted/40 rounded-lg">
+                        <div className="flex-col sm:flex-row flex gap-3 pt-4 border-t mt-6">
+                            <div className="flex items-center space-x-2 px-2 py-1 bg-muted/40 rounded-lg w-full sm:w-auto">
                                 <Checkbox id="continue-add" checked={isCheckingMultiple} onCheckedChange={(c) => setIsCheckingMultiple(!!c)} />
                                 <label htmlFor="continue-add" className="text-sm font-medium leading-none cursor-pointer">続けてもう1件登録する</label>
                             </div>
@@ -277,10 +268,10 @@ export function AddProjectModal({ employees, initialEmployeeId }: { employees: E
                                     )}
                                 </Button>
                             </div>
-                        </DialogFooter>
+                        </div>
                     </form>
                 </Form>
-            </DialogContent>
-        </Dialog>
+            </ResponsiveModal>
+        </>
     );
 }

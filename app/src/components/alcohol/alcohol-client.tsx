@@ -34,6 +34,8 @@ import { ActiveFilters } from "@/components/shared/active-filters";
 import { MobileFiltersSheet } from "@/components/shared/mobile-filters-sheet";
 import { getTodayInTokyo } from "@/lib/date";
 import { deleteAlcoholCheckAction } from "@/app/actions/admin-record-actions";
+import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 export type AlcoholCheckRow = {
     id: string;
@@ -108,6 +110,10 @@ export function AlcoholClient({
 }) {
     const [editingItem, setEditingItem] = useState<AlcoholCheckRow | null>(null);
     const [deletingItem, setDeletingItem] = useState<AlcoholCheckRow | null>(null);
+    const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+    const [mobileLocation, setMobileLocation] = useState(currentLocation);
+    const [mobileStatus, setMobileStatus] = useState(currentStatus);
+    const [mobileEmployee, setMobileEmployee] = useState(currentEmployee);
     const router = useRouter();
     const pathname = usePathname();
     const { isAdminOrHr, role, linkedEmployeeId } = useAuth();
@@ -153,6 +159,12 @@ export function AlcoholClient({
 
     const abnormalCount = initialChecks.filter((check) => check.is_abnormal).length;
 
+    const syncMobileFilters = () => {
+        setMobileLocation(currentLocation);
+        setMobileStatus(currentStatus);
+        setMobileEmployee(currentEmployee);
+    };
+
     const updateFilters = (updates: Partial<{ date: string; location: string; status: string; employee: string; page: number }>) => {
         router.replace(buildAlcoholChecksHref(pathname, {
             date: updates.date ?? currentDate,
@@ -189,6 +201,23 @@ export function AlcoholClient({
             employee: "",
             page: 1,
         }), { scroll: false });
+    };
+
+    const handleMobileFiltersOpenChange = (open: boolean) => {
+        if (open) {
+            syncMobileFilters();
+        }
+        setIsMobileFiltersOpen(open);
+    };
+
+    const applyMobileFilters = () => {
+        setIsMobileFiltersOpen(false);
+        updateFilters({
+            location: mobileLocation,
+            status: mobileStatus,
+            employee: mobileEmployee,
+            page: 1,
+        });
     };
 
     return (
@@ -234,15 +263,27 @@ export function AlcoholClient({
                     <MobileFiltersSheet
                         title="アルコール記録を絞り込む"
                         description="拠点、判定、社員で記録を絞り込みます。"
+                        summary="拠点・判定・社員"
                         activeCount={activeFilters.length}
-                        onClearAll={clearFilters}
+                        onClearAll={() => {
+                            clearFilters();
+                            setIsMobileFiltersOpen(false);
+                            syncMobileFilters();
+                        }}
                         className="flex-1"
+                        open={isMobileFiltersOpen}
+                        onOpenChange={handleMobileFiltersOpenChange}
+                        footer={(
+                            <Button type="button" className="w-full" onClick={applyMobileFilters}>
+                                条件を適用
+                            </Button>
+                        )}
                     >
                         <div className="space-y-2">
                             <p className="text-sm font-medium">拠点</p>
                             <Select
-                                value={currentLocation || undefined}
-                                onValueChange={(value) => updateFilters({ location: value && value !== "all" ? value : "", page: 1 })}
+                                value={mobileLocation || undefined}
+                                onValueChange={(value) => setMobileLocation(value && value !== "all" ? value : "")}
                             >
                                 <SelectTrigger className="w-full">
                                     <SelectValue placeholder="全拠点" />
@@ -258,8 +299,8 @@ export function AlcoholClient({
                         <div className="space-y-2">
                             <p className="text-sm font-medium">判定</p>
                             <Select
-                                value={currentStatus || undefined}
-                                onValueChange={(value) => updateFilters({ status: value && value !== "all" ? value : "", page: 1 })}
+                                value={mobileStatus || undefined}
+                                onValueChange={(value) => setMobileStatus(value && value !== "all" ? value : "")}
                             >
                                 <SelectTrigger className="w-full">
                                     <SelectValue placeholder="全判定" />
@@ -275,8 +316,8 @@ export function AlcoholClient({
                             <p className="text-sm font-medium">社員</p>
                             <Select
                                 items={employeeOptions}
-                                value={currentEmployee || undefined}
-                                onValueChange={(value) => updateFilters({ employee: value && value !== "all" ? value : "", page: 1 })}
+                                value={mobileEmployee || undefined}
+                                onValueChange={(value) => setMobileEmployee(value && value !== "all" ? value : "")}
                             >
                                 <SelectTrigger className="w-full">
                                     <SelectValue placeholder="全社員" />
@@ -379,33 +420,35 @@ export function AlcoholClient({
                                             <span>{check.check_datetime ? format(new Date(check.check_datetime), "HH:mm") : "-"}</span>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-2">
                                         {check.is_abnormal
                                             ? <Badge variant="destructive">不適正</Badge>
                                             : <Badge variant="secondary" className="bg-chart-2/10 text-chart-2 hover:bg-chart-2/20">適正</Badge>}
                                         {showActions ? (
-                                            <>
-                                                <Button variant="ghost" size="icon-sm" aria-label={`${check.employee?.name || "記録"}を編集`} onClick={() => setEditingItem(check)}>
+                                            <RecordActionsMenu label={check.employee?.name || "記録"}>
+                                                <DropdownMenuItem onClick={() => setEditingItem(check)}>
                                                     <Pencil className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon-sm" aria-label={`${check.employee?.name || "記録"}を削除`} className="text-destructive hover:text-destructive" onClick={() => setDeletingItem(check)}>
+                                                    編集
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem variant="destructive" onClick={() => setDeletingItem(check)}>
                                                     <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </>
+                                                    削除
+                                                </DropdownMenuItem>
+                                            </RecordActionsMenu>
                                         ) : null}
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3 text-sm">
                                     <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground">種別</p>
+                                        <p className="text-sm text-muted-foreground">種別</p>
                                         <p className="font-medium">{check.check_type || "-"}</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground">検知値</p>
+                                        <p className="text-sm text-muted-foreground">検知値</p>
                                         <p className="font-medium">{check.measured_value != null ? `${check.measured_value} mg/L` : "-"}</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground">確認者</p>
+                                        <p className="text-sm text-muted-foreground">確認者</p>
                                         {check.checker?.id ? (
                                             <TableCellLink href={`/employees/${check.checker.id}`} className="font-medium hover:underline">
                                                 {check.checker.name}
@@ -415,7 +458,7 @@ export function AlcoholClient({
                                         )}
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground">判定</p>
+                                        <p className="text-sm text-muted-foreground">判定</p>
                                         <p className="font-medium">{check.is_abnormal ? "不適正" : "適正"}</p>
                                     </div>
                                 </div>
@@ -492,14 +535,16 @@ export function AlcoholClient({
                                     <TableCell className="text-sm text-muted-foreground">{check.notes || ""}</TableCell>
                                     {showActions && (
                                         <TableCell>
-                                            <div className="flex items-center gap-1">
-                                                <Button variant="ghost" size="sm" aria-label={`${check.employee?.name || "記録"}を編集`} onClick={() => setEditingItem(check)}>
-                                                    <Pencil className="h-3.5 w-3.5" />
-                                                </Button>
-                                                <Button variant="ghost" size="sm" aria-label={`${check.employee?.name || "記録"}を削除`} className="text-destructive hover:text-destructive" onClick={() => setDeletingItem(check)}>
-                                                    <Trash2 className="h-3.5 w-3.5" />
-                                                </Button>
-                                            </div>
+                                            <RecordActionsMenu label={check.employee?.name || "記録"}>
+                                                <DropdownMenuItem onClick={() => setEditingItem(check)}>
+                                                    <Pencil className="h-4 w-4" />
+                                                    編集
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem variant="destructive" onClick={() => setDeletingItem(check)}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                    削除
+                                                </DropdownMenuItem>
+                                            </RecordActionsMenu>
                                         </TableCell>
                                     )}
                                 </TableRow>
@@ -559,7 +604,7 @@ export function AlcoholClient({
                     open={!!deletingItem}
                     onOpenChange={(open) => !open && setDeletingItem(null)}
                     title="記録の削除"
-                    description={`${deletingItem?.employee?.name || "不明"} の記録を削除します。この操作は取り消せません。`}
+                    description={`${deletingItem?.employee?.name || "不明"} の記録を一覧から非表示にします。監査履歴は保持され、後から確認できます。`}
                     onConfirm={handleDelete}
                 />
             )}

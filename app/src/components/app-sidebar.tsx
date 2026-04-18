@@ -44,7 +44,7 @@ export function AppSidebar() {
                         className="hidden h-9 w-9 group-data-[collapsible=icon]:block"
                     />
                 </div>
-                <p className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
+                <p className="text-sm text-muted-foreground group-data-[collapsible=icon]:hidden">
                     台帳・期限・安全記録を管理
                 </p>
             </SidebarHeader>
@@ -53,7 +53,7 @@ export function AppSidebar() {
                     <div key={section.id} className="px-2.5">
                         {index > 0 && <SidebarSeparator className="my-2.5" />}
                         <SidebarGroup className="p-0">
-                            <SidebarGroupLabel className="px-1.5 mb-1.5 text-[11px] font-medium tracking-[0.04em] text-sidebar-foreground/52">
+                            <SidebarGroupLabel className="px-1.5 mb-1.5 text-xs font-medium tracking-[0.08em] text-sidebar-foreground/52">
                                 {section.title}
                             </SidebarGroupLabel>
                             <SidebarGroupContent>
@@ -86,7 +86,7 @@ export function AppSidebar() {
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
-                <div className="mt-3 px-1.5 text-xs group-data-[collapsible=icon]:hidden">
+                <div className="mt-3 px-1.5 text-sm group-data-[collapsible=icon]:hidden">
                     <p className="truncate font-medium text-foreground/88">{displayName}</p>
                     <p className="mt-0.5 truncate text-muted-foreground">{roleLabel}</p>
                 </div>

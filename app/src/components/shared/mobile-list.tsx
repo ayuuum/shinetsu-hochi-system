@@ -28,9 +28,9 @@ export function MobileListCard({
 }) {
     const header = (
         <CardHeader className="pb-3">
-            {eyebrow ? <div className="text-[11px] font-medium tracking-[0.06em] text-muted-foreground uppercase">{eyebrow}</div> : null}
-            <CardTitle className="text-[15px] leading-snug">{title}</CardTitle>
-            {subtitle ? <p className="text-sm text-muted-foreground">{subtitle}</p> : null}
+            {eyebrow ? <div className="text-xs font-medium tracking-[0.06em] text-muted-foreground uppercase">{eyebrow}</div> : null}
+            <CardTitle className="text-base leading-snug">{title}</CardTitle>
+            {subtitle ? <p className="text-[15px] text-muted-foreground">{subtitle}</p> : null}
         </CardHeader>
     );
 
@@ -66,7 +66,7 @@ export function MobileDataItem({
 }) {
     return (
         <div className={cn("space-y-1", className)}>
-            <p className="text-[11px] font-medium tracking-[0.04em] text-muted-foreground uppercase">{label}</p>
+            <p className="text-xs font-medium tracking-[0.04em] text-muted-foreground uppercase">{label}</p>
             <div className={cn("text-sm font-medium leading-snug text-foreground", valueClassName)}>{value}</div>
         </div>
     );

@@ -24,17 +24,17 @@ export function ActiveFilters({
     }
 
     return (
-        <div className={cn("flex flex-wrap items-center gap-2 rounded-[20px] border border-border/60 bg-muted/25 p-3", className)}>
-            <span className="text-xs font-medium text-muted-foreground">適用中の条件</span>
+        <div className={cn("flex flex-wrap items-center gap-2.5 rounded-[20px] border border-border/60 bg-muted/25 p-3.5", className)}>
+            <span className="text-sm font-medium text-muted-foreground">適用中の条件</span>
             {items.map((item) => (
                 <button
                     key={item.key}
                     type="button"
                     onClick={item.onRemove}
-                    className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+                    className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-border/70 bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
                 >
                     <span>{item.label}</span>
-                    <X className="h-3 w-3 text-muted-foreground" />
+                    <X className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
             ))}
             {onClearAll && (

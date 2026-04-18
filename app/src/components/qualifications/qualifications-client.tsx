@@ -31,6 +31,9 @@ import { EditQualificationModal } from "@/components/qualifications/edit-qualifi
 import { TableCellLink } from "@/components/shared/table-cell-link";
 import { ActiveFilters } from "@/components/shared/active-filters";
 import { MobileFiltersSheet } from "@/components/shared/mobile-filters-sheet";
+import { formatDisplayDate } from "@/lib/date";
+import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 export type QualificationRow = Tables<"employee_qualifications"> & {
     employees: { id: string; name: string; branch: string | null } | null;
@@ -92,6 +95,9 @@ export function QualificationsClient({
 }: QualificationsClientProps) {
     const [search, setSearch] = useState(currentSearch);
     const [editingItem, setEditingItem] = useState<QualificationRow | null>(null);
+    const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+    const [mobileCategory, setMobileCategory] = useState(currentCategory);
+    const [mobileLevel, setMobileLevel] = useState(currentLevel);
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
     const pathname = usePathname();
@@ -139,6 +145,12 @@ export function QualificationsClient({
     }, [currentSearch]);
 
     useEffect(() => {
+        if (isMobileFiltersOpen) return;
+        setMobileCategory(currentCategory);
+        setMobileLevel(currentLevel);
+    }, [currentCategory, currentLevel, isMobileFiltersOpen]);
+
+    useEffect(() => {
         const timer = window.setTimeout(() => {
             if (search === currentSearch) return;
 
@@ -180,6 +192,26 @@ export function QualificationsClient({
         });
     };
 
+    const handleMobileFiltersOpenChange = (open: boolean) => {
+        if (open) {
+            setMobileCategory(currentCategory);
+            setMobileLevel(currentLevel);
+        }
+        setIsMobileFiltersOpen(open);
+    };
+
+    const applyMobileFilters = () => {
+        setIsMobileFiltersOpen(false);
+        startTransition(() => {
+            router.replace(buildQualificationsHref(pathname, {
+                search,
+                category: mobileCategory,
+                level: mobileLevel,
+                page: 1,
+            }), { scroll: false });
+        });
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in duration-200">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -213,7 +245,7 @@ export function QualificationsClient({
                             <div className={`p-2 rounded-lg ${alertStyles.danger.icon}`}><AlertCircle className="h-5 w-5" /></div>
                             <div>
                                 <p className={`text-2xl font-bold ${alertStyles.danger.strong}`}>{counts.danger || 0}</p>
-                                <p className="text-xs text-muted-foreground">期限切れ</p>
+                                <p className="text-sm text-muted-foreground">期限切れ</p>
                             </div>
                         </CardContent>
                     </button>
@@ -229,7 +261,7 @@ export function QualificationsClient({
                             <div className={`p-2 rounded-lg ${alertStyles.urgent.icon}`}><ShieldAlert className="h-5 w-5" /></div>
                             <div>
                                 <p className={`text-2xl font-bold ${alertStyles.urgent.strong}`}>{counts.urgent || 0}</p>
-                                <p className="text-xs text-muted-foreground">14日以内</p>
+                                <p className="text-sm text-muted-foreground">14日以内</p>
                             </div>
                         </CardContent>
                     </button>
@@ -245,7 +277,7 @@ export function QualificationsClient({
                             <div className={`p-2 rounded-lg ${alertStyles.warning.icon}`}><Clock className="h-5 w-5" /></div>
                             <div>
                                 <p className={`text-2xl font-bold ${alertStyles.warning.strong}`}>{counts.warning || 0}</p>
-                                <p className="text-xs text-muted-foreground">30日以内</p>
+                                <p className="text-sm text-muted-foreground">30日以内</p>
                             </div>
                         </CardContent>
                     </button>
@@ -261,7 +293,7 @@ export function QualificationsClient({
                             <div className={`p-2 rounded-lg ${alertStyles.ok.icon}`}><ShieldCheck className="h-5 w-5" /></div>
                             <div>
                                 <p className={`text-2xl font-bold ${alertStyles.ok.strong}`}>{counts.ok || 0}</p>
-                                <p className="text-xs text-muted-foreground">正常</p>
+                                <p className="text-sm text-muted-foreground">正常</p>
                             </div>
                         </CardContent>
                     </button>
@@ -274,7 +306,7 @@ export function QualificationsClient({
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         aria-label="社員名・資格名で検索"
-                        placeholder="社員名・資格名で検索..."
+                        placeholder="社員名・資格名で検索…"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="pl-9"
@@ -283,14 +315,25 @@ export function QualificationsClient({
                 <MobileFiltersSheet
                     title="資格を絞り込む"
                     description="カテゴリや期限状態で表示内容を絞り込みます。"
+                    summary="カテゴリ・期限状態"
                     activeCount={activeFilters.length}
-                    onClearAll={clearFilters}
+                    onClearAll={() => {
+                        clearFilters();
+                        setIsMobileFiltersOpen(false);
+                    }}
+                    open={isMobileFiltersOpen}
+                    onOpenChange={handleMobileFiltersOpenChange}
+                    footer={(
+                        <Button type="button" className="w-full" onClick={applyMobileFilters}>
+                            条件を適用
+                        </Button>
+                    )}
                 >
                     <div className="space-y-2">
                         <p className="text-sm font-medium">カテゴリ</p>
                         <Select
-                            value={currentCategory || undefined}
-                            onValueChange={(value) => updateFilters({ category: value && value !== "all" ? value : "", page: 1 })}
+                            value={mobileCategory || undefined}
+                            onValueChange={(value) => setMobileCategory(value && value !== "all" ? value : "")}
                         >
                             <SelectTrigger className="w-full">
                                 <SelectValue placeholder="すべてのカテゴリ" />
@@ -306,8 +349,8 @@ export function QualificationsClient({
                     <div className="space-y-2">
                         <p className="text-sm font-medium">期限状態</p>
                         <Select
-                            value={currentLevel || undefined}
-                            onValueChange={(value) => updateFilters({ level: value && value !== "all" ? value : "", page: 1 })}
+                            value={mobileLevel || undefined}
+                            onValueChange={(value) => setMobileLevel(value && value !== "all" ? value : "")}
                         >
                             <SelectTrigger className="w-full">
                                 <SelectValue placeholder="すべてのステータス" />
@@ -330,7 +373,7 @@ export function QualificationsClient({
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         aria-label="社員名・資格名で検索"
-                        placeholder="社員名・資格名で検索..."
+                        placeholder="社員名・資格名で検索…"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="pl-9"
@@ -404,31 +447,29 @@ export function QualificationsClient({
                                             </div>
                                         </div>
                                         {showActions ? (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon-sm"
-                                                aria-label={`${q.qualification_master?.name || "資格"}を編集`}
-                                                onClick={() => setEditingItem(q)}
-                                            >
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
+                                            <RecordActionsMenu label={q.qualification_master?.name || "資格"}>
+                                                <DropdownMenuItem onClick={() => setEditingItem(q)}>
+                                                    <Pencil className="h-4 w-4" />
+                                                    編集
+                                                </DropdownMenuItem>
+                                            </RecordActionsMenu>
                                         ) : null}
                                     </div>
                                     <div className="grid grid-cols-2 gap-3 text-sm">
                                         <div className="space-y-1">
-                                            <p className="text-xs text-muted-foreground">カテゴリ</p>
+                                            <p className="text-sm text-muted-foreground">カテゴリ</p>
                                             <p>{q.qualification_master?.category || "-"}</p>
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="text-xs text-muted-foreground">取得日</p>
-                                            <p>{q.acquired_date || "-"}</p>
+                                            <p className="text-sm text-muted-foreground">取得日</p>
+                                            <p className="tabular-nums">{formatDisplayDate(q.acquired_date)}</p>
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="text-xs text-muted-foreground">有効期限</p>
-                                            <p className={`font-medium ${config.color}`}>{q.expiry_date || "期限なし"}</p>
+                                            <p className="text-sm text-muted-foreground">有効期限</p>
+                                            <p className={`font-medium tabular-nums ${config.color}`}>{formatDisplayDate(q.expiry_date, "期限なし")}</p>
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="text-xs text-muted-foreground">申込状況</p>
+                                            <p className="text-sm text-muted-foreground">申込状況</p>
                                             <p>{q.status || "未着手"}</p>
                                         </div>
                                     </div>
@@ -501,9 +542,9 @@ export function QualificationsClient({
                                             </TableCellLink>
                                         </TableCell>
                                         <TableCell className="text-sm text-muted-foreground">{q.qualification_master?.category || "-"}</TableCell>
-                                        <TableCell className="text-sm">{q.acquired_date || "-"}</TableCell>
-                                        <TableCell className={`text-sm font-medium ${config.color}`}>
-                                            {q.expiry_date || "期限なし"}
+                                        <TableCell className="text-sm tabular-nums">{formatDisplayDate(q.acquired_date)}</TableCell>
+                                        <TableCell className={`text-sm font-medium tabular-nums ${config.color}`}>
+                                            {formatDisplayDate(q.expiry_date, "期限なし")}
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant="secondary" className={config.badge}>
@@ -524,14 +565,12 @@ export function QualificationsClient({
                                         </TableCell>
                                         {showActions && (
                                             <TableCell>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon-sm"
-                                                    aria-label={`${q.qualification_master?.name || "資格"}を編集`}
-                                                    onClick={() => setEditingItem(q)}
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
+                                                <RecordActionsMenu label={q.qualification_master?.name || "資格"}>
+                                                    <DropdownMenuItem onClick={() => setEditingItem(q)}>
+                                                        <Pencil className="h-4 w-4" />
+                                                        編集
+                                                    </DropdownMenuItem>
+                                                </RecordActionsMenu>
                                             </TableCell>
                                         )}
                                     </TableRow>

@@ -139,11 +139,13 @@ function LoginForm() {
                 <Input
                     id="email"
                     type="email"
-                    placeholder="example@shinetsu-hochi.co.jp"
+                    placeholder="example@shinetsu-hochi.co.jp…"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    autoFocus
+                    autoComplete="username"
+                    name="email"
+                    spellCheck={false}
                 />
             </div>
             <div className="space-y-2">
@@ -151,14 +153,16 @@ function LoginForm() {
                 <Input
                     id="password"
                     type="password"
-                    placeholder="パスワード"
+                    placeholder="パスワードを入力…"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    autoComplete="current-password"
+                    name="password"
                 />
             </div>
             {error && (
-                <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">{error}</p>
+                <p aria-live="polite" className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">{error}</p>
             )}
             <Button type="submit" className="w-full" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

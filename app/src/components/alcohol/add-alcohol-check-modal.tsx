@@ -1,18 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
+import { ResponsiveModal } from "@/components/shared/responsive-modal";
+import { useHaptics } from "@/hooks/use-haptics";
 import {
     Form,
     FormControl,
@@ -72,13 +65,17 @@ export function AddAlcoholCheckModal({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const router = useRouter();
     const { role } = useAuth();
+    const { triggerHaptic } = useHaptics();
 
     const form = useForm<AlcoholCheckValues>({
         resolver: zodResolver(alcoholCheckSchema),
         defaultValues: getDefaultValues(initialEmployeeId, initialDate, initialLocation),
     });
 
-    const isAbnormal = form.watch("is_abnormal") === "不適正";
+    const isAbnormal = useWatch({
+        control: form.control,
+        name: "is_abnormal",
+    }) === "不適正";
 
     useEffect(() => {
         if (!open || role !== "technician" || employees.length !== 1) return;
@@ -105,6 +102,7 @@ export function AddAlcoholCheckModal({
         setIsSubmitting(false);
 
         if (!result.success) {
+            triggerHaptic("error");
             if (result.fieldErrors) {
                 for (const [field, message] of Object.entries(result.fieldErrors)) {
                     if (!message) continue;
@@ -116,8 +114,10 @@ export function AddAlcoholCheckModal({
         }
 
         if (values.is_abnormal === "不適正") {
+            triggerHaptic("error");
             toast.error("不適正として記録しました。運転は禁止です！安全運転管理者の指示を仰いでください。", { duration: 8000 });
         } else {
+            triggerHaptic("success");
             toast.success("アルコールチェックを記録しました");
         }
         
@@ -126,21 +126,25 @@ export function AddAlcoholCheckModal({
     }
 
     return (
-        <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogTrigger render={<Button className="rounded-full shadow-sm"><Plus className="mr-2 h-4 w-4" />体調・アルコール記録</Button>} />
-            <DialogContent className="sm:max-w-[480px] max-h-[95vh] overflow-y-auto p-4 sm:p-6 bg-slate-50 dark:bg-slate-950">
-                <DialogHeader className="text-center space-y-2 mb-4">
-                    <DialogTitle className="text-2xl font-bold flex items-center justify-center gap-2">
+        <>
+            <Button onClick={() => {
+                triggerHaptic("light");
+                setOpen(true);
+            }} className="rounded-full shadow-sm"><Plus className="mr-2 h-4 w-4" />体調・アルコール記録</Button>
+            <ResponsiveModal
+                open={open}
+                onOpenChange={handleOpenChange}
+                title={
+                    <span className="text-xl md:text-2xl font-bold flex items-center justify-center gap-2">
                         <Beer className="h-6 w-6 text-primary" />
                         アルコールチェック
-                    </DialogTitle>
-                    <DialogDescription>
-                        入力はスマートフォンからのワンタップを想定しています。
-                    </DialogDescription>
-                </DialogHeader>
-
+                    </span>
+                }
+                description="入力はスマートフォンからのワンタップを想定しています。"
+                className="bg-slate-50 dark:bg-slate-950 sm:max-w-[480px]"
+            >
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
                         {/* Section: Who & When */}
                         <div className="bg-white dark:bg-card rounded-2xl p-4 shadow-sm border space-y-4">
                             <FormField control={form.control} name="employee_id" render={({ field }) => (
@@ -254,7 +258,7 @@ export function AddAlcoholCheckModal({
                             )} />
                         </div>
 
-                        <DialogFooter className="pt-2 pb-4">
+                        <div className="pt-2 pb-4 mt-6">
                             <Button 
                                 type="submit" 
                                 disabled={isSubmitting} 
@@ -267,10 +271,10 @@ export function AddAlcoholCheckModal({
                                 )}
                                 {isAbnormal ? "不適正として記録" : "記録を保存する"}
                             </Button>
-                        </DialogFooter>
+                        </div>
                     </form>
                 </Form>
-            </DialogContent>
-        </Dialog>
+            </ResponsiveModal>
+        </>
     );
 }

@@ -941,6 +941,71 @@ type DeleteActionResult =
     | { success: true }
     | { success: false; error: string };
 
+export async function deleteQualificationAction(qualificationId: string): Promise<DeleteActionResult> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) {
+        return { success: false, error: auth.error };
+    }
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: qualification, error: fetchError } = await supabase
+            .from("employee_qualifications")
+            .select(`
+                employee_id,
+                certificate_url,
+                qualification_master(name)
+            `)
+            .eq("id", qualificationId)
+            .maybeSingle();
+
+        if (fetchError || !qualification) {
+            console.error("Failed to load qualification before delete:", fetchError);
+            return { success: false, error: "資格情報が見つかりません。" };
+        }
+
+        const { data: deletedQualification, error } = await supabase
+            .from("employee_qualifications")
+            .delete()
+            .eq("id", qualificationId)
+            .select("id")
+            .maybeSingle();
+
+        if (error) {
+            console.error("Failed to delete qualification:", error);
+            return { success: false, error: "資格情報の削除に失敗しました。" };
+        }
+        if (!deletedQualification) {
+            return { success: false, error: "資格情報が見つかりません。" };
+        }
+
+        if (qualification.certificate_url) {
+            const { error: storageError } = await supabase.storage
+                .from("certificates")
+                .remove([qualification.certificate_url]);
+
+            if (storageError) {
+                console.error("Failed to delete qualification certificate:", storageError);
+            }
+        }
+
+        await recordAuditLog({
+            actorId: auth.user.id,
+            actorEmail: auth.user.email,
+            entityType: "employee_qualification",
+            entityId: qualificationId,
+            action: "delete",
+            summary: `${qualification.qualification_master?.name || "資格"} を削除`,
+            metadata: { employee_id: qualification.employee_id || null },
+        });
+        revalidateEmployeePaths(qualification.employee_id || undefined);
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while deleting qualification:", error);
+        return { success: false, error: "資格情報の削除に失敗しました。" };
+    }
+}
+
 export async function deleteVehicleAction(vehicleId: string): Promise<DeleteActionResult> {
     const auth = await requireAdminOrHr();
     if (!auth.ok) {

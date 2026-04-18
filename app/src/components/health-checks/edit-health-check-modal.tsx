@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import { Tables } from "@/types/supabase";
 import { updateHealthCheckAction } from "@/app/actions/admin-record-actions";
 import { healthCheckSchema, toHealthCheckFormValues, type HealthCheckValues } from "@/lib/validation/health-check";
+import { formatDisplayDate } from "@/lib/date";
 
 interface EditHealthCheckModalProps {
     healthCheck: Tables<"health_checks">;
@@ -87,7 +88,7 @@ export function EditHealthCheckModal({ healthCheck, employees, open, onOpenChang
             <DialogContent className="sm:max-w-[540px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>健康診断記録の編集</DialogTitle>
-                    <DialogDescription>{healthCheck.check_date} の健康診断記録を編集します。</DialogDescription>
+                    <DialogDescription>{formatDisplayDate(healthCheck.check_date)} の健康診断記録を編集します。</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

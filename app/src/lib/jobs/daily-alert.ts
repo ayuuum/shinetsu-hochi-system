@@ -2,12 +2,12 @@ import { Tables } from "@/types/supabase";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "@/types/supabase";
 
-type QualificationAlertRow = Pick<Tables<"employee_qualifications">, "expiry_date" | "status"> & {
+export type QualificationAlertRow = Pick<Tables<"employee_qualifications">, "expiry_date" | "status"> & {
     employees: Pick<Tables<"employees">, "name" | "branch"> | null;
     qualification_master: Pick<Tables<"qualification_master">, "name"> | null;
 };
 
-type EmailAlert = {
+export type EmailAlert = {
     level: "info" | "warning" | "urgent" | "critical";
     employeeName: string;
     branch: string | null;
@@ -30,28 +30,10 @@ export type DailyAlertJobResult = {
     };
 };
 
-export async function executeDailyAlertJob(
-    supabase: SupabaseClient<Database>
-): Promise<DailyAlertJobResult> {
-    const { data: qualifications, error } = await supabase
-        .from("employee_qualifications")
-        .select(`
-            *,
-            employees!inner(name, branch),
-            qualification_master(name)
-        `)
-        .is("employees.deleted_at", null)
-        .not("expiry_date", "is", null)
-        .order("expiry_date", { ascending: true });
-
-    if (error) {
-        throw error;
-    }
-
-    const now = new Date();
+export function buildDailyAlerts(qualifications: QualificationAlertRow[], now = new Date()) {
     const alerts: EmailAlert[] = [];
 
-    for (const q of (qualifications || []) as QualificationAlertRow[]) {
+    for (const q of qualifications) {
         if (!q.expiry_date) continue;
         const expiry = new Date(q.expiry_date);
         const days = Math.floor((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -75,6 +57,40 @@ export async function executeDailyAlertJob(
 
     const emailAlerts = alerts.filter(
         (alert) => alert.level === "critical" || alert.level === "urgent" || alert.level === "warning"
+    );
+
+    return {
+        alerts,
+        emailAlerts,
+        breakdown: {
+            critical: alerts.filter((alert) => alert.level === "critical").length,
+            urgent: alerts.filter((alert) => alert.level === "urgent").length,
+            warning: alerts.filter((alert) => alert.level === "warning").length,
+            info: alerts.filter((alert) => alert.level === "info").length,
+        },
+    };
+}
+
+export async function executeDailyAlertJob(
+    supabase: SupabaseClient<Database>
+): Promise<DailyAlertJobResult> {
+    const { data: qualifications, error } = await supabase
+        .from("employee_qualifications")
+        .select(`
+            *,
+            employees!inner(name, branch),
+            qualification_master(name)
+        `)
+        .is("employees.deleted_at", null)
+        .not("expiry_date", "is", null)
+        .order("expiry_date", { ascending: true });
+
+    if (error) {
+        throw error;
+    }
+
+    const { alerts, emailAlerts, breakdown } = buildDailyAlerts(
+        (qualifications || []) as QualificationAlertRow[]
     );
 
     const emailConfigured = !!(process.env.RESEND_API_KEY && process.env.ALERT_EMAIL_TO);
@@ -108,12 +124,7 @@ export async function executeDailyAlertJob(
         emailTargetCount: emailAlerts.length,
         emailSent,
         emailConfigured,
-        breakdown: {
-            critical: alerts.filter((alert) => alert.level === "critical").length,
-            urgent: alerts.filter((alert) => alert.level === "urgent").length,
-            warning: alerts.filter((alert) => alert.level === "warning").length,
-            info: alerts.filter((alert) => alert.level === "info").length,
-        },
+        breakdown,
     };
 }
 

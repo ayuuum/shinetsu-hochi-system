@@ -33,6 +33,9 @@ import { TableCellLink } from "@/components/shared/table-cell-link";
 import { ActiveFilters } from "@/components/shared/active-filters";
 import { MobileFiltersSheet } from "@/components/shared/mobile-filters-sheet";
 import { deleteHealthCheckAction } from "@/app/actions/admin-record-actions";
+import { formatDisplayDate } from "@/lib/date";
+import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 export type HealthCheckWithEmployee = Tables<"health_checks"> & {
     employees: { id: string; name: string; branch: string | null } | null;
@@ -90,6 +93,9 @@ export function HealthChecksClient({
     const [search, setSearch] = useState(currentSearch);
     const [editingItem, setEditingItem] = useState<HealthCheckWithEmployee | null>(null);
     const [deletingItem, setDeletingItem] = useState<HealthCheckWithEmployee | null>(null);
+    const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+    const [mobileType, setMobileType] = useState(currentType);
+    const [mobileResult, setMobileResult] = useState(currentResult);
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
     const pathname = usePathname();
@@ -128,6 +134,12 @@ export function HealthChecksClient({
     useEffect(() => {
         setSearch(currentSearch);
     }, [currentSearch]);
+
+    useEffect(() => {
+        if (isMobileFiltersOpen) return;
+        setMobileType(currentType);
+        setMobileResult(currentResult);
+    }, [currentResult, currentType, isMobileFiltersOpen]);
 
     useEffect(() => {
         const timer = window.setTimeout(() => {
@@ -175,6 +187,26 @@ export function HealthChecksClient({
         });
     };
 
+    const handleMobileFiltersOpenChange = (open: boolean) => {
+        if (open) {
+            setMobileType(currentType);
+            setMobileResult(currentResult);
+        }
+        setIsMobileFiltersOpen(open);
+    };
+
+    const applyMobileFilters = () => {
+        setIsMobileFiltersOpen(false);
+        startTransition(() => {
+            router.replace(buildHealthChecksHref(pathname, {
+                search,
+                type: mobileType,
+                result: mobileResult,
+                page: 1,
+            }), { scroll: false });
+        });
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -190,7 +222,7 @@ export function HealthChecksClient({
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                         aria-label="社員名・医療機関で検索"
-                        placeholder="社員名・医療機関で検索..."
+                        placeholder="社員名・医療機関で検索…"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="h-11 pl-9"
@@ -199,14 +231,25 @@ export function HealthChecksClient({
                 <MobileFiltersSheet
                     title="健康診断を絞り込む"
                     description="種別や結果で記録を絞り込みます。"
+                    summary="種別・結果"
                     activeCount={activeFilters.length}
-                    onClearAll={clearFilters}
+                    onClearAll={() => {
+                        clearFilters();
+                        setIsMobileFiltersOpen(false);
+                    }}
+                    open={isMobileFiltersOpen}
+                    onOpenChange={handleMobileFiltersOpenChange}
+                    footer={(
+                        <Button type="button" className="w-full" onClick={applyMobileFilters}>
+                            条件を適用
+                        </Button>
+                    )}
                 >
                     <div className="space-y-2">
                         <p className="text-sm font-medium">種別</p>
                         <Select
-                            value={currentType || undefined}
-                            onValueChange={(value) => updateFilters({ type: value && value !== "all" ? value : "", page: 1 })}
+                            value={mobileType || undefined}
+                            onValueChange={(value) => setMobileType(value && value !== "all" ? value : "")}
                         >
                             <SelectTrigger className="w-full">
                                 <SelectValue placeholder="全ての種別" />
@@ -222,8 +265,8 @@ export function HealthChecksClient({
                     <div className="space-y-2">
                         <p className="text-sm font-medium">結果</p>
                         <Select
-                            value={currentResult || undefined}
-                            onValueChange={(value) => updateFilters({ result: value && value !== "all" ? value : "", page: 1 })}
+                            value={mobileResult || undefined}
+                            onValueChange={(value) => setMobileResult(value && value !== "all" ? value : "")}
                         >
                             <SelectTrigger className="w-full">
                                 <SelectValue placeholder="全ての結果" />
@@ -243,7 +286,7 @@ export function HealthChecksClient({
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                         aria-label="社員名・医療機関で検索"
-                        placeholder="社員名・医療機関で検索..."
+                        placeholder="社員名・医療機関で検索…"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="pl-9"
@@ -303,31 +346,33 @@ export function HealthChecksClient({
                                         <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                                             <span>{check.employees?.branch || "拠点未設定"}</span>
                                             <span>·</span>
-                                            <span>{check.check_date || "-"}</span>
+                                            <span className="tabular-nums">{formatDisplayDate(check.check_date)}</span>
                                         </div>
                                     </div>
                                     {showActions ? (
-                                        <div className="flex items-center gap-1">
-                                            <Button variant="ghost" size="icon-sm" aria-label={`${check.employees?.name || "健康診断記録"}を編集`} onClick={() => setEditingItem(check)}>
+                                        <RecordActionsMenu label={check.employees?.name || "健康診断記録"}>
+                                            <DropdownMenuItem onClick={() => setEditingItem(check)}>
                                                 <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon-sm" aria-label={`${check.employees?.name || "健康診断記録"}を削除`} className="text-destructive hover:text-destructive" onClick={() => setDeletingItem(check)}>
+                                                編集
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem variant="destructive" onClick={() => setDeletingItem(check)}>
                                                 <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
+                                                削除
+                                            </DropdownMenuItem>
+                                        </RecordActionsMenu>
                                     ) : null}
                                 </div>
                                 <div className="grid grid-cols-2 gap-3 text-sm">
                                     <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground">種別</p>
+                                        <p className="text-sm text-muted-foreground">種別</p>
                                         <p className="font-medium">{check.check_type || "-"}</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground">医療機関</p>
+                                        <p className="text-sm text-muted-foreground">医療機関</p>
                                         <p className="font-medium">{check.hospital_name || "-"}</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground">結果</p>
+                                        <p className="text-sm text-muted-foreground">結果</p>
                                         <div>
                                             {check.is_normal === true ? (
                                                 <Badge variant="secondary" className="bg-green-100 text-green-600">異常なし</Badge>
@@ -339,7 +384,7 @@ export function HealthChecksClient({
                                         </div>
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground">身長 / 体重</p>
+                                        <p className="text-sm text-muted-foreground">身長 / 体重</p>
                                         <p className="font-medium">
                                             {check.height != null || check.weight != null
                                                 ? `${check.height != null ? `${check.height}cm` : "-"} / ${check.weight != null ? `${check.weight}kg` : "-"}`
@@ -387,7 +432,7 @@ export function HealthChecksClient({
                                         )}
                                     </TableCell>
                                     <TableCell>{check.employees?.branch || "-"}</TableCell>
-                                    <TableCell>{check.check_date}</TableCell>
+                                    <TableCell className="tabular-nums">{formatDisplayDate(check.check_date)}</TableCell>
                                     <TableCell>{check.check_type || "-"}</TableCell>
                                     <TableCell>{check.hospital_name || "-"}</TableCell>
                                     <TableCell>
@@ -406,14 +451,16 @@ export function HealthChecksClient({
                                     </TableCell>
                                     {showActions && (
                                         <TableCell>
-                                            <div className="flex items-center gap-1">
-                                                <Button variant="ghost" size="sm" aria-label={`${check.employees?.name || "健康診断記録"}を編集`} onClick={() => setEditingItem(check)}>
-                                                    <Pencil className="h-3.5 w-3.5" />
-                                                </Button>
-                                                <Button variant="ghost" size="sm" aria-label={`${check.employees?.name || "健康診断記録"}を削除`} className="text-destructive hover:text-destructive" onClick={() => setDeletingItem(check)}>
-                                                    <Trash2 className="h-3.5 w-3.5" />
-                                                </Button>
-                                            </div>
+                                            <RecordActionsMenu label={check.employees?.name || "健康診断記録"}>
+                                                <DropdownMenuItem onClick={() => setEditingItem(check)}>
+                                                    <Pencil className="h-4 w-4" />
+                                                    編集
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem variant="destructive" onClick={() => setDeletingItem(check)}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                    削除
+                                                </DropdownMenuItem>
+                                            </RecordActionsMenu>
                                         </TableCell>
                                     )}
                                 </TableRow>
@@ -471,7 +518,7 @@ export function HealthChecksClient({
                     open={!!deletingItem}
                     onOpenChange={(open) => !open && setDeletingItem(null)}
                     title="健康診断記録の削除"
-                    description={`${deletingItem?.employees?.name || ""} の ${deletingItem?.check_date || ""} の健康診断記録を削除します。`}
+                    description={`${deletingItem?.employees?.name || ""} の ${formatDisplayDate(deletingItem?.check_date)} の健康診断記録を一覧から非表示にします。監査履歴は保持されます。`}
                     onConfirm={handleDelete}
                 />
             )}

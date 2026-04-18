@@ -14,7 +14,7 @@ export function TableCellLink({ children, className, ...props }: TableCellLinkPr
         <Link
             {...props}
             className={cn(
-                "block -m-2 rounded-md px-2 py-2 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                "block -m-2 rounded-md px-2 py-2.5 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                 className,
             )}
         >

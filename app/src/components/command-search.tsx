@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Command } from "cmdk";
-import { ArrowUpRight, Award, Search, Truck, User } from "lucide-react";
+import { ArrowUpRight, Award, BriefcaseBusiness, HeartPulse, Search, Truck, User, Wine } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { formatDateInTokyo, formatDisplayDate } from "@/lib/date";
 import { Tables } from "@/types/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -14,7 +15,7 @@ import {
 
 type SearchResult = {
     id: string;
-    type: "employee" | "qualification" | "vehicle" | "action";
+    type: "employee" | "qualification" | "vehicle" | "project" | "health-check" | "alcohol-check" | "action";
     title: string;
     subtitle: string;
     href: string;
@@ -32,8 +33,24 @@ type QualificationSearchRow = Pick<Tables<"employee_qualifications">, "id" | "em
 
 type VehicleSearchRow = Pick<Tables<"vehicles">, "id" | "plate_number" | "vehicle_name">;
 
+type ProjectSearchRow = Pick<Tables<"construction_records">, "id" | "construction_name" | "location" | "construction_date"> & {
+    employees: Pick<Tables<"employees">, "name"> | null;
+};
+
+type HealthCheckSearchRow = Pick<Tables<"health_checks">, "id" | "employee_id" | "check_date" | "check_type" | "hospital_name"> & {
+    employees: Pick<Tables<"employees">, "name"> | null;
+};
+
+type AlcoholCheckSearchRow = Pick<Tables<"alcohol_checks">, "id" | "employee_id" | "check_datetime" | "is_abnormal" | "location"> & {
+    employee: Pick<Tables<"employees">, "name"> | null;
+};
+
 const RECENT_ITEMS_STORAGE_KEY = "shinetsu-hochi-command-recent";
 const MAX_RECENT_ITEMS = 6;
+
+function buildInCondition(column: string, ids: string[]) {
+    return ids.length > 0 ? `${column}.in.(${ids.join(",")})` : null;
+}
 
 export function CommandSearch({
     open,
@@ -162,19 +179,62 @@ export function CommandSearch({
             if (vehicleResult.error) throw vehicleResult.error;
 
             let qualificationRows: QualificationSearchRow[] = [];
+            const employeeIds = (employeeResult.data || []).map((employee) => employee.id);
+            const employeeCondition = buildInCondition("employee_id", employeeIds);
             const qualificationIds = qualificationMasterResult.data?.map((item) => item.id) || [];
 
-            if (qualificationIds.length > 0) {
-                const { data, error } = await supabase
-                    .from("employee_qualifications")
-                    .select("id, employee_id, employees!inner(name), qualification_master(name)")
+            const [qualificationResult, projectResult, healthCheckResult, alcoholCheckResult] = await Promise.all([
+                qualificationIds.length > 0
+                    ? supabase
+                        .from("employee_qualifications")
+                        .select("id, employee_id, employees!inner(name), qualification_master(name)")
+                        .is("employees.deleted_at", null)
+                        .in("qualification_id", qualificationIds)
+                        .limit(5)
+                    : Promise.resolve({ data: [] as QualificationSearchRow[], error: null }),
+                supabase
+                    .from("construction_records")
+                    .select("id, construction_name, location, construction_date, employees!inner(name)")
+                    .is("deleted_at", null)
                     .is("employees.deleted_at", null)
-                    .in("qualification_id", qualificationIds)
-                    .limit(5);
+                    .or([
+                        `construction_name.ilike.${pattern}`,
+                        `location.ilike.${pattern}`,
+                        employeeCondition,
+                    ].filter(Boolean).join(","))
+                    .limit(5),
+                supabase
+                    .from("health_checks")
+                    .select("id, employee_id, check_date, check_type, hospital_name, employees!inner(name)")
+                    .is("deleted_at", null)
+                    .is("employees.deleted_at", null)
+                    .or([
+                        `hospital_name.ilike.${pattern}`,
+                        `check_type.ilike.${pattern}`,
+                        employeeCondition,
+                    ].filter(Boolean).join(","))
+                    .limit(5),
+                supabase
+                    .from("alcohol_checks")
+                    .select("id, employee_id, check_datetime, is_abnormal, location, employee:employees!alcohol_checks_employee_id_fkey(name)")
+                    .is("deleted_at", null)
+                    .or([
+                        `location.ilike.${pattern}`,
+                        employeeCondition,
+                    ].filter(Boolean).join(","))
+                    .order("check_datetime", { ascending: false })
+                    .limit(5),
+            ]);
 
-                if (error) throw error;
-                qualificationRows = (data || []) as QualificationSearchRow[];
-            }
+            if (qualificationResult.error) throw qualificationResult.error;
+            if (projectResult.error) throw projectResult.error;
+            if (healthCheckResult.error) throw healthCheckResult.error;
+            if (alcoholCheckResult.error) throw alcoholCheckResult.error;
+
+            qualificationRows = (qualificationResult.data || []) as QualificationSearchRow[];
+            const projectRows = (projectResult.data || []) as ProjectSearchRow[];
+            const healthCheckRows = (healthCheckResult.data || []) as HealthCheckSearchRow[];
+            const alcoholCheckRows = (alcoholCheckResult.data || []) as AlcoholCheckSearchRow[];
 
             const items: SearchResult[] = [];
 
@@ -207,6 +267,69 @@ export function CommandSearch({
                     title: vehicle.plate_number,
                     subtitle: vehicle.vehicle_name || "車両・備品",
                     href: `/vehicles?q=${encodeURIComponent(vehicle.plate_number)}`,
+                });
+            });
+
+            projectRows.forEach((project) => {
+                const searchKey = project.construction_name || project.location || project.employees?.name || "";
+                if (!searchKey) return;
+
+                items.push({
+                    id: project.id,
+                    type: "project",
+                    title: project.construction_name || "施工実績",
+                    subtitle: [
+                        project.location,
+                        project.employees?.name,
+                        project.construction_date ? formatDisplayDate(project.construction_date) : null,
+                    ].filter(Boolean).join(" / "),
+                    href: `/projects?q=${encodeURIComponent(searchKey)}`,
+                });
+            });
+
+            healthCheckRows.forEach((healthCheck) => {
+                const searchKey = healthCheck.employees?.name || healthCheck.hospital_name || "";
+                if (!searchKey) return;
+
+                items.push({
+                    id: healthCheck.id,
+                    type: "health-check",
+                    title: `${healthCheck.employees?.name || "社員未設定"} / ${healthCheck.check_type || "健康診断"}`,
+                    subtitle: [
+                        healthCheck.check_date ? formatDisplayDate(healthCheck.check_date) : null,
+                        healthCheck.hospital_name,
+                    ].filter(Boolean).join(" / "),
+                    href: `/health-checks?q=${encodeURIComponent(searchKey)}`,
+                });
+            });
+
+            alcoholCheckRows.forEach((alcoholCheck) => {
+                const date = alcoholCheck.check_datetime ? formatDateInTokyo(alcoholCheck.check_datetime) : "";
+                const params = new URLSearchParams();
+
+                if (date) {
+                    params.set("date", date);
+                }
+                if (alcoholCheck.employee_id) {
+                    params.set("employee", alcoholCheck.employee_id);
+                }
+                if (alcoholCheck.location) {
+                    params.set("location", alcoholCheck.location);
+                }
+                if (alcoholCheck.is_abnormal) {
+                    params.set("status", "abnormal");
+                }
+
+                items.push({
+                    id: alcoholCheck.id,
+                    type: "alcohol-check",
+                    title: `${alcoholCheck.employee?.name || "社員未設定"} / アルコール記録`,
+                    subtitle: [
+                        date ? formatDisplayDate(date) : null,
+                        alcoholCheck.location,
+                        alcoholCheck.is_abnormal ? "不適正" : "適正",
+                    ].filter(Boolean).join(" / "),
+                    href: `/alcohol-checks${params.toString() ? `?${params.toString()}` : ""}`,
                 });
             });
 
@@ -246,6 +369,15 @@ export function CommandSearch({
         }
         if (item.type === "vehicle") {
             return <Truck className="h-4 w-4 text-muted-foreground shrink-0" />;
+        }
+        if (item.type === "project") {
+            return <BriefcaseBusiness className="h-4 w-4 text-muted-foreground shrink-0" />;
+        }
+        if (item.type === "health-check") {
+            return <HeartPulse className="h-4 w-4 text-muted-foreground shrink-0" />;
+        }
+        if (item.type === "alcohol-check") {
+            return <Wine className="h-4 w-4 text-muted-foreground shrink-0" />;
         }
 
         const navItem = findAppNavItemByUrl(item.href);
@@ -302,8 +434,8 @@ export function CommandSearch({
                             <Command.Input
                                 value={query}
                                 onValueChange={setQuery}
-                                aria-label="社員・資格・車両を検索"
-                                placeholder="社員名・資格名・車両番号で検索…"
+                                aria-label="社員・資格・工事・車両・健康診断を検索"
+                                placeholder="社員名・資格名・工事名・車両番号で検索…"
                                 className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground focus-visible:outline-none"
                                 autoFocus
                             />

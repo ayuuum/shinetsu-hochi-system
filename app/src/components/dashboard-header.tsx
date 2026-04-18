@@ -23,8 +23,8 @@ export function DashboardHeader() {
     const sidebarActionLabel = isMobile ? "メニュー" : state === "expanded" ? "サイドバーを閉じる" : "サイドバーを開く";
 
     return (
-        <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border/40 supports-[backdrop-filter]:bg-background/80 print:hidden">
-            <div className="mx-auto max-w-7xl px-3 md:px-6 h-14 flex items-center justify-between gap-4">
+        <header className="sticky top-0 z-20 border-b border-border/40 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80 print:hidden">
+            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-3 md:px-6">
                 <div className="flex min-w-0 items-center gap-2 md:gap-4">
                     <Button
                         type="button"
@@ -32,7 +32,7 @@ export function DashboardHeader() {
                         size="icon"
                         aria-label={sidebarActionLabel}
                         onClick={toggleSidebar}
-                        className="shrink-0 -ml-2 text-foreground/70 hover:text-foreground hover:bg-muted"
+                        className="hidden md:flex shrink-0 -ml-2 text-foreground/70 hover:text-foreground hover:bg-muted"
                     >
                         <PanelLeftIcon className="h-5 w-5" />
                     </Button>
@@ -48,7 +48,7 @@ export function DashboardHeader() {
                     </div>
                 </div>
 
-                <div className="w-full max-w-[280px] md:max-w-[380px]">
+                <div className="w-full max-w-[300px] md:max-w-[400px]">
                     <SearchTrigger className="w-full" />
                 </div>
             </div>

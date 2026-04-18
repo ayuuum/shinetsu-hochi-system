@@ -1,4 +1,9 @@
 const TOKYO_TIME_ZONE = "Asia/Tokyo";
+const DISPLAY_DATE_FORMATTER = new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+});
 
 export function formatDateInTokyo(value: Date | string | number): string {
     return new Intl.DateTimeFormat("sv-SE", {
@@ -28,4 +33,18 @@ export function getTokyoCalendarMonthBounds(todayYmd: string): { start: string; 
 export function isYmdInInclusiveRange(value: string | null | undefined, start: string, end: string) {
     if (!value) return false;
     return value >= start && value <= end;
+}
+
+export function formatDisplayDate(
+    value: Date | string | number | null | undefined,
+    fallback = "-",
+): string {
+    if (!value) return fallback;
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return fallback;
+    }
+
+    return DISPLAY_DATE_FORMATTER.format(date);
 }

@@ -28,6 +28,9 @@ import { toast } from "sonner";
 import { TableCellLink } from "@/components/shared/table-cell-link";
 import { ActiveFilters } from "@/components/shared/active-filters";
 import { deleteVehicleAction } from "@/app/actions/admin-record-actions";
+import { formatDisplayDate } from "@/lib/date";
+import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 export type VehicleWithUser = Tables<"vehicles"> & {
     employees?: { id: string; name: string } | null;
@@ -182,7 +185,7 @@ export function VehiclesClient({
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                     aria-label="ナンバー・車両名・使用者で検索"
-                    placeholder="ナンバー・車両名・使用者で検索..."
+                    placeholder="ナンバー・車両名・使用者で検索…"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="h-11 pl-9"
@@ -212,6 +215,15 @@ export function VehiclesClient({
                                                 <p className="truncate text-base font-semibold">{vehicle.plate_number}</p>
                                             </div>
                                             <p className="mt-1 text-sm text-muted-foreground">{vehicle.vehicle_name || "車両名未設定"}</p>
+                                            <p className="mt-2 text-sm text-primary">
+                                                {vehicle.employees?.id ? (
+                                                    <TableCellLink href={`/employees/${vehicle.employees.id}`} className="font-medium underline-offset-4 hover:underline">
+                                                        主使用者: {vehicle.employees.name}
+                                                    </TableCellLink>
+                                                ) : (
+                                                    <span className="font-medium text-foreground">主使用者: {vehicle.employees?.name || "-"}</span>
+                                                )}
+                                            </p>
                                         </div>
                                         <div className="flex items-center gap-1">
                                             {status === 1
@@ -220,46 +232,38 @@ export function VehiclesClient({
                                                     ? <Badge variant="secondary" className={alertStyles.warning.badge}>注意</Badge>
                                                     : <Badge variant="secondary" className={alertStyles.ok.badge}>正常</Badge>}
                                             {showActions ? (
-                                                <>
-                                                    <Button variant="ghost" size="icon-sm" aria-label={`${vehicle.plate_number}を編集`} onClick={() => setEditingVehicle(vehicle)}>
+                                                <RecordActionsMenu label={vehicle.plate_number}>
+                                                    <DropdownMenuItem onClick={() => setEditingVehicle(vehicle)}>
                                                         <Pencil className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button variant="ghost" size="icon-sm" aria-label={`${vehicle.plate_number}を削除`} className="text-destructive hover:text-destructive" onClick={() => setDeletingVehicle(vehicle)}>
+                                                        編集
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem variant="destructive" onClick={() => setDeletingVehicle(vehicle)}>
                                                         <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </>
+                                                        削除
+                                                    </DropdownMenuItem>
+                                                </RecordActionsMenu>
                                             ) : null}
                                         </div>
                                     </div>
-                                    <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground">主使用者</p>
-                                        {vehicle.employees?.id ? (
-                                            <TableCellLink href={`/employees/${vehicle.employees.id}`} className="font-medium hover:underline">
-                                                {vehicle.employees.name}
-                                            </TableCellLink>
-                                        ) : (
-                                            <p className="font-medium">{vehicle.employees?.name || "-"}</p>
-                                        )}
-                                    </div>
                                     <div className="grid gap-3 text-sm">
                                         <div className="rounded-[16px] bg-muted/30 px-3 py-2">
-                                            <p className="text-xs text-muted-foreground">車検満了日</p>
+                                            <p className="text-sm text-muted-foreground">車検満了日</p>
                                             <div className="mt-1 flex flex-wrap items-center gap-2">
-                                                <span className="font-medium">{vehicle.inspection_expiry || "-"}</span>
+                                                <span className="font-medium tabular-nums">{formatDisplayDate(vehicle.inspection_expiry)}</span>
                                                 {vehicle.inspection_expiry ? getStatusBadge(vehicle.inspection_expiry) : null}
                                             </div>
                                         </div>
                                         <div className="rounded-[16px] bg-muted/30 px-3 py-2">
-                                            <p className="text-xs text-muted-foreground">自賠責保険満期</p>
+                                            <p className="text-sm text-muted-foreground">自賠責保険満期</p>
                                             <div className="mt-1 flex flex-wrap items-center gap-2">
-                                                <span className="font-medium">{vehicle.liability_insurance_expiry || "-"}</span>
+                                                <span className="font-medium tabular-nums">{formatDisplayDate(vehicle.liability_insurance_expiry)}</span>
                                                 {vehicle.liability_insurance_expiry ? getStatusBadge(vehicle.liability_insurance_expiry) : null}
                                             </div>
                                         </div>
                                         <div className="rounded-[16px] bg-muted/30 px-3 py-2">
-                                            <p className="text-xs text-muted-foreground">任意保険満期</p>
+                                            <p className="text-sm text-muted-foreground">任意保険満期</p>
                                             <div className="mt-1 flex flex-wrap items-center gap-2">
-                                                <span className="font-medium">{vehicle.voluntary_insurance_expiry || "-"}</span>
+                                                <span className="font-medium tabular-nums">{formatDisplayDate(vehicle.voluntary_insurance_expiry)}</span>
                                                 {vehicle.voluntary_insurance_expiry ? getStatusBadge(vehicle.voluntary_insurance_expiry) : null}
                                             </div>
                                         </div>
@@ -313,19 +317,19 @@ export function VehiclesClient({
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm">{vehicle.inspection_expiry || "-"}</span>
+                                            <span className="text-sm tabular-nums">{formatDisplayDate(vehicle.inspection_expiry)}</span>
                                             {vehicle.inspection_expiry && getStatusBadge(vehicle.inspection_expiry)}
                                         </div>
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm">{vehicle.liability_insurance_expiry || "-"}</span>
+                                            <span className="text-sm tabular-nums">{formatDisplayDate(vehicle.liability_insurance_expiry)}</span>
                                             {vehicle.liability_insurance_expiry && getStatusBadge(vehicle.liability_insurance_expiry)}
                                         </div>
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm">{vehicle.voluntary_insurance_expiry || "-"}</span>
+                                            <span className="text-sm tabular-nums">{formatDisplayDate(vehicle.voluntary_insurance_expiry)}</span>
                                             {vehicle.voluntary_insurance_expiry && getStatusBadge(vehicle.voluntary_insurance_expiry)}
                                         </div>
                                     </TableCell>
@@ -339,14 +343,16 @@ export function VehiclesClient({
                                     </TableCell>
                                     {showActions && (
                                         <TableCell>
-                                            <div className="flex items-center gap-1">
-                                                <Button variant="ghost" size="sm" aria-label={`${vehicle.plate_number}を編集`} onClick={() => setEditingVehicle(vehicle)}>
-                                                    <Pencil className="h-3.5 w-3.5" />
-                                                </Button>
-                                                <Button variant="ghost" size="sm" aria-label={`${vehicle.plate_number}を削除`} className="text-destructive hover:text-destructive" onClick={() => setDeletingVehicle(vehicle)}>
-                                                    <Trash2 className="h-3.5 w-3.5" />
-                                                </Button>
-                                            </div>
+                                            <RecordActionsMenu label={vehicle.plate_number}>
+                                                <DropdownMenuItem onClick={() => setEditingVehicle(vehicle)}>
+                                                    <Pencil className="h-4 w-4" />
+                                                    編集
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem variant="destructive" onClick={() => setDeletingVehicle(vehicle)}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                    削除
+                                                </DropdownMenuItem>
+                                            </RecordActionsMenu>
                                         </TableCell>
                                     )}
                                 </TableRow>
@@ -400,7 +406,7 @@ export function VehiclesClient({
                     open={!!deletingVehicle}
                     onOpenChange={(open) => !open && setDeletingVehicle(null)}
                     title="車両の削除"
-                    description={`${deletingVehicle?.plate_number} を削除します。この操作は取り消せません。`}
+                    description={`${deletingVehicle?.plate_number} を一覧から非表示にします。監査履歴は保持され、後から確認できます。`}
                     onConfirm={handleDelete}
                 />
             )}
