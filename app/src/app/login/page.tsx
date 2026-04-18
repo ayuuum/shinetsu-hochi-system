@@ -128,14 +128,14 @@ function LoginForm() {
 
     return (
         <>
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-6">
             {authError === "callback" && (
                 <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
                     認証リンクの処理に失敗しました。リンクの有効期限が切れている可能性があります。再度「パスワードを忘れた場合」からお試しください。
                 </p>
             )}
-            <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium">メールアドレス</label>
+            <div>
+                <label htmlFor="email" className="mb-2.5 block text-sm font-semibold tracking-tight">メールアドレス</label>
                 <Input
                     id="email"
                     type="email"
@@ -148,8 +148,8 @@ function LoginForm() {
                     spellCheck={false}
                 />
             </div>
-            <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium">パスワード</label>
+            <div>
+                <label htmlFor="password" className="mb-2.5 block text-sm font-semibold tracking-tight">パスワード</label>
                 <Input
                     id="password"
                     type="password"
@@ -164,11 +164,11 @@ function LoginForm() {
             {error && (
                 <p aria-live="polite" className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">{error}</p>
             )}
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="mt-1 w-full" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 ログイン
             </Button>
-            <p className="text-center text-sm">
+            <p className="pt-1 text-center text-sm">
                 <button
                     type="button"
                     className="text-primary underline-offset-4 hover:underline"
@@ -192,9 +192,9 @@ function LoginForm() {
                         登録済みのメールアドレスに、再設定用のリンクを送信します。
                     </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handlePasswordReset} className="space-y-4">
-                    <div className="space-y-2">
-                        <label htmlFor="reset-email" className="text-sm font-medium">メールアドレス</label>
+                <form onSubmit={handlePasswordReset} className="space-y-5">
+                    <div>
+                        <label htmlFor="reset-email" className="mb-2.5 block text-sm font-semibold tracking-tight">メールアドレス</label>
                         <Input
                             id="reset-email"
                             type="email"
