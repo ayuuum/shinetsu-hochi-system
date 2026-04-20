@@ -40,13 +40,13 @@ create policy certificate_images_write on public.certificate_images
     for all using (
         exists (
             select 1 from public.user_roles ur
-            where ur.user_id = auth.uid()
+            where ur.id = auth.uid()
               and ur.role in ('admin', 'hr')
         )
     ) with check (
         exists (
             select 1 from public.user_roles ur
-            where ur.user_id = auth.uid()
+            where ur.id = auth.uid()
               and ur.role in ('admin', 'hr')
         )
     );
