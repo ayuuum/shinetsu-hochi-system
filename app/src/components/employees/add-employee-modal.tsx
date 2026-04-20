@@ -36,6 +36,7 @@ import { toast } from "sonner";
 import { UnsavedChangesDialog } from "@/components/shared/unsaved-changes-dialog";
 import { createEmployeeAction } from "@/app/actions/admin-record-actions";
 import { employeeCreateSchema, type EmployeeCreateValues } from "@/lib/validation/employee";
+import { supabase } from "@/lib/supabase";
 
 function createDefaultValues(): EmployeeCreateValues {
     return {
@@ -51,6 +52,7 @@ function createDefaultValues(): EmployeeCreateValues {
         branch: "",
         employment_type: "",
         job_title: "",
+        photo_url: "",
     };
 }
 
@@ -58,6 +60,7 @@ export function AddEmployeeModal() {
     const [open, setOpen] = useState(false);
     const [discardOpen, setDiscardOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [photoFile, setPhotoFile] = useState<File | null>(null);
     const router = useRouter();
 
     const form = useForm<EmployeeCreateValues>({
@@ -85,16 +88,39 @@ export function AddEmployeeModal() {
 
     const handleDiscard = () => {
         form.reset(createDefaultValues());
+        setPhotoFile(null);
         setDiscardOpen(false);
         setOpen(false);
     };
 
     async function submitData(values: EmployeeCreateValues, continuous: boolean) {
         setIsSubmitting(true);
+        let uploadedPhotoPath: string | null = null;
+
+        if (photoFile) {
+            const ext = photoFile.name.split(".").pop();
+            const filePath = `employee-photos/${crypto.randomUUID()}.${ext}`;
+            const { error: uploadError } = await supabase.storage
+                .from("certificates")
+                .upload(filePath, photoFile);
+
+            if (uploadError) {
+                setIsSubmitting(false);
+                toast.error(`顔写真のアップロードに失敗しました: ${uploadError.message}`);
+                return;
+            }
+
+            uploadedPhotoPath = filePath;
+            values.photo_url = filePath;
+        }
+
         const result = await createEmployeeAction(values);
         setIsSubmitting(false);
 
         if (!result.success) {
+            if (uploadedPhotoPath) {
+                await supabase.storage.from("certificates").remove([uploadedPhotoPath]);
+            }
             if (result.fieldErrors) {
                 for (const [field, message] of Object.entries(result.fieldErrors)) {
                     if (!message) continue;
@@ -108,9 +134,11 @@ export function AddEmployeeModal() {
         toast.success("社員を登録しました");
         if (continuous) {
             form.reset(createDefaultValues());
+            setPhotoFile(null);
         } else {
             setOpen(false);
             form.reset(createDefaultValues());
+            setPhotoFile(null);
         }
         router.refresh();
     }
@@ -185,6 +213,20 @@ export function AddEmployeeModal() {
                                     </FormItem>
                                 )} />
                             </div>
+
+                            <FormItem>
+                                <FormLabel>顔写真</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)}
+                                    />
+                                </FormControl>
+                                <p className="text-xs text-muted-foreground">
+                                    JPG / PNG を登録できます。証書と同じストレージに保存します。
+                                </p>
+                            </FormItem>
                         </div>
 
                         {/* 連絡先 */}

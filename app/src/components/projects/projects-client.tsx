@@ -163,7 +163,7 @@ export function ProjectsClient({
     };
 
     const handleExport = () => {
-        window.open("/api/export/career-history", "_blank");
+        window.open("/api/export/career-history?format=excel", "_blank");
     };
 
     const clearFilters = () => {
@@ -200,7 +200,7 @@ export function ProjectsClient({
                 </div>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     <Button variant="outline" onClick={handleExport} className="rounded-full shadow-sm">
-                        <Download className="mr-2 h-4 w-4" />CSV出力
+                        <Download className="mr-2 h-4 w-4" />Excel出力
                     </Button>
                     {isAdminOrHr && <AddProjectModal employees={employees} />}
                 </div>

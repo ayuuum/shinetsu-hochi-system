@@ -38,6 +38,7 @@ import {
     toEmployeeUpdateFormValues,
     type EmployeeUpdateValues,
 } from "@/lib/validation/employee";
+import { supabase } from "@/lib/supabase";
 
 interface EditEmployeeModalProps {
     employee: Tables<"employees">;
@@ -49,6 +50,7 @@ interface EditEmployeeModalProps {
 export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: EditEmployeeModalProps) {
     const [discardOpen, setDiscardOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [photoFile, setPhotoFile] = useState<File | null>(null);
 
     const form = useForm<EmployeeUpdateValues>({
         resolver: zodResolver(employeeUpdateSchema),
@@ -81,16 +83,39 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
 
     const handleDiscard = () => {
         form.reset(toEmployeeUpdateFormValues(employee));
+        setPhotoFile(null);
         setDiscardOpen(false);
         onOpenChange(false);
     };
 
     async function onSubmit(values: EmployeeUpdateValues) {
         setIsSubmitting(true);
+        let uploadedPhotoPath: string | null = null;
+
+        if (photoFile) {
+            const ext = photoFile.name.split(".").pop();
+            const filePath = `employee-photos/${crypto.randomUUID()}.${ext}`;
+            const { error: uploadError } = await supabase.storage
+                .from("certificates")
+                .upload(filePath, photoFile);
+
+            if (uploadError) {
+                setIsSubmitting(false);
+                toast.error(`顔写真のアップロードに失敗しました: ${uploadError.message}`);
+                return;
+            }
+
+            uploadedPhotoPath = filePath;
+            values.photo_url = filePath;
+        }
+
         const result = await updateEmployeeAction(employee.id, values);
         setIsSubmitting(false);
 
         if (!result.success) {
+            if (uploadedPhotoPath) {
+                await supabase.storage.from("certificates").remove([uploadedPhotoPath]);
+            }
             if (result.fieldErrors) {
                 for (const [field, message] of Object.entries(result.fieldErrors)) {
                     if (!message) continue;
@@ -102,7 +127,11 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
         }
 
         toast.success("社員情報を更新しました");
+        if (uploadedPhotoPath && employee.photo_url && employee.photo_url !== uploadedPhotoPath) {
+            await supabase.storage.from("certificates").remove([employee.photo_url]);
+        }
         form.reset(values);
+        setPhotoFile(null);
         onOpenChange(false);
         onSuccess?.();
     }
@@ -191,6 +220,20 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
                                 <FormMessage />
                             </FormItem>
                         )} />
+
+                        <FormItem>
+                            <FormLabel>顔写真</FormLabel>
+                            <FormControl>
+                                <Input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)}
+                                />
+                            </FormControl>
+                            <p className="text-xs text-muted-foreground">
+                                新しい画像を選ぶと差し替え保存します。
+                            </p>
+                        </FormItem>
 
                         <div className="grid grid-cols-3 gap-4">
                             <FormField control={form.control} name="hire_date" render={({ field }) => (

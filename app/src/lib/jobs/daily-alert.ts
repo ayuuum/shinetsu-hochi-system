@@ -93,7 +93,9 @@ export async function executeDailyAlertJob(
         (qualifications || []) as QualificationAlertRow[]
     );
 
-    const emailConfigured = !!(process.env.RESEND_API_KEY && process.env.ALERT_EMAIL_TO);
+    const gasConfigured = !!process.env.GOOGLE_APPS_SCRIPT_URL;
+    const resendConfigured = !!(process.env.RESEND_API_KEY && process.env.ALERT_EMAIL_TO);
+    const emailConfigured = gasConfigured || resendConfigured;
     let emailSent = false;
 
     if (emailAlerts.length > 0 && emailConfigured) {
@@ -101,22 +103,39 @@ export async function executeDailyAlertJob(
         const subject = criticalCount > 0
             ? `【要対応】資格期限切れ ${criticalCount}件 + 期限間近 ${emailAlerts.length - criticalCount}件`
             : `【確認】資格期限間近 ${emailAlerts.length}件`;
+        const html = buildDailyAlertEmailHtml(emailAlerts);
 
-        const response = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-            },
-            body: JSON.stringify({
-                from: "株式会社信越報知 社員・資格管理 <noreply@resend.dev>",
-                to: process.env.ALERT_EMAIL_TO!.split(",").map((value) => value.trim()),
-                subject,
-                html: buildDailyAlertEmailHtml(emailAlerts),
-            }),
-        });
+        if (gasConfigured) {
+            const response = await fetch(process.env.GOOGLE_APPS_SCRIPT_URL!, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    to: process.env.ALERT_EMAIL_TO?.split(",").map((value) => value.trim()) ?? [],
+                    subject,
+                    html,
+                    alerts: emailAlerts,
+                }),
+            });
+            emailSent = response.ok;
+        } else if (resendConfigured) {
+            const response = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+                },
+                body: JSON.stringify({
+                    from: "株式会社信越報知 社員・資格管理 <noreply@resend.dev>",
+                    to: process.env.ALERT_EMAIL_TO!.split(",").map((value) => value.trim()),
+                    subject,
+                    html,
+                }),
+            });
 
-        emailSent = response.ok;
+            emailSent = response.ok;
+        }
     }
 
     return {

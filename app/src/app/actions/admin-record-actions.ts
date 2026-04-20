@@ -59,6 +59,12 @@ import {
     toItAccountUpdate,
     type EmployeeItAccountValues,
 } from "@/lib/validation/employee-it-account";
+import {
+    employeeFamilySchema,
+    toEmployeeFamilyInsert,
+    toEmployeeFamilyUpdate,
+    type EmployeeFamilyValues,
+} from "@/lib/validation/employee-family";
 
 type ActionResult<TField extends string> =
     | { success: true }
@@ -170,6 +176,13 @@ function revalidateAlcoholCheckPaths(employeeId?: string | null) {
 
 function revalidateInsurancePaths(employeeId?: string | null) {
     revalidatePath("/insurances");
+    revalidatePath("/employees");
+    if (employeeId) {
+        revalidatePath(`/employees/${employeeId}`);
+    }
+}
+
+function revalidateFamilyPaths(employeeId?: string | null) {
     revalidatePath("/employees");
     if (employeeId) {
         revalidatePath(`/employees/${employeeId}`);
@@ -378,6 +391,129 @@ export async function updateEmployeeAction(
     } catch (error) {
         console.error("Unexpected error while updating employee:", error);
         return { success: false, error: "社員情報の更新に失敗しました。" };
+    }
+}
+
+export async function createEmployeeFamilyAction(
+    values: EmployeeFamilyValues
+): Promise<ActionResult<keyof EmployeeFamilyValues>> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) {
+        return { success: false, error: auth.error };
+    }
+
+    const parsed = employeeFamilySchema.safeParse(values);
+    if (!parsed.success) {
+        return {
+            success: false,
+            error: "入力内容を確認してください。",
+            fieldErrors: getFieldErrors<keyof EmployeeFamilyValues>(parsed.error),
+        };
+    }
+
+    try {
+        if (!(await employeeExists(parsed.data.employee_id))) {
+            return {
+                success: false,
+                error: "入力内容を確認してください。",
+                fieldErrors: { employee_id: "対象社員が見つかりません。" },
+            };
+        }
+
+        const supabase = await createSupabaseServer();
+        const { data, error } = await supabase
+            .from("employee_family")
+            .insert([toEmployeeFamilyInsert(parsed.data)])
+            .select("id")
+            .single();
+
+        if (error) {
+            console.error("Failed to create employee family:", error);
+            return { success: false, error: "家族情報の登録に失敗しました。" };
+        }
+
+        await recordAuditLog({
+            actorId: auth.user.id,
+            actorEmail: auth.user.email,
+            entityType: "employee_family",
+            entityId: data.id,
+            action: "create",
+            summary: `${parsed.data.name} を登録`,
+            metadata: {
+                employee_id: parsed.data.employee_id,
+                relationship: parsed.data.relationship || null,
+                is_emergency_contact: parsed.data.is_emergency_contact,
+            },
+        });
+        revalidateFamilyPaths(parsed.data.employee_id);
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while creating employee family:", error);
+        return { success: false, error: "家族情報の登録に失敗しました。" };
+    }
+}
+
+export async function updateEmployeeFamilyAction(
+    familyId: string,
+    values: EmployeeFamilyValues
+): Promise<ActionResult<keyof EmployeeFamilyValues>> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) {
+        return { success: false, error: auth.error };
+    }
+
+    const parsed = employeeFamilySchema.safeParse(values);
+    if (!parsed.success) {
+        return {
+            success: false,
+            error: "入力内容を確認してください。",
+            fieldErrors: getFieldErrors<keyof EmployeeFamilyValues>(parsed.error),
+        };
+    }
+
+    try {
+        if (!(await employeeExists(parsed.data.employee_id))) {
+            return {
+                success: false,
+                error: "入力内容を確認してください。",
+                fieldErrors: { employee_id: "対象社員が見つかりません。" },
+            };
+        }
+
+        const supabase = await createSupabaseServer();
+        const { data, error } = await supabase
+            .from("employee_family")
+            .update(toEmployeeFamilyUpdate(parsed.data))
+            .eq("id", familyId)
+            .select("id")
+            .maybeSingle();
+
+        if (error) {
+            console.error("Failed to update employee family:", error);
+            return { success: false, error: "家族情報の更新に失敗しました。" };
+        }
+        if (!data) {
+            return { success: false, error: "家族情報が見つかりません。" };
+        }
+
+        await recordAuditLog({
+            actorId: auth.user.id,
+            actorEmail: auth.user.email,
+            entityType: "employee_family",
+            entityId: familyId,
+            action: "update",
+            summary: `${parsed.data.name} を更新`,
+            metadata: {
+                employee_id: parsed.data.employee_id,
+                relationship: parsed.data.relationship || null,
+                is_emergency_contact: parsed.data.is_emergency_contact,
+            },
+        });
+        revalidateFamilyPaths(parsed.data.employee_id);
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while updating employee family:", error);
+        return { success: false, error: "家族情報の更新に失敗しました。" };
     }
 }
 
@@ -1454,6 +1590,51 @@ export async function deleteEmployeeAction(employeeId: string): Promise<DeleteAc
     } catch (error) {
         console.error("Unexpected error while deleting employee:", error);
         return { success: false, error: "社員の削除に失敗しました。" };
+    }
+}
+
+export async function deleteEmployeeFamilyAction(familyId: string): Promise<DeleteActionResult> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) {
+        return { success: false, error: auth.error };
+    }
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: family, error: fetchError } = await supabase
+            .from("employee_family")
+            .select("name, employee_id")
+            .eq("id", familyId)
+            .maybeSingle();
+
+        if (fetchError || !family) {
+            return { success: false, error: "家族情報が見つかりません。" };
+        }
+
+        const { error } = await supabase
+            .from("employee_family")
+            .delete()
+            .eq("id", familyId);
+
+        if (error) {
+            console.error("Failed to delete employee family:", error);
+            return { success: false, error: "家族情報の削除に失敗しました。" };
+        }
+
+        await recordAuditLog({
+            actorId: auth.user.id,
+            actorEmail: auth.user.email,
+            entityType: "employee_family",
+            entityId: familyId,
+            action: "delete",
+            summary: `${family.name} を削除`,
+            metadata: { employee_id: family.employee_id },
+        });
+        revalidateFamilyPaths(family.employee_id);
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while deleting employee family:", error);
+        return { success: false, error: "家族情報の削除に失敗しました。" };
     }
 }
 

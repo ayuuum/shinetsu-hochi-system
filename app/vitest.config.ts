@@ -4,6 +4,15 @@ import path from 'path';
 export default defineConfig({
   test: {
     globals: true,
+    include: [
+      "src/**/*.{test,spec}.{ts,tsx}",
+    ],
+    exclude: [
+      "e2e/**",
+      "node_modules/**",
+      "**/node_modules/**",
+      ".next/**",
+    ],
   },
   resolve: {
     alias: {

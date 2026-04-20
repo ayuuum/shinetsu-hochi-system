@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { getTodayInTokyo } from "@/lib/date";
+import { getTodayInTokyo, getTokyoCalendarMonthBounds } from "@/lib/date";
 import { getSupabaseEnv } from "@/lib/supabase-env";
 import { Tables } from "@/types/supabase";
 
@@ -38,6 +38,65 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const from = searchParams.get("from");
     const to = searchParams.get("to");
+    const format = searchParams.get("format") || "csv";
+    const report = searchParams.get("report");
+    const month = searchParams.get("month") || getTodayInTokyo().slice(0, 7);
+
+    if (report === "monthly") {
+        const { start, end } = getTokyoCalendarMonthBounds(`${month}-01`);
+        const [{ data: employees, error: employeeError }, { data: checks, error: checksError }] = await Promise.all([
+            supabase
+                .from("employees")
+                .select("id, name, branch")
+                .is("deleted_at", null)
+                .order("branch")
+                .order("name"),
+            supabase
+                .from("alcohol_checks")
+                .select("employee_id, check_datetime")
+                .is("deleted_at", null)
+                .gte("check_datetime", `${start}T00:00:00`)
+                .lte("check_datetime", `${end}T23:59:59`),
+        ]);
+
+        if (employeeError || checksError) {
+            return NextResponse.json({ error: employeeError?.message || checksError?.message }, { status: 500 });
+        }
+
+        const recordedDaysByEmployee = new Map<string, Set<string>>();
+        for (const row of checks || []) {
+            if (!row.employee_id || !row.check_datetime) continue;
+            const current = recordedDaysByEmployee.get(row.employee_id) ?? new Set<string>();
+            current.add(row.check_datetime.slice(0, 10));
+            recordedDaysByEmployee.set(row.employee_id, current);
+        }
+
+        const monthDays = Number(end.slice(-2));
+        const headers = ["対象月", "拠点", "社員名", "記録日数", "月日数", "記録率(%)"];
+        const lines = (employees || []).map((employee) => {
+            const recordedDays = recordedDaysByEmployee.get(employee.id)?.size ?? 0;
+            const rate = monthDays > 0 ? Math.round((recordedDays / monthDays) * 100) : 0;
+            return [month, employee.branch || "", employee.name, recordedDays, monthDays, rate];
+        });
+
+        if (format === "excel") {
+            const htmlRows = lines.map((line) => `<tr>${line.map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("");
+            return new NextResponse(`<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><table border="1"><thead><tr>${headers.map((header) => `<th>${header}</th>`).join("")}</tr></thead><tbody>${htmlRows}</tbody></table></body></html>`, {
+                headers: {
+                    "Content-Type": "application/vnd.ms-excel; charset=utf-8",
+                    "Content-Disposition": `attachment; filename="alcohol-monthly-report-${month}.xls"`,
+                },
+            });
+        }
+
+        const csv = "\uFEFF" + [headers.join(","), ...lines.map((line) => line.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(","))].join("\n");
+        return new NextResponse(csv, {
+            headers: {
+                "Content-Type": "text/csv; charset=utf-8",
+                "Content-Disposition": `attachment; filename="alcohol-monthly-report-${month}.csv"`,
+            },
+        });
+    }
 
     let query = supabase
         .from("alcohol_checks")
@@ -71,6 +130,28 @@ export async function GET(request: NextRequest) {
     ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
 
     const csv = "\uFEFF" + [headers.join(","), ...rows].join("\n");
+
+    if (format === "excel") {
+        const htmlRows = ((checks || []) as AlcoholCheckExportRow[]).map((c) => `
+            <tr>
+                <td>${c.check_datetime || ""}</td>
+                <td>${c.employee?.name || ""}</td>
+                <td>${c.check_type || ""}</td>
+                <td>${c.checker?.name || ""}</td>
+                <td>${c.measured_value != null ? String(c.measured_value) : ""}</td>
+                <td>${c.is_abnormal ? "不適正" : "適正"}</td>
+                <td>${c.location || ""}</td>
+                <td>${c.notes || ""}</td>
+            </tr>
+        `).join("");
+
+        return new NextResponse(`<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><table border="1"><thead><tr>${headers.map((header) => `<th>${header}</th>`).join("")}</tr></thead><tbody>${htmlRows}</tbody></table></body></html>`, {
+            headers: {
+                "Content-Type": "application/vnd.ms-excel; charset=utf-8",
+                "Content-Disposition": `attachment; filename="alcohol_checks_${getTodayInTokyo()}.xls"`,
+            },
+        });
+    }
 
     return new NextResponse(csv, {
         headers: {

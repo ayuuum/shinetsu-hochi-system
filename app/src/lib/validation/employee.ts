@@ -40,6 +40,7 @@ const employeeBaseSchema = z.object({
     emp_insurance_no: optionalText,
     health_insurance_no: optionalText,
     pension_no: optionalText,
+    photo_url: optionalText,
 });
 
 export const employeeCreateSchema = employeeBaseSchema.extend({
@@ -90,6 +91,7 @@ export function toEmployeeInsert(values: EmployeeCreateValues): TablesInsert<"em
         emp_insurance_no: normalizeNullableText(values.emp_insurance_no),
         health_insurance_no: normalizeNullableText(values.health_insurance_no),
         pension_no: normalizeNullableText(values.pension_no),
+        photo_url: normalizeNullableText(values.photo_url),
     };
 }
 
@@ -112,6 +114,7 @@ export function toEmployeeUpdate(values: EmployeeUpdateValues): TablesUpdate<"em
         emp_insurance_no: normalizeNullableText(values.emp_insurance_no),
         health_insurance_no: normalizeNullableText(values.health_insurance_no),
         pension_no: normalizeNullableText(values.pension_no),
+        photo_url: normalizeNullableText(values.photo_url),
     };
 }
 
@@ -134,5 +137,6 @@ export function toEmployeeUpdateFormValues(employee: Tables<"employees">): Emplo
         emp_insurance_no: employee.emp_insurance_no || "",
         health_insurance_no: employee.health_insurance_no || "",
         pension_no: employee.pension_no || "",
+        photo_url: employee.photo_url || "",
     };
 }

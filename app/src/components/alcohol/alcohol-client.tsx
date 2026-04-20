@@ -52,6 +52,15 @@ export type AlcoholCheckRow = {
     checker?: { id: string; name: string } | null;
 };
 
+type MonthlyAlcoholSummary = {
+    employeeId: string;
+    employeeName: string;
+    branch: string;
+    recordedDays: number;
+    monthDays: number;
+    completionRate: number;
+};
+
 type Employee = { id: string; name: string };
 
 function buildAlcoholChecksHref(pathname: string, {
@@ -96,6 +105,8 @@ export function AlcoholClient({
     currentLocation,
     currentStatus,
     currentEmployee,
+    currentMonth,
+    monthlySummary,
     currentPage,
     totalPages,
 }: {
@@ -105,6 +116,8 @@ export function AlcoholClient({
     currentLocation: string;
     currentStatus: string;
     currentEmployee: string;
+    currentMonth: string;
+    monthlySummary: MonthlyAlcoholSummary[];
     currentPage: number;
     totalPages: number;
 }) {
@@ -190,6 +203,16 @@ export function AlcoholClient({
         const params = new URLSearchParams();
         if (currentDate) params.set("from", currentDate);
         if (currentDate) params.set("to", currentDate);
+        params.set("format", "excel");
+        window.open(`/api/export/alcohol-checks?${params.toString()}`, "_blank");
+    };
+
+    const handleMonthlyExport = () => {
+        const params = new URLSearchParams({
+            report: "monthly",
+            month: currentMonth,
+            format: "excel",
+        });
         window.open(`/api/export/alcohol-checks?${params.toString()}`, "_blank");
     };
 
@@ -230,7 +253,7 @@ export function AlcoholClient({
                 <div className="flex flex-col sm:flex-row gap-2">
                     <Button variant="outline" onClick={handleExport}>
                         <Download className="mr-2 h-4 w-4" />
-                        CSV出力
+                        Excel出力
                     </Button>
                     {canRecordAlcohol && (
                         <AddAlcoholCheckModal
@@ -250,6 +273,54 @@ export function AlcoholClient({
                     </p>
                 </div>
             )}
+
+            <Card className="border-border/60 shadow-sm">
+                <CardContent className="space-y-4 p-5">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <h2 className="text-lg font-bold">月次記録率レポート</h2>
+                            <p className="text-sm text-muted-foreground">拠点別・社員別に月内の記録率を確認できます。</p>
+                        </div>
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                            <Input
+                                aria-label="レポート対象月"
+                                type="month"
+                                value={currentMonth}
+                                onChange={(e) => {
+                                    const params = new URLSearchParams(window.location.search);
+                                    params.set("month", e.target.value);
+                                    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+                                }}
+                                className="h-11"
+                            />
+                            <Button variant="outline" onClick={handleMonthlyExport}>
+                                <Download className="mr-2 h-4 w-4" />
+                                月次Excel出力
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                        {monthlySummary.slice(0, 6).map((summary) => (
+                            <Card key={summary.employeeId} className="border-border/50">
+                                <CardContent className="space-y-2 p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <p className="font-semibold">{summary.employeeName}</p>
+                                            <p className="text-sm text-muted-foreground">{summary.branch}</p>
+                                        </div>
+                                        <Badge variant={summary.completionRate >= 90 ? "default" : summary.completionRate >= 60 ? "secondary" : "destructive"}>
+                                            {summary.completionRate}%
+                                        </Badge>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                        記録 {summary.recordedDays} / {summary.monthDays} 日
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
 
             <div className="space-y-3 md:hidden">
                 <Input

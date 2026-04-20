@@ -138,11 +138,20 @@ export default async function EmployeeDetailPage({
             })
     );
 
+    let photoUrl: string | null = null;
+    if (employee.photo_url) {
+        const { data } = await supabase.storage
+            .from("certificates")
+            .createSignedUrl(employee.photo_url, 3600);
+        photoUrl = data?.signedUrl || null;
+    }
+
     return (
         <EmployeeDetailClient
             employee={employee}
             certUrls={Object.fromEntries(certificateEntries.filter((entry): entry is readonly [string, string] => entry !== null))}
             initialTab={currentTab}
+            photoUrl={photoUrl}
         />
     );
 }

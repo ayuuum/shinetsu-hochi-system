@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -41,6 +42,7 @@ import { AddConstructionModal } from "@/components/employees/add-construction-mo
 import { AddLifeInsuranceModal } from "@/components/employees/add-life-insurance-modal";
 import { AddDamageInsuranceModal } from "@/components/employees/add-damage-insurance-modal";
 import { AddItAccountModal } from "@/components/employees/add-it-account-modal";
+import { AddFamilyModal } from "@/components/employees/add-family-modal";
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { alertStyles } from "@/lib/alert-utils";
@@ -107,10 +109,12 @@ export function EmployeeDetailClient({
     employee,
     certUrls,
     initialTab,
+    photoUrl,
 }: {
     employee: EmployeeDetail;
     certUrls: Record<string, string>;
     initialTab: EmployeeDetailTab;
+    photoUrl: string | null;
 }) {
     const router = useRouter();
     const pathname = usePathname();
@@ -242,7 +246,17 @@ export function EmployeeDetailClient({
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div className="flex items-center gap-4">
                         <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-inner">
-                            <User className="h-10 w-10" />
+                            {photoUrl ? (
+                                <Image
+                                    src={photoUrl}
+                                    alt={`${employee.name} の顔写真`}
+                                    width={80}
+                                    height={80}
+                                    className="h-20 w-20 rounded-2xl object-cover"
+                                />
+                            ) : (
+                                <User className="h-10 w-10" />
+                            )}
                         </div>
                         <div>
                             <div className="flex items-center gap-3">
@@ -581,7 +595,19 @@ export function EmployeeDetailClient({
                     <Card className="shadow-sm border-border/50">
                         <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle className="text-lg">施工実績履歴</CardTitle>
-                            {isAdminOrHr && <AddConstructionModal employeeId={employee.id} onSuccess={() => router.refresh()} />}
+                            <div className="flex flex-wrap items-center gap-2">
+                                {employee.construction_records.length > 0 ? (
+                                    <>
+                                        <Button size="sm" variant="outline" render={<Link href={`/api/export/career-history?employeeId=${employee.id}&format=excel`} />}>
+                                            Excel出力
+                                        </Button>
+                                        <Button size="sm" variant="outline" render={<Link href={`/employees/${employee.id}/career-history/print`} target="_blank" />}>
+                                            PDF出力
+                                        </Button>
+                                    </>
+                                ) : null}
+                                {isAdminOrHr && <AddConstructionModal employeeId={employee.id} onSuccess={() => router.refresh()} />}
+                            </div>
                         </CardHeader>
                         <CardContent>
                             {employee.construction_records.length === 0 ? (
@@ -622,31 +648,37 @@ export function EmployeeDetailClient({
                 <TabsContent value="family" className="mt-6">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-bold">家族・緊急連絡先</h3>
-                        <p className="text-xs text-muted-foreground">このセクションは現在閲覧専用です。</p>
+                        {isAdminOrHr ? <AddFamilyModal employeeId={employee.id} onSuccess={() => router.refresh()} /> : null}
                     </div>
                     {employee.employee_family.length === 0 ? (
                         <Card className="bg-muted/10 border-dashed">
                             <CardContent className="py-10 text-center text-muted-foreground text-sm">
-                                家族情報が登録されていません。家族情報の追加機能は現在未提供です。
+                                家族情報が登録されていません。
                             </CardContent>
                         </Card>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {employee.employee_family.map((family) => (
                                 <Card key={family.id} className="shadow-sm">
-                                    <CardContent className="p-4 flex justify-between items-center">
+                                    <CardContent className="p-4 flex justify-between items-center gap-4">
                                         <div>
                                             <div className="flex items-center gap-2">
                                                 <span className="font-bold">{family.name}</span>
                                                 <Badge variant="secondary" className="text-[10px] h-4 px-1">{family.relationship}</Badge>
                                             </div>
                                             <p className="text-xs text-muted-foreground mt-1 tabular-nums">{formatDisplayDate(family.birth_date, "不明")} 生まれ</p>
+                                            <p className="text-xs text-muted-foreground mt-1">{family.phone_number || "電話番号未登録"}</p>
                                         </div>
-                                        {family.is_emergency_contact && (
-                                            <Badge className={`${alertStyles.danger.badge} border-red-200/70`}>
-                                                緊急連絡先
-                                            </Badge>
-                                        )}
+                                        <div className="flex flex-col items-end gap-2">
+                                            {family.is_emergency_contact && (
+                                                <Badge className={`${alertStyles.danger.badge} border-red-200/70`}>
+                                                    緊急連絡先
+                                                </Badge>
+                                            )}
+                                            {isAdminOrHr ? (
+                                                <AddFamilyModal employeeId={employee.id} existingRecord={family} onSuccess={() => router.refresh()} />
+                                            ) : null}
+                                        </div>
                                     </CardContent>
                                 </Card>
                             ))}
