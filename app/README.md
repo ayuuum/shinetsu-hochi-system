@@ -1,3 +1,16 @@
+## Shinetsu Hochi System
+
+消防設備会社向けの社員・資格・車両・施工実績・健康診断・アルコールチェック管理アプリです。
+
+最近の主な追加機能:
+
+- 社員顔写真の登録と詳細表示
+- 家族・緊急連絡先の CRUD
+- 施工実績の Excel 出力と印刷用ページ
+- アルコールチェックの月次記録率レポート
+- Google Apps Script 経由の通知送信オプション
+- Playwright / Vitest による自動テスト
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
