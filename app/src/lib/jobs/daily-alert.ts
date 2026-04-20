@@ -2,19 +2,29 @@ import { Tables } from "@/types/supabase";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "@/types/supabase";
 
-export type QualificationAlertRow = Pick<Tables<"employee_qualifications">, "expiry_date" | "status"> & {
+export type QualificationAlertRow = Pick<
+    Tables<"employee_qualifications">,
+    "id" | "expiry_date" | "status" | "photo_renewal_date"
+> & {
+    employee_id: string | null;
     employees: Pick<Tables<"employees">, "name" | "branch"> | null;
     qualification_master: Pick<Tables<"qualification_master">, "name"> | null;
 };
 
+export type AlertCategory = "qualification_expiry" | "photo_renewal";
+
 export type EmailAlert = {
     level: "info" | "warning" | "urgent" | "critical";
+    category: AlertCategory;
     employeeName: string;
     branch: string | null;
     qualificationName: string;
     expiryDate: string;
     daysRemaining: number;
     status: string | null;
+    // link back to the source row for alert_logs dedup
+    targetId: string;
+    employeeId: string | null;
 };
 
 export type DailyAlertJobResult = {
@@ -28,31 +38,64 @@ export type DailyAlertJobResult = {
         warning: number;
         info: number;
     };
+    suppressedCount: number;
 };
+
+function classifyLevel(days: number): EmailAlert["level"] | null {
+    if (days > 60) return null;
+    if (days < 0) return "critical";
+    if (days <= 14) return "urgent";
+    if (days <= 30) return "warning";
+    return "info";
+}
 
 export function buildDailyAlerts(qualifications: QualificationAlertRow[], now = new Date()) {
     const alerts: EmailAlert[] = [];
 
     for (const q of qualifications) {
-        if (!q.expiry_date) continue;
-        const expiry = new Date(q.expiry_date);
-        const days = Math.floor((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        if (days > 60) continue;
+        const qualificationName = q.qualification_master?.name || "不明";
+        const employeeName = q.employees?.name || "不明";
+        const branch = q.employees?.branch || null;
 
-        let level: EmailAlert["level"] = "info";
-        if (days < 0) level = "critical";
-        else if (days <= 14) level = "urgent";
-        else if (days <= 30) level = "warning";
+        if (q.expiry_date) {
+            const expiry = new Date(q.expiry_date);
+            const days = Math.floor((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            const level = classifyLevel(days);
+            if (level) {
+                alerts.push({
+                    level,
+                    category: "qualification_expiry",
+                    employeeName,
+                    branch,
+                    qualificationName,
+                    expiryDate: q.expiry_date,
+                    daysRemaining: days,
+                    status: q.status || null,
+                    targetId: q.id,
+                    employeeId: q.employee_id,
+                });
+            }
+        }
 
-        alerts.push({
-            level,
-            employeeName: q.employees?.name || "不明",
-            branch: q.employees?.branch || null,
-            qualificationName: q.qualification_master?.name || "不明",
-            expiryDate: q.expiry_date,
-            daysRemaining: days,
-            status: q.status || null,
-        });
+        if (q.photo_renewal_date) {
+            const renewal = new Date(q.photo_renewal_date);
+            const days = Math.floor((renewal.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            const level = classifyLevel(days);
+            if (level) {
+                alerts.push({
+                    level,
+                    category: "photo_renewal",
+                    employeeName,
+                    branch,
+                    qualificationName: `${qualificationName}（免状写真更新）`,
+                    expiryDate: q.photo_renewal_date,
+                    daysRemaining: days,
+                    status: q.status || null,
+                    targetId: q.id,
+                    employeeId: q.employee_id,
+                });
+            }
+        }
     }
 
     const emailAlerts = alerts.filter(
@@ -71,39 +114,104 @@ export function buildDailyAlerts(qualifications: QualificationAlertRow[], now = 
     };
 }
 
+const DEDUP_WINDOW_HOURS = 20;
+
+function alertKey(alert: EmailAlert): string {
+    return `${alert.category}|${alert.targetId}|${alert.level}`;
+}
+
+async function filterByDedup(
+    supabase: SupabaseClient<Database>,
+    alerts: EmailAlert[]
+): Promise<{ fresh: EmailAlert[]; suppressed: number }> {
+    if (alerts.length === 0) return { fresh: [], suppressed: 0 };
+
+    const since = new Date(Date.now() - DEDUP_WINDOW_HOURS * 60 * 60 * 1000).toISOString();
+    const targetIds = Array.from(new Set(alerts.map((a) => a.targetId)));
+
+    const { data: recent, error } = await supabase
+        .from("alert_logs")
+        .select("category, target_id, alert_level, created_at")
+        .in("target_id", targetIds)
+        .gte("created_at", since);
+
+    if (error) {
+        console.error("alert_logs dedup lookup failed, will send without dedup:", error);
+        return { fresh: alerts, suppressed: 0 };
+    }
+
+    const recentKeys = new Set(
+        (recent ?? []).map(
+            (r) => `${r.category}|${r.target_id}|${r.alert_level}`
+        )
+    );
+
+    // CRITICAL はPRD上「日次メール」なので重複抑止せずに毎日送る
+    const fresh = alerts.filter((a) => {
+        if (a.level === "critical") return true;
+        return !recentKeys.has(alertKey(a));
+    });
+
+    return { fresh, suppressed: alerts.length - fresh.length };
+}
+
+async function recordAlertLogs(
+    supabase: SupabaseClient<Database>,
+    alerts: EmailAlert[]
+): Promise<void> {
+    if (alerts.length === 0) return;
+    const rows = alerts.map((a) => ({
+        category: a.category,
+        target_id: a.targetId,
+        target_name: a.qualificationName,
+        alert_level: a.level,
+        expiry_date: a.expiryDate,
+        employee_id: a.employeeId,
+    }));
+    const { error } = await supabase.from("alert_logs").insert(rows);
+    if (error) {
+        console.error("alert_logs insert failed:", error);
+    }
+}
+
 export async function executeDailyAlertJob(
     supabase: SupabaseClient<Database>
 ): Promise<DailyAlertJobResult> {
     const { data: qualifications, error } = await supabase
         .from("employee_qualifications")
         .select(`
-            *,
+            id,
+            employee_id,
+            expiry_date,
+            photo_renewal_date,
+            status,
             employees!inner(name, branch),
             qualification_master(name)
         `)
         .is("employees.deleted_at", null)
-        .not("expiry_date", "is", null)
-        .order("expiry_date", { ascending: true });
+        .or("expiry_date.not.is.null,photo_renewal_date.not.is.null");
 
     if (error) {
         throw error;
     }
 
     const { alerts, emailAlerts, breakdown } = buildDailyAlerts(
-        (qualifications || []) as QualificationAlertRow[]
+        (qualifications || []) as unknown as QualificationAlertRow[]
     );
+
+    const { fresh: dedupedEmailAlerts, suppressed } = await filterByDedup(supabase, emailAlerts);
 
     const gasConfigured = !!process.env.GOOGLE_APPS_SCRIPT_URL;
     const resendConfigured = !!(process.env.RESEND_API_KEY && process.env.ALERT_EMAIL_TO);
     const emailConfigured = gasConfigured || resendConfigured;
     let emailSent = false;
 
-    if (emailAlerts.length > 0 && emailConfigured) {
-        const criticalCount = emailAlerts.filter((alert) => alert.level === "critical").length;
+    if (dedupedEmailAlerts.length > 0 && emailConfigured) {
+        const criticalCount = dedupedEmailAlerts.filter((alert) => alert.level === "critical").length;
         const subject = criticalCount > 0
-            ? `【要対応】資格期限切れ ${criticalCount}件 + 期限間近 ${emailAlerts.length - criticalCount}件`
-            : `【確認】資格期限間近 ${emailAlerts.length}件`;
-        const html = buildDailyAlertEmailHtml(emailAlerts);
+            ? `【要対応】資格期限切れ ${criticalCount}件 + 期限間近 ${dedupedEmailAlerts.length - criticalCount}件`
+            : `【確認】資格期限間近 ${dedupedEmailAlerts.length}件`;
+        const html = buildDailyAlertEmailHtml(dedupedEmailAlerts);
 
         if (gasConfigured) {
             const response = await fetch(process.env.GOOGLE_APPS_SCRIPT_URL!, {
@@ -115,7 +223,7 @@ export async function executeDailyAlertJob(
                     to: process.env.ALERT_EMAIL_TO?.split(",").map((value) => value.trim()) ?? [],
                     subject,
                     html,
-                    alerts: emailAlerts,
+                    alerts: dedupedEmailAlerts,
                 }),
             });
             emailSent = response.ok;
@@ -136,14 +244,19 @@ export async function executeDailyAlertJob(
 
             emailSent = response.ok;
         }
+
+        if (emailSent) {
+            await recordAlertLogs(supabase, dedupedEmailAlerts);
+        }
     }
 
     return {
         totalAlerts: alerts.length,
-        emailTargetCount: emailAlerts.length,
+        emailTargetCount: dedupedEmailAlerts.length,
         emailSent,
         emailConfigured,
         breakdown,
+        suppressedCount: suppressed,
     };
 }
 

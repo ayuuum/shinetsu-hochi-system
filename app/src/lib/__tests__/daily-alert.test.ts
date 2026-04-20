@@ -3,7 +3,10 @@ import { buildDailyAlerts, type QualificationAlertRow } from "@/lib/jobs/daily-a
 
 function createQualificationRow(overrides: Partial<QualificationAlertRow> = {}): QualificationAlertRow {
     return {
+        id: "q-1",
+        employee_id: "e-1",
         expiry_date: "2026-04-20",
+        photo_renewal_date: null,
         status: "未着手",
         employees: {
             name: "山田 太郎",
