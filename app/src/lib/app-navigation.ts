@@ -7,6 +7,7 @@ import {
     Tags,
     Truck,
     Upload,
+    UserCog,
     UserCircle,
     Users,
     Wine,
@@ -24,6 +25,8 @@ export type AppNavItem = {
     section: AppNavSectionId;
     keywords: string[];
     managerOnly?: boolean;
+    /** admin ロールのみ表示 */
+    adminOnly?: boolean;
     /** 技術者ロールではサイドバー・検索から除外 */
     hideForTechnician?: boolean;
     /** 技術者ロールのみ表示（例: マイプロフィール） */
@@ -162,6 +165,15 @@ export const appNavItems: AppNavItem[] = [
         keywords: ["history", "ops", "job", "import", "cron"],
         managerOnly: true,
     },
+    {
+        title: "ユーザー管理",
+        description: "システムアカウントの招待・権限設定",
+        url: "/admin/users",
+        icon: UserCog,
+        section: "admin",
+        keywords: ["user", "account", "invite", "permission"],
+        adminOnly: true,
+    },
 ];
 
 function navItemMatches(pathname: string, url: string) {
@@ -208,6 +220,7 @@ export function getVisibleAppNavItems(
     linkedEmployeeId: string | null = null
 ) {
     return appNavItems.filter((item) => {
+        if (item.adminOnly && role !== "admin") return false;
         if (item.managerOnly && !isAdminOrHr) return false;
         if (item.technicianOnly) {
             return role === "technician" && !!linkedEmployeeId;
