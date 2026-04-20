@@ -59,13 +59,37 @@ export default async function QualificationDetailPage({ params }: PageProps) {
         }
     }
 
-    let certificateSignedUrl: string | null = null;
-    if (qualification.certificate_url) {
-        const { data: signed, error: signError } = await supabase.storage
+    const { data: certificateImageRows } = await supabase
+        .from("certificate_images")
+        .select("id, storage_path, caption, sort_order")
+        .eq("qualification_id", id)
+        .order("sort_order", { ascending: true });
+
+    const certificateImages: { id: string; url: string; caption: string | null }[] = [];
+    for (const row of certificateImageRows ?? []) {
+        const { data: signed } = await supabase.storage
+            .from("certificates")
+            .createSignedUrl(row.storage_path, 3600);
+        if (signed?.signedUrl) {
+            certificateImages.push({
+                id: row.id,
+                url: signed.signedUrl,
+                caption: row.caption,
+            });
+        }
+    }
+
+    // Fallback: legacy single certificate_url, only show if no certificate_images rows exist
+    if (certificateImages.length === 0 && qualification.certificate_url) {
+        const { data: signed } = await supabase.storage
             .from("certificates")
             .createSignedUrl(qualification.certificate_url, 3600);
-        if (!signError && signed?.signedUrl) {
-            certificateSignedUrl = signed.signedUrl;
+        if (signed?.signedUrl) {
+            certificateImages.push({
+                id: "legacy",
+                url: signed.signedUrl,
+                caption: null,
+            });
         }
     }
 
@@ -182,6 +206,10 @@ export default async function QualificationDetailPage({ params }: PageProps) {
                             }
                             tone="muted"
                         />
+                        <DetailField
+                            label="取得区分"
+                            value={qualification.acquisition_type || "-"}
+                        />
                         {qualification.notes && (
                             <div className="sm:col-span-2">
                                 <DetailField
@@ -191,20 +219,26 @@ export default async function QualificationDetailPage({ params }: PageProps) {
                                 />
                             </div>
                         )}
-                        {certificateSignedUrl ? (
+                        {certificateImages.length > 0 ? (
                             <div className="sm:col-span-2">
                                 <DetailField
-                                    label="証書画像"
+                                    label={`証書画像（${certificateImages.length}枚）`}
                                     value={
-                                        <a
-                                            href={certificateSignedUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-                                        >
-                                            <FileImage className="h-4 w-4 shrink-0" />
-                                            証書画像を表示
-                                        </a>
+                                        <ul className="space-y-1.5">
+                                            {certificateImages.map((img, idx) => (
+                                                <li key={img.id}>
+                                                    <a
+                                                        href={img.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                                                    >
+                                                        <FileImage className="h-4 w-4 shrink-0" />
+                                                        {img.caption || `証書画像 ${idx + 1}`}
+                                                    </a>
+                                                </li>
+                                            ))}
+                                        </ul>
                                     }
                                 />
                             </div>

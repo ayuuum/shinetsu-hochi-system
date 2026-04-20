@@ -99,6 +99,47 @@ export type Database = {
           },
         ]
       }
+      certificate_images: {
+        Row: {
+          id: string
+          qualification_id: string
+          storage_path: string
+          mime_type: string | null
+          caption: string | null
+          sort_order: number
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          qualification_id: string
+          storage_path: string
+          mime_type?: string | null
+          caption?: string | null
+          sort_order?: number
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          qualification_id?: string
+          storage_path?: string
+          mime_type?: string | null
+          caption?: string | null
+          sort_order?: number
+          created_at?: string
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_images_qualification_id_fkey"
+            columns: ["qualification_id"]
+            isOneToOne: false
+            referencedRelation: "employee_qualifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alert_logs: {
         Row: {
           alert_level: string | null
@@ -447,6 +488,7 @@ export type Database = {
       employee_qualifications: {
         Row: {
           acquired_date: string | null
+          acquisition_type: string | null
           certificate_number: string | null
           certificate_url: string | null
           created_at: string | null
@@ -463,6 +505,7 @@ export type Database = {
         }
         Insert: {
           acquired_date?: string | null
+          acquisition_type?: string | null
           certificate_number?: string | null
           certificate_url?: string | null
           created_at?: string | null
@@ -479,6 +522,7 @@ export type Database = {
         }
         Update: {
           acquired_date?: string | null
+          acquisition_type?: string | null
           certificate_number?: string | null
           certificate_url?: string | null
           created_at?: string | null

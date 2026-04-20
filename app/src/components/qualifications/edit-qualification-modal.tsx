@@ -36,6 +36,8 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { QualificationRow } from "@/components/qualifications/qualifications-client";
 
+const ACQUISITION_TYPES = ["試験", "講習", "実務経験"] as const;
+
 const formSchema = z.object({
     acquired_date: z.string().optional(),
     expiry_date: z.string().optional(),
@@ -43,6 +45,7 @@ const formSchema = z.object({
     issuing_authority: z.string().optional(),
     status: z.string(),
     notes: z.string().optional(),
+    acquisition_type: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -55,11 +58,14 @@ interface EditQualificationModalProps {
 
 export function EditQualificationModal({ qualification, open, onOpenChange }: EditQualificationModalProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [additionalFiles, setAdditionalFiles] = useState<File[]>([]);
     const [certificateFile, setCertificateFile] = useState<File | null>(null);
     const [removeCertificate, setRemoveCertificate] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const additionalInputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
     const employeeId = qualification.employees?.id;
+    const acquisitionTypeRaw = (qualification as { acquisition_type?: string | null }).acquisition_type ?? "";
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -70,6 +76,7 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
             issuing_authority: qualification.issuing_authority || "",
             status: qualification.status || "未着手",
             notes: qualification.notes || "",
+            acquisition_type: acquisitionTypeRaw,
         },
     });
 
@@ -83,14 +90,16 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
                 issuing_authority: qualification.issuing_authority || "",
                 status: qualification.status || "未着手",
                 notes: qualification.notes || "",
+                acquisition_type: acquisitionTypeRaw,
             });
         }
-    }, [open, qualification, form]);
+    }, [open, qualification, form, acquisitionTypeRaw]);
 
     useEffect(() => {
         if (!open) {
             setCertificateFile(null);
             setRemoveCertificate(false);
+            setAdditionalFiles([]);
         }
     }, [open]);
 
@@ -131,6 +140,7 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
                 issuing_authority: values.issuing_authority || null,
                 status: values.status,
                 notes: values.notes || null,
+                acquisition_type: values.acquisition_type || null,
             };
 
             if (nextCertificateUrl !== undefined) {
@@ -152,6 +162,40 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
 
             if (nextCertificateUrl !== undefined && previousPath && previousPath !== nextCertificateUrl) {
                 await supabase.storage.from("certificates").remove([previousPath]);
+            }
+
+            // Upload additional images into certificate_images
+            if (additionalFiles.length > 0 && employeeId) {
+                const uploadedExtras: string[] = [];
+                for (const file of additionalFiles) {
+                    const ext = file.name.split(".").pop();
+                    const filePath = `${employeeId}/${crypto.randomUUID()}.${ext}`;
+                    const { error: upErr } = await supabase.storage
+                        .from("certificates")
+                        .upload(filePath, file);
+                    if (upErr) {
+                        await supabase.storage.from("certificates").remove(uploadedExtras);
+                        toast.error("追加画像のアップロードに失敗しました: " + upErr.message);
+                        return;
+                    }
+                    uploadedExtras.push(filePath);
+                }
+
+                if (uploadedExtras.length > 0) {
+                    const { error: imgErr } = await supabase
+                        .from("certificate_images")
+                        .insert(
+                            uploadedExtras.map((storage_path, i) => ({
+                                qualification_id: qualification.id,
+                                storage_path,
+                                sort_order: 100 + i,
+                            }))
+                        );
+                    if (imgErr) {
+                        console.error("certificate_images insert failed:", imgErr);
+                        toast.warning("画像は保存しましたが、関連付けに失敗しました。");
+                    }
+                }
             }
 
             toast.success("資格情報を更新しました");
@@ -207,23 +251,43 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
                             )} />
                         </div>
 
-                        <FormField control={form.control} name="status" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>申込状況</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="未着手">未着手</SelectItem>
-                                        <SelectItem value="申込中">申込中</SelectItem>
-                                        <SelectItem value="受講予定">受講予定</SelectItem>
-                                        <SelectItem value="更新済み">更新済み</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField control={form.control} name="status" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>申込状況</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="未着手">未着手</SelectItem>
+                                            <SelectItem value="申込済">申込済</SelectItem>
+                                            <SelectItem value="受講済">受講済</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                            <FormField control={form.control} name="acquisition_type" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>取得区分</FormLabel>
+                                    <Select
+                                        onValueChange={(val: string | null) => field.onChange(val ?? "")}
+                                        value={field.value || ""}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger><SelectValue placeholder="未指定" /></SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {ACQUISITION_TYPES.map((t) => (
+                                                <SelectItem key={t} value={t}>{t}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                        </div>
 
                         <FormField control={form.control} name="notes" render={({ field }) => (
                             <FormItem>
@@ -304,6 +368,34 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
                                     <span>登録済みの証書画像を削除する</span>
                                 </label>
                             ) : null}
+
+                            <div className="border-t pt-3">
+                                <p className="text-xs font-medium">追加の証書画像（複数選択可）</p>
+                                <input
+                                    ref={additionalInputRef}
+                                    type="file"
+                                    accept="image/*,.pdf"
+                                    multiple
+                                    className="hidden"
+                                    onChange={(e) => setAdditionalFiles(Array.from(e.target.files ?? []))}
+                                />
+                                <div className="mt-2 flex flex-wrap items-center gap-3">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => additionalInputRef.current?.click()}
+                                    >
+                                        <Upload className="mr-2 h-4 w-4" />
+                                        画像を追加
+                                    </Button>
+                                    {additionalFiles.length > 0 && (
+                                        <span className="text-xs text-muted-foreground">
+                                            {additionalFiles.length}枚を追加予定
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
                         <DialogFooter>
