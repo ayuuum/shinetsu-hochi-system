@@ -10,7 +10,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
 
 interface DeleteConfirmDialogProps {
     open: boolean;
@@ -40,8 +40,14 @@ export function DeleteConfirmDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{title}</DialogTitle>
-                    <DialogDescription>{description}</DialogDescription>
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10">
+                            <AlertTriangle className="h-5 w-5 text-destructive" />
+                        </div>
+                        <DialogTitle>{title}</DialogTitle>
+                    </div>
+                    <DialogDescription className="pt-1">{description}</DialogDescription>
+                    <p className="text-xs text-muted-foreground">この操作は取り消しできません。</p>
                 </DialogHeader>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)} disabled={deleting}>

@@ -22,7 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Pencil, Trash2, Download } from "lucide-react";
+import { Pencil, Trash2, Download, ShieldAlert } from "lucide-react";
 import { AddAlcoholCheckModal } from "./add-alcohol-check-modal";
 import { EditAlcoholCheckModal } from "./edit-alcohol-check-modal";
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
@@ -267,7 +267,8 @@ export function AlcoholClient({
             </div>
 
             {abnormalCount > 0 && (
-                <div className="p-4 rounded-[16px] bg-destructive/10 border border-destructive/20">
+                <div className="flex items-start gap-3 p-4 rounded-[16px] bg-destructive/10 border border-destructive/20">
+                    <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
                     <p className="text-sm font-bold text-destructive">
                         不適正記録が {abnormalCount} 件あります。安全運転管理者の対応が必要です。
                     </p>

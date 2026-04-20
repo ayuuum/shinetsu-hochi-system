@@ -31,7 +31,7 @@ export const alertStyles = {
         icon: "bg-destructive/10 text-destructive",
         bg: "border border-border bg-card shadow-sm",
         subtle: "border border-border bg-card shadow-sm",
-        badge: "border border-destructive/30 bg-transparent text-destructive font-medium",
+        badge: "border border-destructive/50 bg-destructive/10 text-destructive font-semibold",
         label: "期限切れ",
     },
     urgent: {
@@ -40,7 +40,7 @@ export const alertStyles = {
         icon: "bg-chart-5/10 text-chart-5",
         bg: "border border-border bg-card shadow-sm",
         subtle: "border border-border bg-card shadow-sm",
-        badge: "border border-chart-5/30 bg-transparent text-chart-5 font-medium",
+        badge: "border border-chart-5/50 bg-chart-5/10 text-chart-5 font-semibold",
         label: "14日以内",
     },
     warning: {
@@ -49,7 +49,7 @@ export const alertStyles = {
         icon: "bg-chart-3/10 text-chart-3",
         bg: "border border-border bg-card shadow-sm",
         subtle: "border border-border bg-card shadow-sm",
-        badge: "border border-chart-3/30 bg-transparent text-chart-3 font-medium",
+        badge: "border border-chart-3/50 bg-chart-3/10 text-chart-3 font-semibold",
         label: "30日以内",
     },
     info: {
@@ -58,7 +58,7 @@ export const alertStyles = {
         icon: "bg-secondary text-foreground",
         bg: "border border-border bg-card shadow-sm",
         subtle: "border border-border bg-card shadow-sm",
-        badge: "border border-border bg-transparent text-muted-foreground font-medium",
+        badge: "border border-border bg-muted/50 text-muted-foreground font-medium",
         label: "60日以内",
     },
     ok: {
@@ -67,7 +67,7 @@ export const alertStyles = {
         icon: "bg-chart-2/10 text-chart-2",
         bg: "border border-border bg-card shadow-sm",
         subtle: "border border-border bg-card shadow-sm",
-        badge: "border border-chart-2/30 bg-transparent text-chart-2 font-medium",
+        badge: "border border-chart-2/50 bg-chart-2/10 text-chart-2 font-semibold",
         label: "正常",
     },
 } as const;
