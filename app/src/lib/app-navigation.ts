@@ -157,15 +157,6 @@ export const appNavItems: AppNavItem[] = [
         managerOnly: true,
     },
     {
-        title: "運用履歴",
-        description: "インポートと通知ジョブの履歴を確認",
-        url: "/operations-log",
-        icon: Activity,
-        section: "admin",
-        keywords: ["history", "ops", "job", "import", "cron"],
-        managerOnly: true,
-    },
-    {
         title: "ユーザー管理",
         description: "システムアカウントの招待・権限設定",
         url: "/admin/users",

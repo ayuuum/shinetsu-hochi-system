@@ -533,8 +533,8 @@ export function QualificationsClient({
                                 const config = levelConfig[level];
                                 const days = q.expiry_date ? differenceInDays(new Date(q.expiry_date), new Date()) : null;
                                 return (
-                                    <TableRow key={q.id} className="hover:bg-transparent">
-                                        <TableCell className="sticky left-0 z-10 bg-card font-bold shadow-[inset_-1px_0_0_hsl(var(--border))]">
+                                    <TableRow key={q.id} className="hover:bg-muted/30">
+                                        <TableCell className="sticky left-0 z-10 bg-card py-4 font-bold shadow-[inset_-1px_0_0_hsl(var(--border))]">
                                             {q.employees?.id ? (
                                                 <TableCellLink href={`/employees/${q.employees.id}`} className="font-bold hover:underline">
                                                     {q.employees.name}
@@ -543,25 +543,25 @@ export function QualificationsClient({
                                                 q.employees?.name || "-"
                                             )}
                                         </TableCell>
-                                        <TableCell className="text-sm">{q.employees?.branch || "-"}</TableCell>
-                                        <TableCell className="text-sm font-medium">
+                                        <TableCell className="py-4 text-sm">{q.employees?.branch || "-"}</TableCell>
+                                        <TableCell className="py-4 text-sm font-medium">
                                             <TableCellLink href={`/qualifications/${q.id}`} className="text-sm font-medium hover:underline">
                                                 {q.qualification_master?.name || "-"}
                                             </TableCellLink>
                                         </TableCell>
-                                        <TableCell className="text-sm text-muted-foreground">{q.qualification_master?.category || "-"}</TableCell>
-                                        <TableCell className="text-sm tabular-nums">{formatDisplayDate(q.acquired_date)}</TableCell>
-                                        <TableCell className={`text-sm font-medium tabular-nums ${config.color}`}>
+                                        <TableCell className="py-4 text-sm text-muted-foreground">{q.qualification_master?.category || "-"}</TableCell>
+                                        <TableCell className="py-4 text-sm tabular-nums">{formatDisplayDate(q.acquired_date)}</TableCell>
+                                        <TableCell className={`py-4 text-sm font-semibold tabular-nums ${config.color}`}>
                                             {formatDisplayDate(q.expiry_date, "期限なし")}
                                         </TableCell>
-                                        <TableCell>
-                                            <Badge variant="secondary" className={config.badge}>
+                                        <TableCell className="py-4">
+                                            <Badge variant="secondary" className={`${config.badge} text-xs font-semibold px-2 py-0.5`}>
                                                 {days !== null
                                                     ? days < 0 ? `${Math.abs(days)}日超過` : days === 0 ? "本日" : `残${days}日`
                                                     : "−"}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="text-sm text-muted-foreground">{q.status || "未着手"}</TableCell>
+                                        <TableCell className="py-4 text-sm text-muted-foreground">{q.status || "未着手"}</TableCell>
                                         <TableCell className="text-center">
                                             {q.certificate_url ? (
                                                 <span className="inline-flex text-primary" title="証書画像あり">

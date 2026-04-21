@@ -44,9 +44,7 @@ export function AppSidebar() {
                         className="hidden h-9 w-9 group-data-[collapsible=icon]:block"
                     />
                 </div>
-                <p className="text-sm text-muted-foreground group-data-[collapsible=icon]:hidden">
-                    台帳・期限・安全記録を管理
-                </p>
+
             </SidebarHeader>
             <SidebarContent className="py-2.5">
                 {navigationSections.map((section, index) => (
