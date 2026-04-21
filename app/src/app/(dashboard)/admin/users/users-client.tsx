@@ -73,6 +73,8 @@ function RoleSelect({
         });
     };
 
+    const roleLabel: Record<string, string> = { admin: "管理者", hr: "人事", technician: "技術者" };
+
     return (
         <Select
             value={currentRole ?? undefined}
@@ -80,7 +82,9 @@ function RoleSelect({
             disabled={disabled || isPending}
         >
             <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="未設定" />
+                <SelectValue placeholder="未設定">
+                    {currentRole ? roleLabel[currentRole] : "未設定"}
+                </SelectValue>
             </SelectTrigger>
             <SelectContent>
                 <SelectItem value="admin">管理者</SelectItem>
