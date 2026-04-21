@@ -53,6 +53,8 @@ export default async function QualificationsPage({
         ok: 0,
     };
     let totalPages = 1;
+    // Fix: fetch employees list to enable direct qualification addition from this page
+    let employees: { id: string; name: string; branch: string | null }[] = [];
 
     try {
         const supabase = await createSupabaseServer();
@@ -67,6 +69,7 @@ export default async function QualificationsPage({
             employeeSearchResult,
             qualificationSearchResult,
             categoryQualificationResult,
+            employeeListResult,
         ] = await Promise.all([
             supabase
                 .from("qualification_master")
@@ -95,7 +98,15 @@ export default async function QualificationsPage({
                     .eq("category", currentCategory)
                     .limit(500)
                 : Promise.resolve({ data: [] as { id: string }[], error: null }),
+            supabase
+                .from("employees")
+                .select("id, name, branch")
+                .is("deleted_at", null)
+                .order("branch")
+                .order("name"),
         ]);
+
+        employees = (employeeListResult.data || []) as { id: string; name: string; branch: string | null }[];
 
         categories = [...new Set((categoryResult.data || []).map((item) => item.category).filter(Boolean))] as string[];
 
@@ -191,6 +202,7 @@ export default async function QualificationsPage({
             currentLevel={currentLevel}
             currentPage={currentPage}
             totalPages={totalPages}
+            employees={employees}
         />
     );
 }

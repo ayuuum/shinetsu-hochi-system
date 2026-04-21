@@ -63,6 +63,12 @@ export function EditAlcoholCheckModal({ check, employees, open, onOpenChange }: 
     }, [open, check, form]);
 
     async function onSubmit(values: AlcoholCheckValues) {
+        // Fix: show confirmation dialog when marking as abnormal, matching add modal behavior
+        if (values.is_abnormal === "不適正") {
+            const confirmed = window.confirm("不適正（陽性）として記録を更新します。よろしいですか？");
+            if (!confirmed) return;
+        }
+
         setIsSubmitting(true);
         const result = await updateAlcoholCheckAction(check.id, values);
         setIsSubmitting(false);

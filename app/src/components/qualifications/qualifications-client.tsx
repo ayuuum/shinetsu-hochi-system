@@ -23,7 +23,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, FileImage, Tags } from "lucide-react";
+import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, FileImage, Tags, Plus } from "lucide-react";
 import { differenceInDays } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { alertStyles, getAlertLevel, type AlertLevel } from "@/lib/alert-utils";
@@ -34,6 +34,7 @@ import { MobileFiltersSheet } from "@/components/shared/mobile-filters-sheet";
 import { formatDisplayDate } from "@/lib/date";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { AddQualificationFromListModal } from "./add-qualification-from-list-modal";
 
 export type QualificationRow = Tables<"employee_qualifications"> & {
     employees: { id: string; name: string; branch: string | null } | null;
@@ -41,6 +42,8 @@ export type QualificationRow = Tables<"employee_qualifications"> & {
 };
 
 const levelConfig = alertStyles;
+
+type Employee = { id: string; name: string; branch: string | null };
 
 interface QualificationsClientProps {
     initialQualifications: QualificationRow[];
@@ -51,6 +54,7 @@ interface QualificationsClientProps {
     currentLevel: string;
     currentPage: number;
     totalPages: number;
+    employees?: Employee[];
 }
 
 function buildQualificationsHref(pathname: string, {
@@ -92,6 +96,7 @@ export function QualificationsClient({
     currentLevel,
     currentPage,
     totalPages,
+    employees = [],
 }: QualificationsClientProps) {
     const [search, setSearch] = useState(currentSearch);
     const [editingItem, setEditingItem] = useState<QualificationRow | null>(null);
@@ -219,16 +224,19 @@ export function QualificationsClient({
                     <h1 className="text-3xl font-bold tracking-tight">資格・講習管理</h1>
                     <p className="text-muted-foreground mt-2">全従業員の資格・免状の期限と更新予定を一元管理します。</p>
                 </div>
+                {/* Fix: add qualification button for direct addition from list page */}
                 {isAdminOrHr && (
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="shrink-0"
-                        render={<Link href="/qualifications/masters" />}
-                    >
-                        <Tags className="mr-2 h-4 w-4" />
-                        資格マスタ
-                    </Button>
+                    <div className="flex items-center gap-2 shrink-0">
+                        <AddQualificationFromListModal employees={employees} onSuccess={() => router.refresh()} />
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            render={<Link href="/qualifications/masters" />}
+                        >
+                            <Tags className="mr-2 h-4 w-4" />
+                            資格マスタ
+                        </Button>
+                    </div>
                 )}
             </div>
 

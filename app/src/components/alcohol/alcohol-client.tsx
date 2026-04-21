@@ -207,13 +207,10 @@ export function AlcoholClient({
         window.open(`/api/export/alcohol-checks?${params.toString()}`, "_blank");
     };
 
+    // Fix: point monthly export to the dedicated monthly CSV API
     const handleMonthlyExport = () => {
-        const params = new URLSearchParams({
-            report: "monthly",
-            month: currentMonth,
-            format: "excel",
-        });
-        window.open(`/api/export/alcohol-checks?${params.toString()}`, "_blank");
+        const params = new URLSearchParams({ month: currentMonth });
+        window.open(`/api/export/alcohol-checks-monthly?${params.toString()}`, "_blank");
     };
 
     const clearFilters = () => {
@@ -300,8 +297,9 @@ export function AlcoholClient({
                             </Button>
                         </div>
                     </div>
+                    {/* Fix: removed .slice(0, 6) so all employees are shown */}
                     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                        {monthlySummary.slice(0, 6).map((summary) => (
+                        {monthlySummary.map((summary) => (
                             <Card key={summary.employeeId} className="border-border/50">
                                 <CardContent className="space-y-2 p-4">
                                     <div className="flex items-center justify-between gap-3">
