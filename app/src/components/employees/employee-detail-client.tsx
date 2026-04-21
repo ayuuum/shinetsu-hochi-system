@@ -316,21 +316,21 @@ export function EmployeeDetailClient({
 
             <Tabs value={initialTab} onValueChange={(value) => handleTabChange(value as EmployeeDetailTab)} className="w-full">
                 <div className="overflow-x-auto -mx-1 px-1">
-                    <TabsList className="inline-flex min-w-full h-auto bg-muted/30 p-1 rounded-xl">
-                        <TabsTrigger value="basic" className="flex-shrink-0 rounded-lg px-4 py-3 text-sm"><User className="mr-1 h-3.5 w-3.5 hidden md:inline" />基本情報</TabsTrigger>
+                    <TabsList className="inline-flex min-w-full h-auto bg-muted/30 p-1.5 rounded-xl">
+                        <TabsTrigger value="basic" className="flex-shrink-0 rounded-lg px-4 py-3.5 text-sm"><User className="mr-1 h-3.5 w-3.5 hidden md:inline" />基本情報</TabsTrigger>
                         {!isTechnicianSelf && (
-                            <TabsTrigger value="insurance" className="flex-shrink-0 rounded-lg px-4 py-3 text-sm"><Shield className="mr-1 h-3.5 w-3.5 hidden md:inline" />保険情報</TabsTrigger>
+                            <TabsTrigger value="insurance" className="flex-shrink-0 rounded-lg px-4 py-3.5 text-sm"><Shield className="mr-1 h-3.5 w-3.5 hidden md:inline" />保険情報</TabsTrigger>
                         )}
                         {isAdminOrHr && (
-                            <TabsTrigger value="it" className="flex-shrink-0 rounded-lg px-4 py-3 text-sm">
+                            <TabsTrigger value="it" className="flex-shrink-0 rounded-lg px-4 py-3.5 text-sm">
                                 <Laptop className="mr-1 h-3.5 w-3.5 hidden md:inline" />
                                 IT・ライセンス
                             </TabsTrigger>
                         )}
-                        <TabsTrigger value="qualifications" className="flex-shrink-0 rounded-lg px-4 py-3 text-sm"><Award className="mr-1 h-3.5 w-3.5 hidden md:inline" />保有資格</TabsTrigger>
-                        <TabsTrigger value="construction" className="flex-shrink-0 rounded-lg px-4 py-3 text-sm"><HardHat className="mr-1 h-3.5 w-3.5 hidden md:inline" />施工実績</TabsTrigger>
-                        <TabsTrigger value="family" className="flex-shrink-0 rounded-lg px-4 py-3 text-sm"><Users className="mr-1 h-3.5 w-3.5 hidden md:inline" />家族</TabsTrigger>
-                        <TabsTrigger value="health" className="flex-shrink-0 rounded-lg px-4 py-3 text-sm"><Heart className="mr-1 h-3.5 w-3.5 hidden md:inline" />健康診断</TabsTrigger>
+                        <TabsTrigger value="qualifications" className="flex-shrink-0 rounded-lg px-4 py-3.5 text-sm"><Award className="mr-1 h-3.5 w-3.5 hidden md:inline" />保有資格</TabsTrigger>
+                        <TabsTrigger value="construction" className="flex-shrink-0 rounded-lg px-4 py-3.5 text-sm"><HardHat className="mr-1 h-3.5 w-3.5 hidden md:inline" />施工実績</TabsTrigger>
+                        <TabsTrigger value="family" className="flex-shrink-0 rounded-lg px-4 py-3.5 text-sm"><Users className="mr-1 h-3.5 w-3.5 hidden md:inline" />家族</TabsTrigger>
+                        <TabsTrigger value="health" className="flex-shrink-0 rounded-lg px-4 py-3.5 text-sm"><Heart className="mr-1 h-3.5 w-3.5 hidden md:inline" />健康診断</TabsTrigger>
                     </TabsList>
                 </div>
 
