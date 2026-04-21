@@ -37,18 +37,18 @@ export function DashboardHeader() {
                         <PanelLeftIcon className="h-5 w-5" />
                     </Button>
                     
-                    <div className="hidden sm:flex items-center gap-2.5 text-sm font-medium tracking-wide">
-                        <span className="text-muted-foreground">
+                    <div className="hidden sm:flex items-center gap-2 text-sm font-medium tracking-wide min-w-0">
+                        <span className="text-muted-foreground whitespace-nowrap shrink-0">
                             {section.title}
                         </span>
-                        <span aria-hidden="true" className="text-border/60">•</span>
-                        <span className="text-muted-foreground/80">
+                        <span aria-hidden="true" className="text-border/60 shrink-0">•</span>
+                        <span className="text-muted-foreground/80 whitespace-nowrap shrink-0">
                             {headerDateFormatter.format(new Date())}
                         </span>
                     </div>
                 </div>
 
-                <div className="w-full max-w-[300px] md:max-w-[400px]">
+                <div className="w-[200px] sm:w-[260px] md:w-[360px] shrink-0">
                     <SearchTrigger className="w-full" />
                 </div>
             </div>
