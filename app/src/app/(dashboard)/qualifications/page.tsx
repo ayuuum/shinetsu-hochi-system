@@ -5,6 +5,7 @@ import { getAuthSnapshot } from "@/lib/auth-server";
 import { QualificationsClient, type QualificationRow } from "@/components/qualifications/qualifications-client";
 import { formatDateInTokyo, getTodayInTokyo } from "@/lib/date";
 import { getAlertLevel, type AlertLevel } from "@/lib/alert-utils";
+import { getCachedQualificationCategories, getCachedEmployeeList, getCachedQualificationSummary } from "@/lib/cached-queries";
 
 const PAGE_SIZE = 50;
 
@@ -72,45 +73,37 @@ export default async function QualificationsPage({
             .order("expiry_date", { ascending: true })
             .range(from, to);
 
-        const baseSummaryQuery = () => supabase
-            .from("employee_qualifications")
-            .select("expiry_date, employees!inner(id)")
-            .is("employees.deleted_at", null);
-
         const noFilter = !currentSearch && !currentCategory;
 
-        // When no filter: run all queries (including main) in a single round trip
-        // When filtered: first get IDs, then run main queries
-        let categoryResult: { data: { category: string | null }[] | null; error: unknown };
-        let employeeListResult: { data: { id: string; name: string; branch: string | null }[] | null; error: unknown };
         let pageResult: { data: unknown[] | null; count: number | null; error: unknown };
-        let summaryResult: { data: { expiry_date: string | null }[] | null; error: unknown };
+        let summaryData: { expiry_date: string | null }[];
+
+        // categories and employee list served from cache (5 min TTL, revalidated on mutation)
+        const [categories_cached, employees_cached] = await Promise.all([
+            getCachedQualificationCategories(),
+            getCachedEmployeeList(),
+        ]);
+        categories = categories_cached;
+        employees = employees_cached;
 
         if (noFilter) {
             let pq = basePageQuery();
-            let sq = baseSummaryQuery();
-
             if (currentLevel === "danger") pq = pq.lt("expiry_date", today);
             if (currentLevel === "urgent") pq = pq.gte("expiry_date", today).lte("expiry_date", urgentLimit);
             if (currentLevel === "warning") pq = pq.gt("expiry_date", urgentLimit).lte("expiry_date", warningLimit);
             if (currentLevel === "info") pq = pq.gt("expiry_date", warningLimit).lte("expiry_date", infoLimit);
             if (currentLevel === "ok") pq = pq.or("expiry_date.is.null,expiry_date.gt." + infoLimit);
 
-            [categoryResult, employeeListResult, pageResult, summaryResult] = await Promise.all([
-                supabase.from("qualification_master").select("category").not("category", "is", null).order("category"),
-                supabase.from("employees").select("id, name, branch").is("deleted_at", null).order("branch").order("name"),
-                pq,
-                sq,
-            ]) as [typeof categoryResult, typeof employeeListResult, typeof pageResult, typeof summaryResult];
+            // summary served from cache (no filter = stable, revalidated on mutation)
+            const [pqResult, cachedSummary] = await Promise.all([pq, getCachedQualificationSummary()]);
+            pageResult = pqResult as typeof pageResult;
+            summaryData = cachedSummary;
         } else {
             const [
-                catRes,
                 employeeSearchResult,
                 qualificationSearchResult,
                 categoryQualificationResult,
-                empListRes,
             ] = await Promise.all([
-                supabase.from("qualification_master").select("category").not("category", "is", null).order("category"),
                 currentSearch
                     ? supabase.from("employees").select("id").is("deleted_at", null).ilike("name", searchPattern!).limit(100)
                     : Promise.resolve({ data: [] as { id: string }[], error: null }),
@@ -120,11 +113,7 @@ export default async function QualificationsPage({
                 currentCategory
                     ? supabase.from("qualification_master").select("id").eq("category", currentCategory).limit(500)
                     : Promise.resolve({ data: [] as { id: string }[], error: null }),
-                supabase.from("employees").select("id, name, branch").is("deleted_at", null).order("branch").order("name"),
             ]);
-
-            categoryResult = catRes;
-            employeeListResult = empListRes as typeof employeeListResult;
 
             const employeeIds = (employeeSearchResult.data || []).map((item) => item.id);
             const qualificationIds = (qualificationSearchResult.data || []).map((item) => item.id);
@@ -141,10 +130,13 @@ export default async function QualificationsPage({
 
             if (!hasMatches || !hasCategoryMatches) {
                 pageResult = { data: [], count: 0, error: null };
-                summaryResult = { data: [], error: null };
+                summaryData = [];
             } else {
                 let pq = basePageQuery();
-                let sq = baseSummaryQuery();
+                let sq = supabase
+                    .from("employee_qualifications")
+                    .select("expiry_date, employees!inner(id)")
+                    .is("employees.deleted_at", null);
 
                 if (currentCategory) {
                     pq = pq.in("qualification_id", categoryQualificationIds);
@@ -164,17 +156,16 @@ export default async function QualificationsPage({
                         : pq.or(`expiry_date.is.null,expiry_date.gt.${infoLimit}`);
                 }
 
-                [pageResult, summaryResult] = await Promise.all([pq, sq]) as [typeof pageResult, typeof summaryResult];
+                const [pqResult, sqResult] = await Promise.all([pq, sq]);
+                pageResult = pqResult as typeof pageResult;
+                summaryData = (sqResult.data || []) as { expiry_date: string | null }[];
             }
         }
-
-        employees = (employeeListResult.data || []) as { id: string; name: string; branch: string | null }[];
-        categories = [...new Set((categoryResult.data || []).map((item) => item.category).filter(Boolean))] as string[];
 
         qualifications = (pageResult.data || []) as QualificationRow[];
         totalPages = Math.max(1, Math.ceil(((pageResult.count as number | null) || 0) / PAGE_SIZE));
 
-        counts = ((summaryResult.data || []) as { expiry_date: string | null }[]).reduce<Record<AlertLevel, number>>((acc, row) => {
+        counts = summaryData.reduce<Record<AlertLevel, number>>((acc, row) => {
             const level = getAlertLevel(row.expiry_date);
             acc[level] += 1;
             return acc;

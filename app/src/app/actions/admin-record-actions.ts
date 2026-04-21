@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import { getAuthSnapshot } from "@/lib/auth-server";
 import { createSupabaseServer } from "@/lib/supabase-server";
@@ -138,6 +138,8 @@ function revalidateEmployeePaths(employeeId?: string) {
     revalidatePath("/projects");
     revalidatePath("/health-checks");
     revalidatePath("/alcohol-checks");
+    updateTag("employees");
+    updateTag("qualifications");
     if (employeeId) {
         revalidatePath(`/employees/${employeeId}`);
     }

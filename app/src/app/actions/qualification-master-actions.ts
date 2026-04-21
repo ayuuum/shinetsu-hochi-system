@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import { getAuthSnapshot } from "@/lib/auth-server";
 import { createSupabaseServer } from "@/lib/supabase-server";
@@ -46,6 +46,8 @@ export async function createQualificationMasterAction(raw: unknown): Promise<Act
     revalidatePath("/qualifications/masters");
     revalidatePath("/qualifications");
     revalidatePath("/employees");
+    updateTag("qualification-master");
+    updateTag("qualifications");
     return { success: true };
 }
 
@@ -74,6 +76,8 @@ export async function updateQualificationMasterAction(raw: unknown): Promise<Act
     revalidatePath("/qualifications/masters");
     revalidatePath("/qualifications");
     revalidatePath("/employees");
+    updateTag("qualification-master");
+    updateTag("qualifications");
     return { success: true };
 }
 
@@ -102,5 +106,7 @@ export async function deleteQualificationMasterAction(id: string): Promise<Actio
     revalidatePath("/qualifications/masters");
     revalidatePath("/qualifications");
     revalidatePath("/employees");
+    updateTag("qualification-master");
+    updateTag("qualifications");
     return { success: true };
 }
