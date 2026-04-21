@@ -48,29 +48,11 @@ export default async function EmployeeDetailPage({
         supabase
             .from("employees")
             .select(`
-                id, name, name_kana, employee_number, branch, position, job_title,
-                birth_date, gender, phone_number, email, address, blood_type,
-                hire_date, termination_date, employment_type, notes,
-                health_insurance_no, pension_no, emp_insurance_no, photo_url,
-                deleted_at, created_at, updated_at,
-                employee_qualifications(
-                    id, employee_id, qualification_master_id, certificate_number,
-                    acquired_date, expiry_date, status, certificate_url, notes,
-                    deleted_at, created_at, updated_at,
-                    qualification_master(id, name, category, has_expiry, renewal_rule)
-                ),
-                employee_family(
-                    id, employee_id, name, relationship, birth_date,
-                    phone_number, is_emergency_contact, notes, created_at
-                ),
-                employee_life_insurances(
-                    id, employee_id, insurance_name, insurance_company, agency,
-                    start_date, maturity_date, peak_date, notes, created_at
-                ),
-                employee_damage_insurances(
-                    id, employee_id, insurance_name, insurance_company, agency,
-                    insurance_type, renewal_date, coverage_details, notes, created_at
-                )
+                *,
+                employee_qualifications(*, qualification_master(*)),
+                employee_family(*),
+                employee_life_insurances(*),
+                employee_damage_insurances(*)
             `)
             .eq("id", id)
             .is("deleted_at", null)
