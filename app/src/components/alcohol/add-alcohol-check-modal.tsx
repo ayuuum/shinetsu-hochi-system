@@ -115,7 +115,7 @@ export function AddAlcoholCheckModal({
 
         if (values.is_abnormal === "不適正") {
             triggerHaptic("error");
-            toast.error("不適正として記録しました。運転は禁止です！安全運転管理者の指示を仰いでください。", { duration: 8000 });
+            toast.error("不適正（陽性）として記録しました。直ちに安全運転管理者へ報告してください。", { duration: 8000 });
         } else {
             triggerHaptic("success");
             toast.success("アルコールチェックを記録しました");
