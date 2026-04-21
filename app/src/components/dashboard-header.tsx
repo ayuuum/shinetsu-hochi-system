@@ -48,7 +48,7 @@ export function DashboardHeader() {
                     </div>
                 </div>
 
-                <div className="w-[200px] sm:w-[260px] md:w-[360px] shrink-0">
+                <div className="w-[160px] sm:w-[200px] md:w-[260px] shrink-0">
                     <SearchTrigger className="w-full" />
                 </div>
             </div>
