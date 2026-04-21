@@ -39,6 +39,7 @@ import { formatDisplayDate } from "@/lib/date";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { getVehicleExpiryFilterLabel, getVehicleSortLabel } from "@/lib/display-labels";
+import { PageHeader } from "@/components/shared/page-header";
 
 export type VehicleWithUser = Tables<"vehicles"> & {
     employees?: { id: string; name: string } | null;
@@ -197,13 +198,13 @@ export function VehiclesClient({
                     </div>
                 ) : null
             ) : (
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h2 className="text-2xl font-bold tracking-tight">車両</h2>
-                        <p className="text-muted-foreground mt-2">社用車の車検・保険期限を管理します。</p>
-                    </div>
-                    {isAdminOrHr && <AddVehicleModal employees={employees} />}
-                </div>
+                <PageHeader
+                    title="車両"
+                    description="社用車の車検・保険期限を管理します。"
+                    actions={isAdminOrHr ? <AddVehicleModal employees={employees} /> : undefined}
+                    titleAs="h2"
+                    className="space-y-0"
+                />
             )}
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

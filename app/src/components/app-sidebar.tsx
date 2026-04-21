@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import {
     LogOut,
 } from "lucide-react";
@@ -19,17 +20,26 @@ import {
     SidebarSeparator,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { getGroupedAppNavigation, isAppNavActive } from "@/lib/app-navigation";
 
 export function AppSidebar() {
     const pathname = usePathname();
+    const router = useRouter();
     const { user, role, signOut, isAdminOrHr, linkedEmployeeId } = useAuth();
 
     const displayName = user?.email?.split("@")[0] || "ユーザー";
     const roleLabel = role === "admin" ? "管理者" : role === "hr" ? "人事" : role === "technician" ? "技術者" : "";
     const navigationSections = getGroupedAppNavigation(isAdminOrHr, role, linkedEmployeeId);
+
+    useEffect(() => {
+        for (const section of navigationSections) {
+            for (const item of section.items) {
+                router.prefetch(item.url);
+            }
+        }
+    }, [navigationSections, router]);
 
     return (
         <Sidebar collapsible="icon" className="border-r border-border bg-sidebar print:hidden">

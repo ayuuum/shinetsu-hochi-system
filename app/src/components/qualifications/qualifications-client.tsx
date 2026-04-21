@@ -35,6 +35,8 @@ import { formatDisplayDate } from "@/lib/date";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { AddQualificationFromListModal } from "./add-qualification-from-list-modal";
+import { PageHeader } from "@/components/shared/page-header";
+import { getQualificationLevelLabel } from "@/lib/display-labels";
 
 export type QualificationRow = Tables<"employee_qualifications"> & {
     employees: { id: string; name: string; branch: string | null } | null;
@@ -109,13 +111,6 @@ export function QualificationsClient({
     const { isAdminOrHr } = useAuth();
     const showActions = isAdminOrHr;
     const columnCount = showActions ? 7 : 6;
-    const levelLabels: Record<string, string> = {
-        danger: "期限切れ",
-        urgent: "14日以内",
-        warning: "30日以内",
-        info: "60日以内",
-        ok: "正常",
-    };
     const activeFilters = [
         currentSearch
             ? {
@@ -139,7 +134,7 @@ export function QualificationsClient({
         currentLevel
             ? {
                 key: "level",
-                label: `状態: ${levelLabels[currentLevel] || currentLevel}`,
+                label: `状態: ${getQualificationLevelLabel(currentLevel)}`,
                 onRemove: () => updateFilters({ level: "", page: 1 }),
             }
             : null,
@@ -219,14 +214,11 @@ export function QualificationsClient({
 
     return (
         <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">資格・講習管理</h1>
-                    <p className="text-muted-foreground mt-2">全従業員の資格・免状の期限と更新予定を一元管理します。</p>
-                </div>
-                {/* Fix: add qualification button for direct addition from list page */}
-                {isAdminOrHr && (
-                    <div className="flex items-center gap-2 shrink-0">
+            <PageHeader
+                title="資格・講習管理"
+                description="全従業員の資格・免状の期限と更新予定を一元管理します。"
+                actions={isAdminOrHr ? (
+                    <>
                         <AddQualificationFromListModal employees={employees} onSuccess={() => router.refresh()} />
                         <Button
                             variant="outline"
@@ -236,12 +228,12 @@ export function QualificationsClient({
                             <Tags className="mr-2 h-4 w-4" />
                             資格マスタ
                         </Button>
-                    </div>
-                )}
-            </div>
+                    </>
+                ) : undefined}
+            />
 
             {/* Summary KPI Strip */}
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                 {(
                     [
                         { level: "danger", label: "期限切れ", icon: AlertCircle },
@@ -272,7 +264,7 @@ export function QualificationsClient({
                                 <p className={`text-3xl font-bold tabular-nums tracking-tight ${isActive ? "text-current" : style.strong}`}>
                                     {counts[level] || 0}
                                 </p>
-                                <p className={`mt-0.5 text-xs font-medium ${isActive ? "text-current/80" : "text-muted-foreground"}`}>{label}</p>
+                                <p className={`mt-0.5 whitespace-nowrap text-xs font-medium ${isActive ? "text-current/80" : "text-muted-foreground"}`}>{label}</p>
                             </div>
                         </button>
                     );

@@ -3,6 +3,25 @@ export const HEALTH_CHECK_RESULT_OPTIONS = [
     { value: "false", label: "要再検査" },
 ] as const;
 
+const HEALTH_CHECK_LIST_RESULT_LABELS = {
+    normal: "異常なし",
+    abnormal: "要再検査",
+} as const;
+
+const QUALIFICATION_LEVEL_LABELS = {
+    danger: "期限切れ",
+    urgent: "14日以内",
+    warning: "30日以内",
+    info: "60日以内",
+    ok: "正常",
+} as const;
+
+const USER_ROLE_LABELS = {
+    admin: "管理者",
+    hr: "人事",
+    technician: "技術者",
+} as const;
+
 export const VEHICLE_SORT_LABELS = {
     plate: "ナンバー順",
     inspection: "車検満了日順",
@@ -24,6 +43,29 @@ export function getHealthCheckResultLabel(value: boolean | null | undefined) {
 
 export function getHealthCheckResultValueLabel(value: string | null | undefined) {
     return HEALTH_CHECK_RESULT_OPTIONS.find((option) => option.value === value)?.label ?? "結果を選択";
+}
+
+export function normalizeHealthCheckListResultValue(value: string | null | undefined) {
+    if (!value) return "";
+    if (value === "normal" || value === "true") return "normal";
+    if (value === "abnormal" || value === "false") return "abnormal";
+    return "";
+}
+
+export function getHealthCheckListResultLabel(value: string | null | undefined) {
+    const normalized = normalizeHealthCheckListResultValue(value);
+    if (!normalized) return "すべての結果";
+    return HEALTH_CHECK_LIST_RESULT_LABELS[normalized];
+}
+
+export function getQualificationLevelLabel(value: string | null | undefined) {
+    if (!value) return "すべて";
+    return QUALIFICATION_LEVEL_LABELS[value as keyof typeof QUALIFICATION_LEVEL_LABELS] ?? "-";
+}
+
+export function getUserRoleLabel(value: string | null | undefined) {
+    if (!value) return "未設定";
+    return USER_ROLE_LABELS[value as keyof typeof USER_ROLE_LABELS] ?? "未設定";
 }
 
 export function getVehicleSortLabel(value: string | null | undefined) {

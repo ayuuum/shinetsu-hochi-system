@@ -36,7 +36,12 @@ import { deleteHealthCheckAction } from "@/app/actions/admin-record-actions";
 import { formatDisplayDate } from "@/lib/date";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { getHealthCheckResultLabel } from "@/lib/display-labels";
+import {
+    getHealthCheckListResultLabel,
+    getHealthCheckResultLabel,
+    normalizeHealthCheckListResultValue,
+} from "@/lib/display-labels";
+import { PageHeader } from "@/components/shared/page-header";
 
 export type HealthCheckWithEmployee = Tables<"health_checks"> & {
     employees: { id: string; name: string; branch: string | null } | null;
@@ -91,12 +96,13 @@ export function HealthChecksClient({
     currentPage: number;
     totalPages: number;
 }) {
+    const normalizedCurrentResult = normalizeHealthCheckListResultValue(currentResult);
     const [search, setSearch] = useState(currentSearch);
     const [editingItem, setEditingItem] = useState<HealthCheckWithEmployee | null>(null);
     const [deletingItem, setDeletingItem] = useState<HealthCheckWithEmployee | null>(null);
     const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
     const [mobileType, setMobileType] = useState(currentType);
-    const [mobileResult, setMobileResult] = useState(currentResult);
+    const [mobileResult, setMobileResult] = useState(normalizedCurrentResult);
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
     const pathname = usePathname();
@@ -126,7 +132,7 @@ export function HealthChecksClient({
         currentResult
             ? {
                 key: "result",
-                label: `結果: ${currentResult === "normal" ? "異常なし" : currentResult === "abnormal" ? "要再検査" : "結果を選択"}`,
+                label: `結果: ${getHealthCheckListResultLabel(currentResult)}`,
                 onRemove: () => updateFilters({ result: "", page: 1 }),
             }
             : null,
@@ -139,8 +145,8 @@ export function HealthChecksClient({
     useEffect(() => {
         if (isMobileFiltersOpen) return;
         setMobileType(currentType);
-        setMobileResult(currentResult);
-    }, [currentResult, currentType, isMobileFiltersOpen]);
+        setMobileResult(normalizedCurrentResult);
+    }, [currentType, isMobileFiltersOpen, normalizedCurrentResult]);
 
     useEffect(() => {
         const timer = window.setTimeout(() => {
@@ -150,21 +156,21 @@ export function HealthChecksClient({
                 router.replace(buildHealthChecksHref(pathname, {
                     search,
                     type: currentType,
-                    result: currentResult,
+                    result: normalizedCurrentResult,
                     page: 1,
                 }), { scroll: false });
             });
         }, 250);
 
         return () => window.clearTimeout(timer);
-    }, [currentResult, currentSearch, currentType, pathname, router, search]);
+    }, [normalizedCurrentResult, currentSearch, currentType, pathname, router, search]);
 
     const updateFilters = (updates: Partial<{ type: string; result: string; page: number }>) => {
         startTransition(() => {
             router.replace(buildHealthChecksHref(pathname, {
                 search,
                 type: updates.type ?? currentType,
-                result: updates.result ?? currentResult,
+                result: updates.result ?? normalizedCurrentResult,
                 page: updates.page ?? 1,
             }), { scroll: false });
         });
@@ -191,7 +197,7 @@ export function HealthChecksClient({
     const handleMobileFiltersOpenChange = (open: boolean) => {
         if (open) {
             setMobileType(currentType);
-            setMobileResult(currentResult);
+            setMobileResult(normalizedCurrentResult);
         }
         setIsMobileFiltersOpen(open);
     };
@@ -210,13 +216,11 @@ export function HealthChecksClient({
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">健康診断管理</h1>
-                    <p className="text-muted-foreground mt-2">全従業員の健康診断記録を管理します。</p>
-                </div>
-                {isAdminOrHr && <AddHealthCheckModal employees={employees} />}
-            </div>
+            <PageHeader
+                title="健康診断管理"
+                description="全従業員の健康診断記録を管理します。"
+                actions={isAdminOrHr ? <AddHealthCheckModal employees={employees} /> : undefined}
+            />
 
             <div className="space-y-3 md:hidden">
                 <div className="relative">
@@ -308,7 +312,7 @@ export function HealthChecksClient({
                     </SelectContent>
                 </Select>
                     <Select
-                        value={currentResult || undefined}
+                        value={normalizedCurrentResult || undefined}
                         onValueChange={(value) => updateFilters({ result: value && value !== "all" ? value : "", page: 1 })}
                     >
                         <SelectTrigger className="w-[160px]">

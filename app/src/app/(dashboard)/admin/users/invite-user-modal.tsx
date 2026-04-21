@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { inviteUserAction } from "@/app/actions/admin-user-actions";
+import { getUserRoleLabel } from "@/lib/display-labels";
 
 interface InviteUserModalProps {
     open: boolean;
@@ -33,6 +34,11 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
     const [email, setEmail] = useState("");
     const [role, setRole] = useState<InviteRole>("technician");
     const [isPending, startTransition] = useTransition();
+    const roleOptions = [
+        { value: "admin", label: getUserRoleLabel("admin") },
+        { value: "hr", label: getUserRoleLabel("hr") },
+        { value: "technician", label: getUserRoleLabel("technician") },
+    ];
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -76,6 +82,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                     <div className="space-y-1.5">
                         <Label>ロール</Label>
                         <Select
+                            items={roleOptions}
                             value={role}
                             onValueChange={(val: string | null) => {
                                 if (val) setRole(val as InviteRole);
@@ -83,7 +90,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                             disabled={isPending}
                         >
                             <SelectTrigger className="w-full">
-                                <SelectValue />
+                                <SelectValue>{getUserRoleLabel(role)}</SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="admin">管理者</SelectItem>

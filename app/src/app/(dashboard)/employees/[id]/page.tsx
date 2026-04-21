@@ -70,49 +70,53 @@ export default async function EmployeeDetailPage({
     let employee_it_accounts: Tables<"employee_it_accounts">[] = [];
     let construction_records: Tables<"construction_records">[] = [];
     let health_checks: Tables<"health_checks">[] = [];
+    const loadIt = shouldLoadEmployeeItAccounts(currentTab, auth.role === "admin" || auth.role === "hr");
+    const loadConstruction = shouldLoadConstructionRecords(currentTab);
+    const loadHealth = shouldLoadHealthChecks(currentTab);
 
-    if (shouldLoadEmployeeItAccounts(currentTab, auth.role === "admin" || auth.role === "hr")) {
-        const itResult = await supabase
-            .from("employee_it_accounts")
-            .select("*")
-            .eq("employee_id", id)
-            .order("sort_order", { ascending: true })
-            .order("created_at", { ascending: true });
-        if (itResult.error) {
-            console.error("Failed to load employee IT accounts:", itResult.error);
-        } else {
-            employee_it_accounts = itResult.data ?? [];
-        }
+    const [itResult, constructionResult, healthResult] = await Promise.all([
+        loadIt
+            ? supabase
+                .from("employee_it_accounts")
+                .select("*")
+                .eq("employee_id", id)
+                .order("sort_order", { ascending: true })
+                .order("created_at", { ascending: true })
+            : Promise.resolve({ data: null, error: null }),
+        loadConstruction
+            ? supabase
+                .from("construction_records")
+                .select("*")
+                .eq("employee_id", id)
+                .is("deleted_at", null)
+                .order("construction_date", { ascending: false })
+            : Promise.resolve({ data: null, error: null }),
+        loadHealth
+            ? supabase
+                .from("health_checks")
+                .select("*")
+                .eq("employee_id", id)
+                .is("deleted_at", null)
+                .order("check_date", { ascending: false })
+            : Promise.resolve({ data: null, error: null }),
+    ]);
+
+    if (itResult.error) {
+        console.error("Failed to load employee IT accounts:", itResult.error);
+    } else {
+        employee_it_accounts = itResult.data ?? [];
     }
 
-    if (shouldLoadConstructionRecords(currentTab)) {
-        const constructionResult = await supabase
-            .from("construction_records")
-            .select("*")
-            .eq("employee_id", id)
-            .is("deleted_at", null)
-            .order("construction_date", { ascending: false });
-
-        if (constructionResult.error) {
-            console.error("Failed to load construction records:", constructionResult.error);
-        } else {
-            construction_records = constructionResult.data ?? [];
-        }
+    if (constructionResult.error) {
+        console.error("Failed to load construction records:", constructionResult.error);
+    } else {
+        construction_records = constructionResult.data ?? [];
     }
 
-    if (shouldLoadHealthChecks(currentTab)) {
-        const healthResult = await supabase
-            .from("health_checks")
-            .select("*")
-            .eq("employee_id", id)
-            .is("deleted_at", null)
-            .order("check_date", { ascending: false });
-
-        if (healthResult.error) {
-            console.error("Failed to load health checks:", healthResult.error);
-        } else {
-            health_checks = healthResult.data ?? [];
-        }
+    if (healthResult.error) {
+        console.error("Failed to load health checks:", healthResult.error);
+    } else {
+        health_checks = healthResult.data ?? [];
     }
 
     const employee: EmployeeDetail = {
@@ -126,39 +130,73 @@ export default async function EmployeeDetailPage({
         health_checks,
     };
 
-    const certificateEntries = shouldLoadQualificationCertificateUrls(currentTab)
-        ? await Promise.all(
-            employee.employee_qualifications
-                .filter((qualification) => qualification.certificate_url)
-                .map(async (qualification) => {
-                    try {
-                        const { data, error } = await supabase.storage
-                            .from("certificates")
-                            .createSignedUrl(qualification.certificate_url!, 3600);
+    const buildCertificateEntriesPromise = async () => {
+        if (!shouldLoadQualificationCertificateUrls(currentTab)) {
+            return [] as (readonly [string, string] | null)[];
+        }
 
-                        if (error || !data?.signedUrl) {
-                            if (error) {
-                                console.error(`Failed to create signed URL for qualification ${qualification.id}:`, error);
-                            }
-                            return null;
+        const qualificationIds = employee.employee_qualifications.map((qualification) => qualification.id);
+        const primaryCertificatePathByQualificationId = new Map<string, string>();
+
+        for (const qualification of employee.employee_qualifications) {
+            if (qualification.certificate_url) {
+                primaryCertificatePathByQualificationId.set(qualification.id, qualification.certificate_url);
+            }
+        }
+
+        if (qualificationIds.length > 0) {
+            const { data: certificateImages, error: certificateImagesError } = await supabase
+                .from("certificate_images")
+                .select("qualification_id, storage_path, sort_order")
+                .in("qualification_id", qualificationIds)
+                .order("sort_order", { ascending: true });
+
+            if (certificateImagesError) {
+                console.error("Failed to load certificate images:", certificateImagesError);
+            } else {
+                for (const row of certificateImages ?? []) {
+                    if (!row.qualification_id || !row.storage_path) continue;
+                    if (!primaryCertificatePathByQualificationId.has(row.qualification_id)) {
+                        primaryCertificatePathByQualificationId.set(row.qualification_id, row.storage_path);
+                    }
+                }
+            }
+        }
+
+        return Promise.all(
+            employee.employee_qualifications.map(async (qualification) => {
+                const storagePath = primaryCertificatePathByQualificationId.get(qualification.id);
+                if (!storagePath) return null;
+
+                try {
+                    const { data, error } = await supabase.storage
+                        .from("certificates")
+                        .createSignedUrl(storagePath, 3600);
+
+                    if (error || !data?.signedUrl) {
+                        if (error) {
+                            console.error(`Failed to create signed URL for qualification ${qualification.id}:`, error);
                         }
-
-                        return [qualification.id, data.signedUrl] as const;
-                    } catch (error) {
-                        console.error(`Failed to fetch certificate URL for qualification ${qualification.id}:`, error);
                         return null;
                     }
-                })
-        )
-        : [];
 
-    let photoUrl: string | null = null;
-    if (employee.photo_url) {
-        const { data } = await supabase.storage
-            .from("certificates")
-            .createSignedUrl(employee.photo_url, 3600);
-        photoUrl = data?.signedUrl || null;
-    }
+                    return [qualification.id, data.signedUrl] as const;
+                } catch (error) {
+                    console.error(`Failed to fetch certificate URL for qualification ${qualification.id}:`, error);
+                    return null;
+                }
+            })
+        );
+    };
+
+    const [certificateEntries, photoResult] = await Promise.all([
+        buildCertificateEntriesPromise(),
+        employee.photo_url
+            ? supabase.storage.from("certificates").createSignedUrl(employee.photo_url, 3600)
+            : Promise.resolve(null),
+    ]);
+
+    const photoUrl = photoResult?.data?.signedUrl || null;
 
     return (
         <EmployeeDetailClient

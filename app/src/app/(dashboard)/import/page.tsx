@@ -360,7 +360,7 @@ export default function ImportPage() {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">データインポート</h1>
                     <p className="mt-2 text-muted-foreground">
-                        CSV をアップロードして事前チェックしてから、社員データを一括登録します。
+                        1) CSVをアップロード → 2) 自動チェック（必須項目・日付形式・社員番号重複）→ 3) 問題なければ一括登録、の流れで進みます。
                     </p>
                 </div>
                 <Button variant="outline" render={<Link href="/operations-log" />}>
@@ -376,7 +376,7 @@ export default function ImportPage() {
                         ファイルアップロード
                     </CardTitle>
                     <CardDescription>
-                        UTF-8 形式の CSV をアップロードしてください。必須項目・日付形式・社員番号の重複をチェックします。
+                        UTF-8 のCSVを選択すると、サーバー側で「必須項目」「日付形式」「社員番号の重複」を自動チェックします。
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -409,7 +409,7 @@ export default function ImportPage() {
 
                     <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                         <Badge variant="outline">必須: 社員番号 / 氏名 / フリガナ / 生年月日 / 入社日 / 拠点</Badge>
-                        <Badge variant="outline">重複チェック: 社員番号</Badge>
+                        <Badge variant="outline">重複チェック: 社員番号（既存・CSV内）</Badge>
                         <Badge variant="outline">日付形式: YYYY-MM-DD または YYYY/M/D</Badge>
                     </div>
                 </CardContent>

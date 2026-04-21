@@ -36,6 +36,7 @@ import { getTodayInTokyo } from "@/lib/date";
 import { deleteAlcoholCheckAction } from "@/app/actions/admin-record-actions";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { PageHeader } from "@/components/shared/page-header";
 
 export type AlcoholCheckRow = {
     id: string;
@@ -242,26 +243,26 @@ export function AlcoholClient({
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">アルコールチェック</h1>
-                    <p className="text-muted-foreground mt-2">法令に基づく飲酒検査記録を管理します。</p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2">
-                    <Button variant="outline" onClick={handleExport}>
-                        <Download className="mr-2 h-4 w-4" />
-                        Excel出力
-                    </Button>
-                    {canRecordAlcohol && (
-                        <AddAlcoholCheckModal
-                            employees={employees}
-                            initialEmployeeId={currentEmployee}
-                            initialDate={currentDate}
-                            initialLocation={currentLocation}
-                        />
-                    )}
-                </div>
-            </div>
+            <PageHeader
+                title="アルコールチェック"
+                description="法令に基づく飲酒検査記録を管理します。"
+                actions={(
+                    <>
+                        <Button variant="outline" onClick={handleExport}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Excel出力
+                        </Button>
+                        {canRecordAlcohol && (
+                            <AddAlcoholCheckModal
+                                employees={employees}
+                                initialEmployeeId={currentEmployee}
+                                initialDate={currentDate}
+                                initialLocation={currentLocation}
+                            />
+                        )}
+                    </>
+                )}
+            />
 
             {abnormalCount > 0 && (
                 <div className="flex items-start gap-3 p-4 rounded-[16px] bg-destructive/10 border border-destructive/20">
@@ -274,12 +275,12 @@ export function AlcoholClient({
 
             <Card className="border-border/60 shadow-sm">
                 <CardContent className="space-y-4 p-5">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <h2 className="text-lg font-bold">月次記録率レポート</h2>
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="min-w-0 flex-1">
+                            <h2 className="text-lg font-bold text-balance">月次記録率レポート</h2>
                             <p className="text-sm text-muted-foreground">拠点別・社員別に月内の記録率を確認できます。</p>
                         </div>
-                        <div className="flex flex-col gap-2 sm:flex-row">
+                        <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
                             <Input
                                 aria-label="レポート対象月"
                                 type="month"
