@@ -573,7 +573,7 @@ export default async function Home() {
                                 <Link
                                     key={card.title}
                                     href={card.href}
-                                className="group rounded-[20px] border border-border/60 bg-background/55 p-4 transition-[border-color,background-color] duration-200 hover:border-primary/12 hover:bg-background/80"
+                                className="group rounded-[20px] border border-border/60 bg-background/55 p-4 transition-[border-color,background-color] duration-200 hover:border-primary/15 hover:bg-background/80"
                                 >
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0">

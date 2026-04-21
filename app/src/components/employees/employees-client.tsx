@@ -386,7 +386,7 @@ export function EmployeesClient({
                 )}
             </div>
 
-            <div className="hidden overflow-x-auto rounded-xl border bg-card shadow-sm md:block" aria-busy={isPending}>
+            <div className="hidden overflow-x-auto rounded-[24px] border border-border/60 bg-card shadow-[0_1px_2px_rgba(38,42,46,0.04),0_12px_28px_rgba(38,42,46,0.05)] md:block" aria-busy={isPending}>
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-muted/50">

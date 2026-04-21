@@ -358,8 +358,8 @@ export function VehiclesClient({
                             </TableRow>
                         ) : (
                             initialVehicles.map((vehicle) => (
-                                <TableRow key={vehicle.id} className="hover:bg-transparent">
-                                    <TableCell className="sticky left-0 z-10 bg-card font-bold shadow-[inset_-1px_0_0_hsl(var(--border))]">
+                                <TableRow key={vehicle.id} className="group hover:bg-muted/30 transition-colors">
+                                    <TableCell className="sticky left-0 z-10 bg-card font-bold shadow-[inset_-1px_0_0_hsl(var(--border))] group-hover:bg-muted/30">
                                         <div className="flex items-center gap-2">
                                             <Truck className="h-4 w-4 text-muted-foreground shrink-0" />
                                             {vehicle.plate_number}
