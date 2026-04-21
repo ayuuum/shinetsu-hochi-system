@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 export default function TableSkeletonLoading() {
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-2">
                     <Skeleton className="h-9 w-48" />
                     <Skeleton className="h-4 w-72" />
@@ -14,6 +14,15 @@ export default function TableSkeletonLoading() {
                     <Skeleton className="h-9 w-[180px] rounded-lg" />
                     <Skeleton className="h-9 w-24 rounded-lg" />
                 </div>
+            </div>
+
+            <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="rounded-[20px] border p-4 space-y-2">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-7 w-10" />
+                    </div>
+                ))}
             </div>
 
             <Card className="border shadow-none">
