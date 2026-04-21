@@ -222,7 +222,9 @@ export function VehiclesClient({
                         onValueChange={(val: string | null) => updateFilters({ expiry: val === "all" ? "" : (val ?? ""), page: 1 })}
                     >
                         <SelectTrigger className="h-11 w-[130px]">
-                            <SelectValue placeholder="期限フィルタ" />
+                            <span className="flex-1 text-left text-sm">
+                                {currentExpiry === "expired" ? "期限切れ" : currentExpiry === "soon" ? "30日以内" : "すべて"}
+                            </span>
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">すべて</SelectItem>
@@ -235,8 +237,10 @@ export function VehiclesClient({
                         onValueChange={(val: string | null) => updateFilters({ sort: val ?? "plate", page: 1 })}
                     >
                         <SelectTrigger className="h-11 w-[150px]">
-                            <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
-                            <SelectValue placeholder="並び順" />
+                            <ArrowUpDown className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+                            <span className="flex-1 text-left text-sm">
+                                {currentSort === "inspection" ? "車検満了日順" : currentSort === "liability" ? "自賠責満期順" : currentSort === "voluntary" ? "任意保険満期順" : "ナンバー順"}
+                            </span>
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="plate">ナンバー順</SelectItem>
