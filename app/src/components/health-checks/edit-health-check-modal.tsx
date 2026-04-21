@@ -35,6 +35,7 @@ import { Tables } from "@/types/supabase";
 import { updateHealthCheckAction } from "@/app/actions/admin-record-actions";
 import { healthCheckSchema, toHealthCheckFormValues, type HealthCheckValues } from "@/lib/validation/health-check";
 import { formatDisplayDate } from "@/lib/date";
+import { getHealthCheckResultValueLabel, HEALTH_CHECK_RESULT_OPTIONS } from "@/lib/display-labels";
 
 interface EditHealthCheckModalProps {
     healthCheck: Tables<"health_checks">;
@@ -148,11 +149,14 @@ export function EditHealthCheckModal({ healthCheck, employees, open, onOpenChang
                                 <FormLabel>結果 *</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectTrigger>
+                                            <SelectValue>{getHealthCheckResultValueLabel(field.value)}</SelectValue>
+                                        </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        <SelectItem value="true">異常なし</SelectItem>
-                                        <SelectItem value="false">要再検査</SelectItem>
+                                        {HEALTH_CHECK_RESULT_OPTIONS.map((option) => (
+                                            <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />

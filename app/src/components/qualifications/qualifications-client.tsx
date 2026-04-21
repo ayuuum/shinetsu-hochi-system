@@ -23,7 +23,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, FileImage, Tags, Plus } from "lucide-react";
+import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, FileImage, Tags } from "lucide-react";
 import { differenceInDays } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { alertStyles, getAlertLevel, type AlertLevel } from "@/lib/alert-utils";

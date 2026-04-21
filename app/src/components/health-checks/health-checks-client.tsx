@@ -36,6 +36,7 @@ import { deleteHealthCheckAction } from "@/app/actions/admin-record-actions";
 import { formatDisplayDate } from "@/lib/date";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { getHealthCheckResultLabel } from "@/lib/display-labels";
 
 export type HealthCheckWithEmployee = Tables<"health_checks"> & {
     employees: { id: string; name: string; branch: string | null } | null;
@@ -125,7 +126,7 @@ export function HealthChecksClient({
         currentResult
             ? {
                 key: "result",
-                label: `結果: ${currentResult === "normal" ? "異常なし" : "要再検査"}`,
+                label: `結果: ${currentResult === "normal" ? "異常なし" : currentResult === "abnormal" ? "要再検査" : "結果を選択"}`,
                 onRemove: () => updateFilters({ result: "", page: 1 }),
             }
             : null,
@@ -306,11 +307,11 @@ export function HealthChecksClient({
                         <SelectItem value="特殊健康診断">特殊健康診断</SelectItem>
                     </SelectContent>
                 </Select>
-                <Select
-                    value={currentResult || undefined}
-                    onValueChange={(value) => updateFilters({ result: value && value !== "all" ? value : "", page: 1 })}
-                >
-                    <SelectTrigger className="w-[160px]">
+                    <Select
+                        value={currentResult || undefined}
+                        onValueChange={(value) => updateFilters({ result: value && value !== "all" ? value : "", page: 1 })}
+                    >
+                        <SelectTrigger className="w-[160px]">
                         <SelectValue placeholder="全ての結果" />
                     </SelectTrigger>
                     <SelectContent>
@@ -372,14 +373,14 @@ export function HealthChecksClient({
                                         <p className="font-medium">{check.hospital_name || "-"}</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-sm text-muted-foreground">結果</p>
+                                            <p className="text-sm text-muted-foreground">結果</p>
                                         <div>
                                             {check.is_normal === true ? (
                                                 <Badge variant="secondary" className="bg-green-100 text-green-600">異常なし</Badge>
                                             ) : check.is_normal === false ? (
                                                 <Badge variant="destructive">要再検査</Badge>
                                             ) : (
-                                                "-"
+                                                getHealthCheckResultLabel(check.is_normal)
                                             )}
                                         </div>
                                     </div>
@@ -441,7 +442,7 @@ export function HealthChecksClient({
                                         ) : check.is_normal === false ? (
                                             <Badge variant="destructive">要再検査</Badge>
                                         ) : (
-                                            "-"
+                                            getHealthCheckResultLabel(check.is_normal)
                                         )}
                                     </TableCell>
                                     <TableCell>

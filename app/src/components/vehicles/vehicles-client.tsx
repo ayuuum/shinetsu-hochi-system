@@ -38,6 +38,7 @@ import { deleteVehicleAction } from "@/app/actions/admin-record-actions";
 import { formatDisplayDate } from "@/lib/date";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { getVehicleExpiryFilterLabel, getVehicleSortLabel } from "@/lib/display-labels";
 
 export type VehicleWithUser = Tables<"vehicles"> & {
     employees?: { id: string; name: string } | null;
@@ -153,7 +154,7 @@ export function VehiclesClient({
         } : null,
         currentSort !== "plate" ? {
             key: "sort",
-            label: `並び順: ${currentSort === "inspection" ? "車検満了日" : currentSort === "liability" ? "自賠責満期" : "任意保険満期"}`,
+            label: `並び順: ${getVehicleSortLabel(currentSort)}`,
             onRemove: () => updateFilters({ sort: "plate", page: 1 }),
         } : null,
     ].filter((f): f is NonNullable<typeof f> => f !== null);
@@ -222,7 +223,7 @@ export function VehiclesClient({
                         onValueChange={(val: string | null) => updateFilters({ expiry: val === "all" ? "" : (val ?? ""), page: 1 })}
                     >
                         <SelectTrigger className="h-11 w-[130px]">
-                            <SelectValue placeholder="期限フィルタ" />
+                            <SelectValue>{getVehicleExpiryFilterLabel(currentExpiry || "all")}</SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">すべて</SelectItem>
@@ -236,7 +237,7 @@ export function VehiclesClient({
                     >
                         <SelectTrigger className="h-11 w-[150px]">
                             <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
-                            <SelectValue placeholder="並び順" />
+                            <SelectValue>{getVehicleSortLabel(currentSort)}</SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="plate">ナンバー順</SelectItem>
