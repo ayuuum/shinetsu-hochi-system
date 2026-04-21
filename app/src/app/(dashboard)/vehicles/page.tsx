@@ -21,7 +21,7 @@ function buildInCondition(column: string, ids: string[]) {
 export default async function VehiclesPage({
     searchParams,
 }: {
-    searchParams: Promise<{ page?: string; q?: string; eq?: string; eqPage?: string }>;
+    searchParams: Promise<{ page?: string; q?: string; eq?: string; eqPage?: string; sort?: string; expiry?: string }>;
 }) {
     const auth = await getAuthSnapshot();
     if (auth.role === "technician") {
@@ -33,6 +33,8 @@ export default async function VehiclesPage({
     const from = (currentPage - 1) * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
     const currentSearch = (params.q || "").trim();
+    const currentSort = (params.sort || "plate") as "plate" | "inspection" | "liability" | "voluntary";
+    const currentExpiry = (params.expiry || "") as "" | "expired" | "soon";
 
     const eqPage = parsePageParam(params.eqPage);
     const eqFrom = (eqPage - 1) * PAGE_SIZE;
@@ -63,12 +65,30 @@ export default async function VehiclesPage({
             supabase.from("employees").select("id, name").is("deleted_at", null).order("name"),
         ]);
 
+        const sortColumn = currentSort === "inspection" ? "inspection_expiry"
+            : currentSort === "liability" ? "liability_insurance_expiry"
+            : currentSort === "voluntary" ? "voluntary_insurance_expiry"
+            : "plate_number";
+
+        const today = new Date().toISOString().slice(0, 10);
+        const soon = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
         let vehicleQuery = supabase
             .from("vehicles")
             .select("*, employees(id, name)", { count: "exact" })
             .is("deleted_at", null)
-            .order("plate_number", { ascending: true })
+            .order(sortColumn, { ascending: true, nullsFirst: false })
             .range(from, to);
+
+        if (currentExpiry === "expired") {
+            vehicleQuery = vehicleQuery.or(
+                `inspection_expiry.lt.${today},liability_insurance_expiry.lt.${today},voluntary_insurance_expiry.lt.${today}`
+            );
+        } else if (currentExpiry === "soon") {
+            vehicleQuery = vehicleQuery.or(
+                `inspection_expiry.lte.${soon},liability_insurance_expiry.lte.${soon},voluntary_insurance_expiry.lte.${soon}`
+            );
+        }
 
         if (currentSearch && searchPattern) {
             const primaryUserCondition = buildInCondition(
@@ -129,6 +149,8 @@ export default async function VehiclesPage({
                         initialVehicles={vehicleData}
                         employees={empData}
                         currentSearch={currentSearch}
+                        currentSort={currentSort}
+                        currentExpiry={currentExpiry}
                         currentPage={currentPage}
                         totalPages={totalPages}
                     />
