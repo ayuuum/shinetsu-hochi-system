@@ -168,6 +168,7 @@ function revalidateEmployeePaths(employeeId?: string) {
 function revalidateVehiclePaths(vehicleId?: string) {
     revalidatePath("/");
     revalidatePath("/vehicles");
+    updateTag("vehicles");
     if (vehicleId) revalidatePath(`/vehicles/${vehicleId}`);
 }
 
@@ -175,14 +176,17 @@ function revalidateProjectPaths(employeeId?: string | null) {
     revalidatePath("/");
     revalidatePath("/projects");
     revalidatePath("/employees");
+    updateTag("employees");
     if (employeeId) {
         revalidatePath(`/employees/${employeeId}`);
     }
 }
 
 function revalidateHealthCheckPaths(employeeId?: string | null) {
+    revalidatePath("/");
     revalidatePath("/health-checks");
     revalidatePath("/employees");
+    updateTag("health-checks");
     if (employeeId) {
         revalidatePath(`/employees/${employeeId}`);
     }
