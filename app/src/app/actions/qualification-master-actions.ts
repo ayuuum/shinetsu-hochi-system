@@ -12,18 +12,18 @@ import {
 
 type ActionResult = { success: true } | { success: false; error: string };
 
-async function requireAdminOrHr(): Promise<{ ok: true; userId: string } | { ok: false; error: string }> {
+async function requireAdmin(): Promise<{ ok: true; userId: string } | { ok: false; error: string }> {
     const { user, role } = await getAuthSnapshot();
 
-    if (!user || (role !== "admin" && role !== "hr")) {
-        return { ok: false, error: "この操作を実行する権限がありません。" };
+    if (!user || role !== "admin") {
+        return { ok: false, error: "この操作は管理者のみ実行できます。" };
     }
 
     return { ok: true, userId: user.id };
 }
 
 export async function createQualificationMasterAction(raw: unknown): Promise<ActionResult> {
-    const gate = await requireAdminOrHr();
+    const gate = await requireAdmin();
     if (!gate.ok) return { success: false, error: gate.error };
 
     const parsed = qualificationMasterCreateSchema.safeParse(raw);
@@ -52,7 +52,7 @@ export async function createQualificationMasterAction(raw: unknown): Promise<Act
 }
 
 export async function updateQualificationMasterAction(raw: unknown): Promise<ActionResult> {
-    const gate = await requireAdminOrHr();
+    const gate = await requireAdmin();
     if (!gate.ok) return { success: false, error: gate.error };
 
     const parsed = qualificationMasterUpdateSchema.safeParse(raw);
@@ -82,7 +82,7 @@ export async function updateQualificationMasterAction(raw: unknown): Promise<Act
 }
 
 export async function deleteQualificationMasterAction(id: string): Promise<ActionResult> {
-    const gate = await requireAdminOrHr();
+    const gate = await requireAdmin();
     if (!gate.ok) return { success: false, error: gate.error };
 
     const idParsed = z.string().uuid().safeParse(id);

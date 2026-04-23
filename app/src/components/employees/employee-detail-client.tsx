@@ -34,6 +34,7 @@ import {
     Shield,
     Printer,
     Laptop,
+    AlertTriangle,
 } from "lucide-react";
 import { differenceInDays } from "date-fns";
 import { AddQualificationModal } from "@/components/employees/add-qualification-modal";
@@ -129,6 +130,18 @@ export function EmployeeDetailClient({
     const [deletingItAccountId, setDeletingItAccountId] = useState<string | null>(null);
     const { isAdminOrHr, role, linkedEmployeeId } = useAuth();
     const isTechnicianSelf = role === "technician" && linkedEmployeeId === employee.id;
+
+    const today = new Date();
+    const housingAllowanceEnd = employee.hire_date
+        ? new Date(new Date(employee.hire_date).setFullYear(new Date(employee.hire_date).getFullYear() + 5))
+        : null;
+    const housingDaysLeft = housingAllowanceEnd ? differenceInDays(housingAllowanceEnd, today) : null;
+    const housingAlertActive = housingDaysLeft !== null && housingDaysLeft <= 31;
+
+    const hasFamilyAllowance = employee.employee_family.some(f => {
+        if (!f.birth_date || !f.is_dependent) return false;
+        return differenceInDays(today, new Date(f.birth_date)) / 365.25 <= 18;
+    });
 
     const handleBack = () => {
         if (isTechnicianSelf) {
@@ -263,6 +276,7 @@ export function EmployeeDetailClient({
                                 <h1 className="text-3xl font-bold tracking-tight">{employee.name}</h1>
                                 <Badge variant="outline" className="bg-primary/5">{employee.branch || "-"}</Badge>
                                 {employee.termination_date && <Badge variant="destructive">退職済</Badge>}
+                                {isAdminOrHr && hasFamilyAllowance && <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">家族手当あり</Badge>}
                             </div>
                             <p className="text-muted-foreground font-medium">{employee.name_kana} | {employee.employee_number}</p>
                             <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
@@ -285,6 +299,17 @@ export function EmployeeDetailClient({
                     )}
                 </div>
             </div>
+
+            {isAdminOrHr && housingAlertActive && (
+                <div className="mx-6 mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>
+                        {housingDaysLeft! <= 0
+                            ? `家賃補助の支給期間（入社5年）が終了しました。`
+                            : `家賃補助の支給期間が残り${housingDaysLeft}日で終了します（${formatDisplayDate(housingAllowanceEnd!.toISOString().split("T")[0])}まで）。`}
+                    </span>
+                </div>
+            )}
 
             {isAdminOrHr && (
                 <EditEmployeeModal

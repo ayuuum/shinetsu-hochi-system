@@ -93,6 +93,16 @@ async function requireAdminOrHr() {
     return { ok: true as const, user };
 }
 
+async function requireAuthenticated() {
+    const { user } = await getAuthSnapshot();
+
+    if (!user) {
+        return { ok: false as const, error: "ログインが必要です。" };
+    }
+
+    return { ok: true as const, user };
+}
+
 async function recordAuditLog({
     actorId,
     actorEmail,
@@ -1006,7 +1016,7 @@ export async function updateAlcoholCheckAction(
     alcoholCheckId: string,
     values: AlcoholCheckValues
 ): Promise<ActionResult<keyof AlcoholCheckValues>> {
-    const auth = await requireAdminOrHr();
+    const auth = await requireAuthenticated();
     if (!auth.ok) {
         return { success: false, error: auth.error };
     }
