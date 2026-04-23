@@ -3,6 +3,7 @@ import { createSupabaseServer } from "@/lib/supabase-server";
 import { getAuthSnapshot } from "@/lib/auth-server";
 import { HealthChecksClient, type HealthCheckWithEmployee } from "@/components/health-checks/health-checks-client";
 import { normalizeHealthCheckListResultValue } from "@/lib/display-labels";
+import { getCachedEmployeeList } from "@/lib/cached-queries";
 
 const PAGE_SIZE = 50;
 
@@ -50,11 +51,7 @@ export default async function HealthChecksPage({
                     .ilike("name", searchPattern!)
                     .limit(100)
                 : Promise.resolve({ data: [] as { id: string }[], error: null }),
-            supabase
-                .from("employees")
-                .select("id, name")
-                .is("deleted_at", null)
-                .order("name"),
+            getCachedEmployeeList(),
         ]);
 
         let checkQuery = supabase
@@ -88,7 +85,7 @@ export default async function HealthChecksPage({
 
         checkData = (checkResult.data as HealthCheckWithEmployee[]) || [];
         totalPages = Math.max(1, Math.ceil((checkResult.count || 0) / PAGE_SIZE));
-        empData = empResult.data || [];
+        empData = empResult;
     } catch (e) {
         console.error("Failed to load health checks:", e);
     }

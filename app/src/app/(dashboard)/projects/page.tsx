@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { getAuthSnapshot } from "@/lib/auth-server";
 import { ProjectsClient, type ConstructionWithEmployee } from "@/components/projects/projects-client";
+import { getCachedEmployeeList } from "@/lib/cached-queries";
 
 const PAGE_SIZE = 50;
 
@@ -48,11 +49,7 @@ export default async function ProjectsPage({
                     .ilike("name", searchPattern!)
                     .limit(100)
                 : Promise.resolve({ data: [] as { id: string }[], error: null }),
-            supabase
-                .from("employees")
-                .select("id, name, branch")
-                .is("deleted_at", null)
-                .order("name"),
+            getCachedEmployeeList(),
         ]);
 
         let recordsQuery = supabase
@@ -80,7 +77,7 @@ export default async function ProjectsPage({
 
         recordsData = (recordsResult.data as ConstructionWithEmployee[]) || [];
         totalPages = Math.max(1, Math.ceil((recordsResult.count || 0) / PAGE_SIZE));
-        empData = empResult.data || [];
+        empData = empResult;
     } catch (e) {
         console.error("Failed to load construction records:", e);
     }
