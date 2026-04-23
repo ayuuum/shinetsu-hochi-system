@@ -2,7 +2,7 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getStrictAuthSnapshot } from "@/lib/auth-server";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { Json } from "@/types/supabase";
 import {
@@ -84,7 +84,7 @@ function getFieldErrors<TField extends string>(error: z.ZodError): Partial<Recor
 }
 
 async function requireAdminOrHr() {
-    const { user, role } = await getAuthSnapshot();
+    const { user, role } = await getStrictAuthSnapshot();
 
     if (!user || (role !== "admin" && role !== "hr")) {
         return { ok: false as const, error: "この操作を実行する権限がありません。" };
@@ -94,7 +94,7 @@ async function requireAdminOrHr() {
 }
 
 async function requireAdmin() {
-    const { user, role } = await getAuthSnapshot();
+    const { user, role } = await getStrictAuthSnapshot();
 
     if (!user || role !== "admin") {
         return { ok: false as const, error: "この操作を実行する権限がありません。" };
@@ -104,7 +104,7 @@ async function requireAdmin() {
 }
 
 async function requireAuthenticated() {
-    const { user } = await getAuthSnapshot();
+    const { user } = await getStrictAuthSnapshot();
 
     if (!user) {
         return { ok: false as const, error: "ログインが必要です。" };
@@ -940,7 +940,7 @@ export async function updateHealthCheckAction(
 export async function createAlcoholCheckAction(
     values: AlcoholCheckValues
 ): Promise<ActionResult<keyof AlcoholCheckValues>> {
-    const snap = await getAuthSnapshot();
+    const snap = await getStrictAuthSnapshot();
     if (!snap.user) {
         return { success: false, error: "この操作を実行する権限がありません。" };
     }

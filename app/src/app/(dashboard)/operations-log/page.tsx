@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ManualDailyAlertButton } from "@/components/operations/manual-daily-alert-button";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { getSupabaseServiceEnv } from "@/lib/supabase-env";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { Tables } from "@/types/supabase";
@@ -43,7 +43,7 @@ function renderStatusBadge(status: "running" | "completed" | "failed") {
 }
 
 export default async function OperationsLogPage() {
-    const auth = await getAuthSnapshot();
+    const auth = await getFastAuthSnapshot();
 
     if (!auth.user || (auth.role !== "admin" && auth.role !== "hr")) {
         return (

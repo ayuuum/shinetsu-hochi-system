@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { UsersClient, type UserRow } from "./users-client";
 
 function createAdminClient() {
@@ -13,7 +13,7 @@ function createAdminClient() {
 }
 
 export default async function AdminUsersPage() {
-    const { user, role } = await getAuthSnapshot();
+    const { user, role } = await getFastAuthSnapshot();
 
     if (!user || role !== "admin") {
         redirect("/");

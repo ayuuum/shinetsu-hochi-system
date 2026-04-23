@@ -109,7 +109,7 @@ export function AlcoholClient({
     currentMonth,
     monthlySummary,
     currentPage,
-    totalPages,
+    hasNextPage,
 }: {
     initialChecks: AlcoholCheckRow[];
     employees: Employee[];
@@ -120,7 +120,7 @@ export function AlcoholClient({
     currentMonth: string;
     monthlySummary: MonthlyAlcoholSummary[];
     currentPage: number;
-    totalPages: number;
+    hasNextPage: boolean;
 }) {
     const [editingItem, setEditingItem] = useState<AlcoholCheckRow | null>(null);
     const [deletingItem, setDeletingItem] = useState<AlcoholCheckRow | null>(null);
@@ -625,7 +625,7 @@ export function AlcoholClient({
                 </Table>
             </div>
 
-            {totalPages > 1 && (
+            {(currentPage > 1 || hasNextPage) && (
                 <div className="flex items-center justify-center gap-2">
                     <Button
                         variant="outline"
@@ -642,12 +642,12 @@ export function AlcoholClient({
                         前へ
                     </Button>
                     <span className="text-sm text-muted-foreground">
-                        {currentPage} / {totalPages}
+                        {currentPage}ページ
                     </span>
                     <Button
                         variant="outline"
                         size="sm"
-                        disabled={currentPage >= totalPages}
+                        disabled={!hasNextPage}
                         render={<Link href={buildAlcoholChecksHref(pathname, {
                             date: currentDate,
                             location: currentLocation,

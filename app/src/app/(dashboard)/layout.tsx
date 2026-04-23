@@ -4,14 +4,14 @@ import { LazyCommandSearch } from "@/components/lazy-command-search";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { BottomNav } from "@/components/shared/bottom-nav";
 import { AuthProvider } from "@/hooks/use-auth";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
 
 export default async function DashboardLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
-    const auth = await getAuthSnapshot();
+    const auth = await getFastAuthSnapshot();
 
     // `src/proxy.ts`（Next.js 16）で未認証は /login へ — レイアウトではセッションを供給するのみ
     return (

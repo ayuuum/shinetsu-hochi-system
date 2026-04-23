@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { VehicleDetailClient } from "@/components/vehicles/vehicle-detail-client";
 import { Tables } from "@/types/supabase";
 
@@ -17,7 +17,7 @@ export default async function VehicleDetailPage({
     params: Promise<{ id: string }>;
 }) {
     const { id } = await params;
-    const auth = await getAuthSnapshot();
+    const auth = await getFastAuthSnapshot();
     if (auth.role === "technician") {
         redirect("/me");
     }

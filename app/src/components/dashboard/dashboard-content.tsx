@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { addDays, isAfter, isBefore } from "date-fns";
 import Link from "next/link";
 import {
@@ -16,18 +17,18 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getAlertLevel, getDaysRemaining, alertStyles, type AlertLevel } from "@/lib/alert-utils";
-import { getTodayInTokyo, getTokyoCalendarMonthBounds, isYmdInInclusiveRange } from "@/lib/date";
 import { createSupabaseServer } from "@/lib/supabase-server";
+import { alertStyles, getAlertLevel, getDaysRemaining, type AlertLevel } from "@/lib/alert-utils";
+import { getTodayInTokyo, getTokyoCalendarMonthBounds, isYmdInInclusiveRange } from "@/lib/date";
 import {
     getCachedDashboardEmployees,
     getCachedDashboardQualifications,
     getCachedDashboardVehicles,
     getCachedMonthlyHealthChecks,
     type DashboardEmployee,
+    type DashboardHealthCheck,
     type DashboardQualification,
     type DashboardVehicle,
-    type DashboardHealthCheck,
 } from "@/lib/cached-queries";
 import { Tables } from "@/types/supabase";
 
@@ -72,31 +73,51 @@ type DashboardTask = {
     priority: number;
 };
 
+type FocusCard = {
+    title: string;
+    value: number;
+    href: string;
+    description: string;
+    eyebrow: string;
+    icon: LucideIcon;
+    iconClassName: string;
+    valueClassName: string;
+};
+
+type PrioritySnapshot = {
+    today: string;
+    totalEmployees: number;
+    newEmployeesCount: number;
+    qualificationCount: number;
+    vehicleCount: number;
+    expiredCount: number;
+    urgentCount: number;
+    warningCount: number;
+    infoCount: number;
+    urgentAlertCount: number;
+    abnormalAlcohol: number;
+    pendingAlcoholCount: number;
+    missingAlcoholCount: number;
+    vehicleTasks: Array<DashboardVehicle & { daysRemaining: number }>;
+    dashboardTasks: DashboardTask[];
+    focusCards: FocusCard[];
+    topTask: DashboardTask | null;
+    qualificationSummaryTone: typeof alertStyles.danger | typeof alertStyles.urgent | null;
+    vehicleTone: typeof alertStyles.danger | typeof alertStyles.urgent | typeof alertStyles.warning | null;
+    alcoholTone: typeof alertStyles.danger | typeof alertStyles.urgent | typeof alertStyles.ok | null;
+};
+
 const countFormatter = new Intl.NumberFormat("ja-JP");
+const neutralSurfaceClassName = "border border-border/60 bg-white/72";
+const neutralIconClassName = "bg-muted/80 text-muted-foreground";
 
-function classifyAlerts(qualifications: DashboardQualification[]): AlertItem[] {
-    const now = new Date();
-    const alerts: AlertItem[] = [];
-
-    for (const q of qualifications) {
-        if (!q.id || !q.expiry_date || !q.employee_id) continue;
-        const level = getAlertLevel(q.expiry_date, now);
-        if (level === "ok") continue;
-
-        alerts.push({
-            level,
-            qualificationId: q.id,
-            employeeName: q.employees?.name || "不明",
-            employeeBranch: q.employees?.branch || null,
-            employeeId: q.employee_id,
-            qualificationName: q.qualification_master?.name || "不明な資格",
-            expiryDate: q.expiry_date,
-            daysRemaining: getDaysRemaining(q.expiry_date, now),
-        });
-    }
-
-    return alerts.sort((a, b) => a.daysRemaining - b.daysRemaining);
-}
+const monthScheduleCategoryPriority: Record<string, number> = {
+    健診: 0,
+    車検: 1,
+    自賠責: 2,
+    任意保険: 3,
+    資格: 4,
+};
 
 function buildAlcoholChecksHref({
     date,
@@ -121,13 +142,29 @@ function getTaskPriority(base: number, offset: number) {
     return base * 1000 + offset;
 }
 
-const monthScheduleCategoryPriority: Record<string, number> = {
-    健診: 0,
-    車検: 1,
-    自賠責: 2,
-    任意保険: 3,
-    資格: 4,
-};
+function classifyAlerts(qualifications: DashboardQualification[]): AlertItem[] {
+    const now = new Date();
+    const alerts: AlertItem[] = [];
+
+    for (const qualification of qualifications) {
+        if (!qualification.id || !qualification.expiry_date || !qualification.employee_id) continue;
+        const level = getAlertLevel(qualification.expiry_date, now);
+        if (level === "ok") continue;
+
+        alerts.push({
+            level,
+            qualificationId: qualification.id,
+            employeeName: qualification.employees?.name || "不明",
+            employeeBranch: qualification.employees?.branch || null,
+            employeeId: qualification.employee_id,
+            qualificationName: qualification.qualification_master?.name || "不明な資格",
+            expiryDate: qualification.expiry_date,
+            daysRemaining: getDaysRemaining(qualification.expiry_date, now),
+        });
+    }
+
+    return alerts.sort((a, b) => a.daysRemaining - b.daysRemaining);
+}
 
 function buildMonthScheduleItems({
     todayYmd,
@@ -139,45 +176,45 @@ function buildMonthScheduleItems({
     qualifications: DashboardQualification[];
     vehicles: DashboardVehicle[];
     healthRows: DashboardHealthCheck[];
-}): MonthScheduleItem[] {
+}) {
     const { start: monthStart, end: monthEnd } = getTokyoCalendarMonthBounds(todayYmd);
     const items: MonthScheduleItem[] = [];
 
-    for (const v of vehicles) {
-        const href = `/vehicles?q=${encodeURIComponent(v.plate_number)}`;
-        const namePart = v.vehicle_name || "車両";
+    for (const vehicle of vehicles) {
+        const href = `/vehicles?q=${encodeURIComponent(vehicle.plate_number)}`;
+        const namePart = vehicle.vehicle_name || "車両";
 
-        if (isYmdInInclusiveRange(v.inspection_expiry, monthStart, monthEnd)) {
+        if (isYmdInInclusiveRange(vehicle.inspection_expiry, monthStart, monthEnd)) {
             items.push({
-                id: `vehicle-inspection-${v.id}`,
-                date: v.inspection_expiry!,
+                id: `vehicle-inspection-${vehicle.id}`,
+                date: vehicle.inspection_expiry!,
                 category: "車検",
                 categoryPriority: monthScheduleCategoryPriority.車検,
-                title: v.plate_number,
+                title: vehicle.plate_number,
                 subtitle: `${namePart}・車検満了`,
                 href,
                 icon: Truck,
             });
         }
-        if (isYmdInInclusiveRange(v.liability_insurance_expiry, monthStart, monthEnd)) {
+        if (isYmdInInclusiveRange(vehicle.liability_insurance_expiry, monthStart, monthEnd)) {
             items.push({
-                id: `vehicle-liability-${v.id}`,
-                date: v.liability_insurance_expiry!,
+                id: `vehicle-liability-${vehicle.id}`,
+                date: vehicle.liability_insurance_expiry!,
                 category: "自賠責",
                 categoryPriority: monthScheduleCategoryPriority.自賠責,
-                title: v.plate_number,
+                title: vehicle.plate_number,
                 subtitle: `${namePart}・自賠責満期`,
                 href,
                 icon: Truck,
             });
         }
-        if (isYmdInInclusiveRange(v.voluntary_insurance_expiry, monthStart, monthEnd)) {
+        if (isYmdInInclusiveRange(vehicle.voluntary_insurance_expiry, monthStart, monthEnd)) {
             items.push({
-                id: `vehicle-voluntary-${v.id}`,
-                date: v.voluntary_insurance_expiry!,
+                id: `vehicle-voluntary-${vehicle.id}`,
+                date: vehicle.voluntary_insurance_expiry!,
                 category: "任意保険",
                 categoryPriority: monthScheduleCategoryPriority.任意保険,
-                title: v.plate_number,
+                title: vehicle.plate_number,
                 subtitle: `${namePart}・任意保険満期`,
                 href,
                 icon: Truck,
@@ -185,35 +222,35 @@ function buildMonthScheduleItems({
         }
     }
 
-    for (const q of qualifications) {
-        if (!q.expiry_date || !q.id) continue;
-        if (!isYmdInInclusiveRange(q.expiry_date, monthStart, monthEnd)) continue;
-        const empName = q.employees?.name || "社員";
-        const branch = q.employees?.branch;
+    for (const qualification of qualifications) {
+        if (!qualification.expiry_date || !qualification.id) continue;
+        if (!isYmdInInclusiveRange(qualification.expiry_date, monthStart, monthEnd)) continue;
+        const employeeName = qualification.employees?.name || "社員";
+        const branch = qualification.employees?.branch;
         items.push({
-            id: `qualification-${q.id}`,
-            date: q.expiry_date,
+            id: `qualification-${qualification.id}`,
+            date: qualification.expiry_date,
             category: "資格",
             categoryPriority: monthScheduleCategoryPriority.資格,
-            title: q.qualification_master?.name || "資格",
-            subtitle: branch ? `${empName}（${branch}）` : empName,
-            href: `/qualifications/${q.id}`,
+            title: qualification.qualification_master?.name || "資格",
+            subtitle: branch ? `${employeeName}（${branch}）` : employeeName,
+            href: `/qualifications/${qualification.id}`,
             icon: ScrollText,
         });
     }
 
-    for (const h of healthRows) {
-        if (!h.check_date) continue;
-        const empName = h.employees?.name || "社員";
-        const branch = h.employees?.branch;
-        const typeLabel = h.check_type?.trim() || "健康診断";
+    for (const healthRow of healthRows) {
+        if (!healthRow.check_date) continue;
+        const employeeName = healthRow.employees?.name || "社員";
+        const branch = healthRow.employees?.branch;
+        const typeLabel = healthRow.check_type?.trim() || "健康診断";
         items.push({
-            id: `health-${h.id}`,
-            date: h.check_date,
+            id: `health-${healthRow.id}`,
+            date: healthRow.check_date,
             category: "健診",
             categoryPriority: monthScheduleCategoryPriority.健診,
             title: typeLabel,
-            subtitle: [empName, branch, h.hospital_name].filter(Boolean).join(" / "),
+            subtitle: [employeeName, branch, healthRow.hospital_name].filter(Boolean).join(" / "),
             href: "/health-checks",
             icon: HeartPulse,
         });
@@ -222,55 +259,54 @@ function buildMonthScheduleItems({
     items.sort((a, b) => {
         const byDate = a.date.localeCompare(b.date);
         if (byDate !== 0) return byDate;
-        const byCat = a.categoryPriority - b.categoryPriority;
-        if (byCat !== 0) return byCat;
+        const byCategory = a.categoryPriority - b.categoryPriority;
+        if (byCategory !== 0) return byCategory;
         return a.title.localeCompare(b.title, "ja");
     });
 
     return items.slice(0, 40);
 }
 
-export async function DashboardContent() {
-    const today = getTodayInTokyo();
-    const { start: monthStart, end: monthEnd } = getTokyoCalendarMonthBounds(today);
+const getDashboardTodayAlcoholChecks = cache(async (today: string): Promise<DashboardAlcoholRow[]> => {
     const supabase = await createSupabaseServer();
-
-    // Cached (mutation-invalidated via updateTag) + fresh (today's alcohol).
-    const [employeeRows, qualifications, vehicles, healthThisMonth, alcoholResult] = await Promise.all([
-        getCachedDashboardEmployees(),
-        getCachedDashboardQualifications(),
-        getCachedDashboardVehicles(),
-        getCachedMonthlyHealthChecks(monthStart, monthEnd),
-        supabase.from("alcohol_checks").select(`
+    const { data } = await supabase
+        .from("alcohol_checks")
+        .select(`
             id,
             employee_id,
             is_abnormal,
             check_datetime,
             location,
             employee:employees!alcohol_checks_employee_id_fkey(name, branch)
-        `).is("deleted_at", null).gte("check_datetime", `${today}T00:00:00`).lte("check_datetime", `${today}T23:59:59`),
+        `)
+        .is("deleted_at", null)
+        .gte("check_datetime", `${today}T00:00:00`)
+        .lte("check_datetime", `${today}T23:59:59`);
+
+    return ((data || []) as unknown as DashboardAlcoholRow[]);
+});
+
+const getDashboardPrioritySnapshot = cache(async (today: string): Promise<PrioritySnapshot> => {
+    const [employeeRows, qualifications, vehicles, todayAlcoholChecks] = await Promise.all([
+        getCachedDashboardEmployees(),
+        getCachedDashboardQualifications(),
+        getCachedDashboardVehicles(),
+        getDashboardTodayAlcoholChecks(today),
     ]);
 
-    const totalEmployees = employeeRows.length;
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const totalEmployees = employeeRows.length;
     const newEmployeesCount = employeeRows.filter((employee: DashboardEmployee) =>
         employee.hire_date && isAfter(new Date(employee.hire_date), firstDayOfMonth)
     ).length;
 
     const alerts = classifyAlerts(qualifications);
-    const expiredCount = alerts.filter((a) => a.level === "danger").length;
-    const urgentCount = alerts.filter((a) => a.level === "urgent").length;
-    const warningCount = alerts.filter((a) => a.level === "warning").length;
-    const infoCount = alerts.filter((a) => a.level === "info").length;
+    const expiredCount = alerts.filter((item) => item.level === "danger").length;
+    const urgentCount = alerts.filter((item) => item.level === "urgent").length;
+    const warningCount = alerts.filter((item) => item.level === "warning").length;
+    const infoCount = alerts.filter((item) => item.level === "info").length;
     const urgentAlertCount = expiredCount + urgentCount;
-
-    const monthScheduleItems = buildMonthScheduleItems({
-        todayYmd: today,
-        qualifications,
-        vehicles,
-        healthRows: healthThisMonth,
-    });
 
     const vehicleTasks = vehicles
         .filter((vehicle) => !!vehicle.inspection_expiry && isBefore(new Date(vehicle.inspection_expiry), addDays(now, 30)))
@@ -280,7 +316,6 @@ export async function DashboardContent() {
         }))
         .sort((a, b) => a.daysRemaining - b.daysRemaining);
 
-    const todayAlcoholChecks = (alcoholResult.data || []) as unknown as DashboardAlcoholRow[];
     const abnormalAlcoholTasks = todayAlcoholChecks
         .filter((check) => check.is_abnormal)
         .sort((a, b) => (a.check_datetime || "").localeCompare(b.check_datetime || ""));
@@ -290,11 +325,13 @@ export async function DashboardContent() {
         const active = !employee.termination_date || employee.termination_date >= today;
         return hired && active;
     });
+
     const recordedEmployeeIds = new Set(
         todayAlcoholChecks
             .map((check) => check.employee_id)
             .filter((employeeId): employeeId is string => !!employeeId)
     );
+
     const missingAlcoholEmployees = activeEmployees
         .filter((employee) => !recordedEmployeeIds.has(employee.id))
         .sort((a, b) => a.name.localeCompare(b.name, "ja"));
@@ -309,10 +346,8 @@ export async function DashboardContent() {
     const qualificationSummaryTone = urgentAlertCount > 0
         ? (expiredCount > 0 ? alertStyles.danger : alertStyles.urgent)
         : null;
-    const neutralSurfaceClassName = "border border-border/60 bg-white/72";
-    const neutralIconClassName = "bg-muted/80 text-muted-foreground";
 
-    const focusCards = [
+    const focusCards: FocusCard[] = [
         {
             title: "資格・講習",
             value: urgentAlertCount,
@@ -417,10 +452,7 @@ export async function DashboardContent() {
             id: `alcohol-missing-${employee.id}`,
             title: employee.name,
             subtitle: `${employee.branch || "拠点未設定"} / 本日のアルコールチェックが未入力`,
-            href: buildAlcoholChecksHref({
-                date: today,
-                employee: employee.id,
-            }),
+            href: buildAlcoholChecksHref({ date: today, employee: employee.id }),
             meta: `${today} の記録を追加`,
             badgeLabel: "未記録",
             badgeClassName: alertStyles.urgent.badge,
@@ -434,311 +466,167 @@ export async function DashboardContent() {
         .sort((a, b) => a.priority - b.priority)
         .slice(0, 10);
 
-    const quickLinks = [
-        { title: "社員台帳", description: "社員情報と保有資格を確認", href: "/employees" },
-        { title: "資格・講習", description: "期限切れと講習履歴を確認", href: "/qualifications?level=urgent" },
-        { title: "車両・備品", description: "車検期限の近い車両を確認", href: "/vehicles" },
-        { title: "アルコールチェック", description: "本日のチェック記録と未対応を確認", href: buildAlcoholChecksHref({ date: today }) },
-    ];
+    return {
+        today,
+        totalEmployees,
+        newEmployeesCount,
+        qualificationCount: qualifications.length,
+        vehicleCount: vehicles.length,
+        expiredCount,
+        urgentCount,
+        warningCount,
+        infoCount,
+        urgentAlertCount,
+        abnormalAlcohol,
+        pendingAlcoholCount,
+        missingAlcoholCount: missingAlcoholEmployees.length,
+        vehicleTasks,
+        dashboardTasks,
+        focusCards,
+        topTask: dashboardTasks[0] || null,
+        qualificationSummaryTone,
+        vehicleTone,
+        alcoholTone,
+    };
+});
+
+const getDashboardMonthSchedule = cache(async (today: string) => {
+    const { start: monthStart, end: monthEnd } = getTokyoCalendarMonthBounds(today);
+    const [qualifications, vehicles, healthRows] = await Promise.all([
+        getCachedDashboardQualifications(),
+        getCachedDashboardVehicles(),
+        getCachedMonthlyHealthChecks(monthStart, monthEnd),
+    ]);
+
+    return buildMonthScheduleItems({
+        todayYmd: today,
+        qualifications,
+        vehicles,
+        healthRows,
+    });
+});
+
+export function DashboardHeroSection() {
+    const today = getTodayInTokyo();
 
     return (
-        <div className="space-y-5 animate-in fade-in duration-200">
-            <section className="rounded-xl border border-border/50 bg-card p-5 md:p-6">
-                <div className="relative grid gap-5 xl:grid-cols-[minmax(0,1.22fr)_minmax(320px,0.88fr)]">
-                    <div className="space-y-4">
-                        <div className="space-y-1.5">
-                            <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
-                                本日の優先対応
-                            </h2>
-                        </div>
-                        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                            <Button className="w-full sm:w-auto" render={<Link href="/qualifications?level=urgent" />}>
-                                資格タスクを見る
-                            </Button>
-                            <Button className="w-full sm:w-auto" variant="outline" render={<Link href="/vehicles" />}>
-                                車両期限を確認
-                            </Button>
-                            <Button className="w-full sm:w-auto" variant="outline" render={<Link href={buildAlcoholChecksHref({ date: today })} />}>
-                                本日のアルコールチェックを見る
-                            </Button>
-                        </div>
-                        {dashboardTasks[0] ? (
-                            <Link
-                                href={dashboardTasks[0].href}
-                                className={`group block rounded-xl p-4 transition-[border-color,background-color] duration-200 ${dashboardTasks[0].surfaceClassName}`}
-                            >
-                                <div className="flex flex-wrap items-start justify-between gap-3">
-                                    <div className="space-y-1">
-                                        <p className={`text-xs font-semibold uppercase tracking-[0.16em] ${dashboardTasks[0].strongClassName}`}>
-                                            最優先タスク
-                                        </p>
-                                        <p className="text-base font-semibold">
-                                            {dashboardTasks[0].title}
-                                        </p>
-                                        <p className="text-sm text-muted-foreground">
-                                            {dashboardTasks[0].subtitle}
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Badge variant="secondary" className={`${dashboardTasks[0].badgeClassName} text-xs`}>
-                                            {dashboardTasks[0].badgeLabel}
-                                        </Badge>
-                                        <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5" />
-                                    </div>
-                                </div>
-                            </Link>
-                        ) : (
-                            <div className={`rounded-xl p-4 ${alertStyles.ok.subtle}`}>
-                                <div className="flex items-start gap-3">
-                                    <div className={`flex size-10 items-center justify-center rounded-xl ${alertStyles.ok.icon}`}>
-                                        <ShieldCheck className="h-5 w-5" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold">未対応タスクはありません</p>
-                                        <p className="mt-1 text-sm text-muted-foreground">
-                                            本日時点で優先対応が必要な項目は見つかっていません。通常の点検と入力確認だけ進めれば十分です。
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-                        {focusCards.map((card) => {
-                            const Icon = card.icon;
-                            return (
-                                <Link
-                                    key={card.title}
-                                    href={card.href}
-                                className="group rounded-xl border border-border/50 bg-background/55 p-4 transition-[border-color,background-color] duration-200 hover:border-primary/20 hover:bg-muted/60"
-                                >
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="min-w-0">
-                                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                                                {card.eyebrow}
-                                            </p>
-                                            <p className={`mt-2.5 text-[1.9rem] font-semibold tabular-nums ${card.valueClassName}`}>
-                                                {countFormatter.format(card.value)}
-                                            </p>
-                                            <p className="mt-1.5 text-sm font-medium">{card.title}</p>
-                                        </div>
-                                        <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${card.iconClassName}`}>
-                                            <Icon className="h-[18px] w-[18px]" />
-                                        </div>
-                                    </div>
-                                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                                        {card.description}
-                                    </p>
-                                </Link>
-                            );
-                        })}
-                    </div>
+        <section className="rounded-xl border border-border/50 bg-card p-5 md:p-6">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                        Daily Overview
+                    </p>
+                    <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+                        今日の業務状況を先に把握する
+                    </h1>
+                    <p className="max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
+                        資格、車両、アルコールチェック、今月の予定を分けて表示しています。重い集計は後から順に埋まるので、まず必要な画面に移れます。
+                    </p>
                 </div>
-            </section>
-
-            <section className="rounded-xl border border-border/50 bg-card p-5 md:p-6">
-                <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl flex items-center gap-2">
-                            <Calendar className="h-5 w-5 text-muted-foreground" />
-                            今月の予定・期限
-                        </h2>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            健診の受診日・車両の期限・資格の有効期限が今月中のものです（最大40件）。
-                        </p>
-                    </div>
-                </div>
-                <div className="mt-4">
-                    {monthScheduleItems.length === 0 ? (
-                        <div className="rounded-xl border border-dashed border-border/70 bg-muted/25 px-4 py-10 text-center text-sm text-muted-foreground">
-                            今月中に該当する予定・期限はありません。
-                        </div>
-                    ) : (
-                        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                            {monthScheduleItems.map((item) => {
-                                const Icon = item.icon;
-                                return (
-                                    <li key={item.id}>
-                                        <Link
-                                            href={item.href}
-                                            className="group flex gap-3 rounded-xl border border-border/50 bg-background/60 p-3.5 transition-[border-color,background-color] duration-200 hover:border-primary/20 hover:bg-muted/60"
-                                        >
-                                            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/80 text-muted-foreground">
-                                                <Icon className="h-4 w-4" />
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <span className="text-xs font-medium tabular-nums text-muted-foreground">
-                                                        {item.date}
-                                                    </span>
-                                                    <Badge variant="outline" className="text-[10px] font-normal">
-                                                        {item.category}
-                                                    </Badge>
-                                                </div>
-                                                <p className="mt-1 truncate text-sm font-semibold">{item.title}</p>
-                                                <p className="truncate text-xs text-muted-foreground">{item.subtitle}</p>
-                                            </div>
-                                            <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100" />
-                                        </Link>
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    )}
-                </div>
-            </section>
-
-            <div className="grid gap-4 xl:grid-cols-[1.35fr_0.95fr]">
-                <Card className="border-border/60">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <ShieldAlert className={`h-5 w-5 ${alertStyles.danger.strong}`} />
-                            本日の未対応タスク
-                        </CardTitle>
-                        <CardDescription>
-                            資格、車両、アルコールチェックを横断して、直接処理できる順で並べています。
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {dashboardTasks.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center rounded-xl bg-muted/40 px-4 py-10 text-center">
-                                <div className={`mb-3 flex size-12 items-center justify-center rounded-full ${alertStyles.ok.icon}`}>
-                                    <ShieldCheck className="h-6 w-6" />
-                                </div>
-                                <p className="text-sm font-medium">今日の未対応タスクはありません</p>
-                                <p className="mt-1 text-sm text-muted-foreground">
-                                    重要度の高い更新や未記録は見つかっていません。
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {dashboardTasks.map((task) => {
-                                    const Icon = task.icon;
-                                    return (
-                                        <Link
-                                            key={task.id}
-                                            href={task.href}
-                                            className={`group flex flex-col items-start gap-3 rounded-xl p-4 transition-[border-color,background-color] duration-200 sm:flex-row sm:items-center sm:justify-between ${task.surfaceClassName}`}
-                                        >
-                                            <div className="flex min-w-0 items-center gap-3">
-                                                <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${task.iconClassName}`}>
-                                                    <Icon className="h-4 w-4" />
-                                                </div>
-                                                <div className="min-w-0 space-y-1">
-                                                    <p className="truncate text-sm font-semibold">
-                                                        {task.title}
-                                                    </p>
-                                                    <p className="truncate text-sm text-muted-foreground">
-                                                        {task.subtitle}
-                                                    </p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {task.meta}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="flex w-full items-center justify-between sm:ml-4 sm:w-auto sm:justify-start sm:gap-2">
-                                                <Badge variant="secondary" className={`${task.badgeClassName} text-sm`}>
-                                                    {task.badgeLabel}
-                                                </Badge>
-                                                <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5" />
-                                            </div>
-                                        </Link>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                <div className="grid gap-4">
-                    <Card className="border-border/60">
-                        <CardHeader>
-                            <CardTitle>主要画面へのショートカット</CardTitle>
-                            <CardDescription>
-                                朝の確認でよく使う画面にすぐ移動できます。
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                            {quickLinks.map((link) => (
-                                <Link
-                                    key={link.title}
-                                    href={link.href}
-                                    className="group rounded-xl border border-border/50 bg-background/70 p-4 transition-[border-color,background-color] duration-200 hover:border-primary/20 hover:bg-muted/60"
-                                >
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                            <p className="text-sm font-medium">{link.title}</p>
-                                            <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                                                {link.description}
-                                            </p>
-                                        </div>
-                                        <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5" />
-                                    </div>
-                                </Link>
-                            ))}
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-border/60">
-                        <CardHeader>
-                            <CardTitle>本日の安全・運用サマリー</CardTitle>
-                            <CardDescription>
-                                日次確認で見落としやすい項目をまとめています。
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            <div className={`flex flex-col gap-3 rounded-xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${qualificationSummaryTone?.subtle || neutralSurfaceClassName}`}>
-                                <div className="flex items-center gap-3">
-                                    <div className={`flex size-9 items-center justify-center rounded-xl ${qualificationSummaryTone?.icon || neutralIconClassName}`}>
-                                        <AlertCircle className="h-4 w-4" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium">資格アラート</p>
-                                        <p className="text-sm text-muted-foreground">期限切れ / 14日以内 / 30日以内</p>
-                                    </div>
-                                </div>
-                                <div className="text-right tabular-nums">
-                                    <p className={`text-lg font-semibold ${qualificationSummaryTone?.strong || "text-foreground"}`}>{countFormatter.format(urgentAlertCount)}</p>
-                                    <p className="text-sm text-muted-foreground">緊急 {countFormatter.format(expiredCount)}件</p>
-                                </div>
-                            </div>
-                            <div className={`flex flex-col gap-3 rounded-xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${vehicleTone?.subtle || neutralSurfaceClassName}`}>
-                                <div className="flex items-center gap-3">
-                                    <div className={`flex size-9 items-center justify-center rounded-xl ${vehicleTone?.icon || neutralIconClassName}`}>
-                                        <Truck className="h-4 w-4" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium">車検期限</p>
-                                        <p className="text-sm text-muted-foreground">30日以内の対象件数</p>
-                                    </div>
-                                </div>
-                                <div className="text-right tabular-nums">
-                                    <p className={`text-lg font-semibold ${vehicleTone?.strong || "text-foreground"}`}>{countFormatter.format(vehicleTasks.length)}</p>
-                                    <p className="text-sm text-muted-foreground">{vehicleTasks[0]?.inspection_expiry ? `最短 ${vehicleTasks[0].inspection_expiry}` : "直近予定なし"}</p>
-                                </div>
-                            </div>
-                            <div className={`flex flex-col gap-3 rounded-xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${alcoholTone?.subtle || neutralSurfaceClassName}`}>
-                                <div className="flex items-center gap-3">
-                                    <div className={`flex size-9 items-center justify-center rounded-xl ${alcoholTone?.icon || neutralIconClassName}`}>
-                                        <Wine className="h-4 w-4" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium">アルコールチェック</p>
-                                        <p className="text-sm text-muted-foreground">不適正と未記録の件数</p>
-                                    </div>
-                                </div>
-                                <div className="text-right tabular-nums">
-                                    <p className={`text-lg font-semibold ${alcoholTone?.strong || "text-foreground"}`}>{countFormatter.format(pendingAlcoholCount)}</p>
-                                    <p className="text-sm text-muted-foreground">不適正 {countFormatter.format(abnormalAlcohol)}件 / 未記録 {countFormatter.format(missingAlcoholEmployees.length)}名</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                    <Button className="w-full sm:w-auto" render={<Link href="/qualifications?level=urgent" />}>
+                        資格タスクを見る
+                    </Button>
+                    <Button className="w-full sm:w-auto" variant="outline" render={<Link href="/vehicles" />}>
+                        車両期限を確認
+                    </Button>
+                    <Button className="w-full sm:w-auto" variant="outline" render={<Link href={buildAlcoholChecksHref({ date: today })} />}>
+                        本日のアルコールチェック
+                    </Button>
                 </div>
             </div>
+        </section>
+    );
+}
 
-            <div className="grid gap-4 md:grid-cols-3">
+export async function DashboardFocusCardsSection() {
+    const snapshot = await getDashboardPrioritySnapshot(getTodayInTokyo());
+
+    return (
+        <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+            <Card className="border-border/60">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <ShieldAlert className="h-5 w-5 text-muted-foreground" />
+                        最優先タスク
+                    </CardTitle>
+                    <CardDescription>
+                        いま最初に確認すべき対象を 1 件だけ先頭に出しています。
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {snapshot.topTask ? (
+                        <Link
+                            href={snapshot.topTask.href}
+                            className={`group block rounded-xl p-4 transition-[border-color,background-color] duration-200 ${snapshot.topTask.surfaceClassName}`}
+                        >
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                                <div className="space-y-1">
+                                    <p className={`text-xs font-semibold uppercase tracking-[0.16em] ${snapshot.topTask.strongClassName}`}>
+                                        最優先タスク
+                                    </p>
+                                    <p className="text-base font-semibold">{snapshot.topTask.title}</p>
+                                    <p className="text-sm text-muted-foreground">{snapshot.topTask.subtitle}</p>
+                                    <p className="text-sm text-muted-foreground">{snapshot.topTask.meta}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Badge variant="secondary" className={`${snapshot.topTask.badgeClassName} text-xs`}>
+                                        {snapshot.topTask.badgeLabel}
+                                    </Badge>
+                                    <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5" />
+                                </div>
+                            </div>
+                        </Link>
+                    ) : (
+                        <div className={`rounded-xl p-4 ${alertStyles.ok.subtle}`}>
+                            <div className="flex items-start gap-3">
+                                <div className={`flex size-10 items-center justify-center rounded-xl ${alertStyles.ok.icon}`}>
+                                    <ShieldCheck className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold">未対応タスクはありません</p>
+                                    <p className="mt-1 text-sm text-muted-foreground">
+                                        本日時点で優先対応が必要な項目は見つかっていません。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
+                {snapshot.focusCards.map((card) => {
+                    const Icon = card.icon;
+                    return (
+                        <Link
+                            key={card.title}
+                            href={card.href}
+                            className="group rounded-xl border border-border/50 bg-card p-4 transition-[border-color,background-color] duration-200 hover:border-primary/20 hover:bg-muted/60"
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                                        {card.eyebrow}
+                                    </p>
+                                    <p className={`mt-2.5 text-[1.9rem] font-semibold tabular-nums ${card.valueClassName}`}>
+                                        {countFormatter.format(card.value)}
+                                    </p>
+                                    <p className="mt-1.5 text-sm font-medium">{card.title}</p>
+                                </div>
+                                <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${card.iconClassName}`}>
+                                    <Icon className="h-[18px] w-[18px]" />
+                                </div>
+                            </div>
+                            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                                {card.description}
+                            </p>
+                        </Link>
+                    );
+                })}
+            </div>
+
+            <div className="grid gap-4 md:col-span-2 md:grid-cols-3">
                 <Card className="border-border/60">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -747,10 +635,8 @@ export async function DashboardContent() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-3xl font-semibold tabular-nums">{countFormatter.format(totalEmployees)}</p>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                            現在の登録従業員数です。
-                        </p>
+                        <p className="text-3xl font-semibold tabular-nums">{countFormatter.format(snapshot.totalEmployees)}</p>
+                        <p className="mt-2 text-sm text-muted-foreground">現在の登録従業員数です。</p>
                     </CardContent>
                 </Card>
                 <Card className="border-border/60">
@@ -761,10 +647,8 @@ export async function DashboardContent() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-3xl font-semibold tabular-nums">{countFormatter.format(newEmployeesCount)}</p>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                            当月に入社日を迎えた社員数です。
-                        </p>
+                        <p className="text-3xl font-semibold tabular-nums">{countFormatter.format(snapshot.newEmployeesCount)}</p>
+                        <p className="mt-2 text-sm text-muted-foreground">当月に入社日を迎えた社員数です。</p>
                     </CardContent>
                 </Card>
                 <Card className="border-border/60">
@@ -775,24 +659,244 @@ export async function DashboardContent() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-3xl font-semibold tabular-nums">{countFormatter.format(qualifications.length + vehicles.length)}</p>
+                        <p className="text-3xl font-semibold tabular-nums">
+                            {countFormatter.format(snapshot.qualificationCount + snapshot.vehicleCount)}
+                        </p>
                         <p className="mt-2 text-sm text-muted-foreground">
-                            資格 {countFormatter.format(qualifications.length)}件 / 車両 {countFormatter.format(vehicles.length)}件
+                            資格 {countFormatter.format(snapshot.qualificationCount)}件 / 車両 {countFormatter.format(snapshot.vehicleCount)}件
                         </p>
                     </CardContent>
                 </Card>
             </div>
+        </section>
+    );
+}
+
+export async function DashboardMonthScheduleSection() {
+    const items = await getDashboardMonthSchedule(getTodayInTokyo());
+
+    return (
+        <section className="rounded-xl border border-border/50 bg-card p-5 md:p-6">
+            <div>
+                <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+                    <Calendar className="h-5 w-5 text-muted-foreground" />
+                    今月の予定・期限
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                    健診の受診日、車両の期限、資格の有効期限が今月中のものです。
+                </p>
+            </div>
+            <div className="mt-4">
+                {items.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-border/70 bg-muted/25 px-4 py-10 text-center text-sm text-muted-foreground">
+                        今月中に該当する予定・期限はありません。
+                    </div>
+                ) : (
+                    <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        {items.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                                <li key={item.id}>
+                                    <Link
+                                        href={item.href}
+                                        className="group flex gap-3 rounded-xl border border-border/50 bg-background/60 p-3.5 transition-[border-color,background-color] duration-200 hover:border-primary/20 hover:bg-muted/60"
+                                    >
+                                        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/80 text-muted-foreground">
+                                            <Icon className="h-4 w-4" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className="text-xs font-medium tabular-nums text-muted-foreground">{item.date}</span>
+                                                <Badge variant="outline" className="text-[10px] font-normal">{item.category}</Badge>
+                                            </div>
+                                            <p className="mt-1 truncate text-sm font-semibold">{item.title}</p>
+                                            <p className="truncate text-xs text-muted-foreground">{item.subtitle}</p>
+                                        </div>
+                                        <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100" />
+                                    </Link>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                )}
+            </div>
+        </section>
+    );
+}
+
+export async function DashboardTaskListSection() {
+    const snapshot = await getDashboardPrioritySnapshot(getTodayInTokyo());
+
+    return (
+        <section className="grid gap-4 xl:grid-cols-[1.35fr_0.95fr]">
+            <Card className="border-border/60">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <ShieldAlert className={`h-5 w-5 ${alertStyles.danger.strong}`} />
+                        本日の未対応タスク
+                    </CardTitle>
+                    <CardDescription>
+                        資格、車両、アルコールチェックを横断して、直接処理できる順で並べています。
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {snapshot.dashboardTasks.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center rounded-xl bg-muted/40 px-4 py-10 text-center">
+                            <div className={`mb-3 flex size-12 items-center justify-center rounded-full ${alertStyles.ok.icon}`}>
+                                <ShieldCheck className="h-6 w-6" />
+                            </div>
+                            <p className="text-sm font-medium">今日の未対応タスクはありません</p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                重要度の高い更新や未記録は見つかっていません。
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {snapshot.dashboardTasks.map((task) => {
+                                const Icon = task.icon;
+                                return (
+                                    <Link
+                                        key={task.id}
+                                        href={task.href}
+                                        className={`group flex flex-col items-start gap-3 rounded-xl p-4 transition-[border-color,background-color] duration-200 sm:flex-row sm:items-center sm:justify-between ${task.surfaceClassName}`}
+                                    >
+                                        <div className="flex min-w-0 items-center gap-3">
+                                            <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${task.iconClassName}`}>
+                                                <Icon className="h-4 w-4" />
+                                            </div>
+                                            <div className="min-w-0 space-y-1">
+                                                <p className="truncate text-sm font-semibold">{task.title}</p>
+                                                <p className="truncate text-sm text-muted-foreground">{task.subtitle}</p>
+                                                <p className="text-sm text-muted-foreground">{task.meta}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex w-full items-center justify-between sm:ml-4 sm:w-auto sm:justify-start sm:gap-2">
+                                            <Badge variant="secondary" className={`${task.badgeClassName} text-sm`}>
+                                                {task.badgeLabel}
+                                            </Badge>
+                                            <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5" />
+                                        </div>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            <Card className="border-border/60">
+                <CardHeader>
+                    <CardTitle>本日の安全・運用サマリー</CardTitle>
+                    <CardDescription>
+                        日次確認で見落としやすい項目をまとめています。
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    <div className={`flex flex-col gap-3 rounded-xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${snapshot.qualificationSummaryTone?.subtle || neutralSurfaceClassName}`}>
+                        <div className="flex items-center gap-3">
+                            <div className={`flex size-9 items-center justify-center rounded-xl ${snapshot.qualificationSummaryTone?.icon || neutralIconClassName}`}>
+                                <AlertCircle className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium">資格アラート</p>
+                                <p className="text-sm text-muted-foreground">期限切れ / 14日以内 / 30日以内</p>
+                            </div>
+                        </div>
+                        <div className="text-right tabular-nums">
+                            <p className={`text-lg font-semibold ${snapshot.qualificationSummaryTone?.strong || "text-foreground"}`}>
+                                {countFormatter.format(snapshot.urgentAlertCount)}
+                            </p>
+                            <p className="text-sm text-muted-foreground">緊急 {countFormatter.format(snapshot.expiredCount)}件</p>
+                        </div>
+                    </div>
+                    <div className={`flex flex-col gap-3 rounded-xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${snapshot.vehicleTone?.subtle || neutralSurfaceClassName}`}>
+                        <div className="flex items-center gap-3">
+                            <div className={`flex size-9 items-center justify-center rounded-xl ${snapshot.vehicleTone?.icon || neutralIconClassName}`}>
+                                <Truck className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium">車検期限</p>
+                                <p className="text-sm text-muted-foreground">30日以内の対象件数</p>
+                            </div>
+                        </div>
+                        <div className="text-right tabular-nums">
+                            <p className={`text-lg font-semibold ${snapshot.vehicleTone?.strong || "text-foreground"}`}>
+                                {countFormatter.format(snapshot.vehicleTasks.length)}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                                {snapshot.vehicleTasks[0]?.inspection_expiry ? `最短 ${snapshot.vehicleTasks[0].inspection_expiry}` : "直近予定なし"}
+                            </p>
+                        </div>
+                    </div>
+                    <div className={`flex flex-col gap-3 rounded-xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${snapshot.alcoholTone?.subtle || neutralSurfaceClassName}`}>
+                        <div className="flex items-center gap-3">
+                            <div className={`flex size-9 items-center justify-center rounded-xl ${snapshot.alcoholTone?.icon || neutralIconClassName}`}>
+                                <Wine className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium">アルコールチェック</p>
+                                <p className="text-sm text-muted-foreground">不適正と未記録の件数</p>
+                            </div>
+                        </div>
+                        <div className="text-right tabular-nums">
+                            <p className={`text-lg font-semibold ${snapshot.alcoholTone?.strong || "text-foreground"}`}>
+                                {countFormatter.format(snapshot.pendingAlcoholCount)}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                                不適正 {countFormatter.format(snapshot.abnormalAlcohol)}件 / 未記録 {countFormatter.format(snapshot.missingAlcoholCount)}名
+                            </p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </section>
+    );
+}
+
+export function DashboardQuickLinksSection() {
+    const today = getTodayInTokyo();
+    const quickLinks = [
+        { title: "社員台帳", description: "社員情報と保有資格を確認", href: "/employees" },
+        { title: "資格・講習", description: "期限切れと講習履歴を確認", href: "/qualifications?level=urgent" },
+        { title: "車両・備品", description: "車検期限の近い車両を確認", href: "/vehicles" },
+        { title: "アルコールチェック", description: "本日の記録と未対応を確認", href: buildAlcoholChecksHref({ date: today }) },
+    ];
+
+    return (
+        <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+            <Card className="border-border/60">
+                <CardHeader>
+                    <CardTitle>主要画面へのショートカット</CardTitle>
+                    <CardDescription>
+                        朝の確認でよく使う画面にすぐ移動できます。
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-3 sm:grid-cols-2">
+                    {quickLinks.map((link) => (
+                        <Link
+                            key={link.title}
+                            href={link.href}
+                            className="group rounded-xl border border-border/50 bg-background/70 p-4 transition-[border-color,background-color] duration-200 hover:border-primary/20 hover:bg-muted/60"
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-sm font-medium">{link.title}</p>
+                                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{link.description}</p>
+                                </div>
+                                <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5" />
+                            </div>
+                        </Link>
+                    ))}
+                </CardContent>
+            </Card>
 
             <div className="rounded-xl border border-border/50 bg-card px-4 py-3">
-                <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1">
-                    <span className="mr-1">資格アラート内訳</span>
-                    <span className={`font-medium tabular-nums ${alertStyles.danger.strong}`}>期限切れ {countFormatter.format(expiredCount)}</span>
-                    <span className={`font-medium tabular-nums ${alertStyles.urgent.strong}`}>14日以内 {countFormatter.format(urgentCount)}</span>
-                    <span className={`font-medium tabular-nums ${alertStyles.warning.strong}`}>30日以内 {countFormatter.format(warningCount)}</span>
-                    <span className={`font-medium tabular-nums ${alertStyles.info.strong}`}>60日以内 {countFormatter.format(infoCount)}</span>
-                    <span className={`font-medium tabular-nums ${alcoholTone?.strong || "text-foreground"}`}>アルコールチェック未記録 {countFormatter.format(missingAlcoholEmployees.length)}</span>
+                <div className="flex h-full flex-col justify-center gap-2 text-sm text-muted-foreground">
+                    <p className="text-sm font-medium text-foreground">表示方針</p>
+                    <p>このページはセクションごとに別々に読み込みます。重い一覧や日次データが遅くても、他のカードは先に使えます。</p>
+                    <p>資格、車両、アルコールチェック、今月の予定を個別に確認したいときは上のショートカットから直接開いてください。</p>
                 </div>
             </div>
-        </div>
+        </section>
     );
 }

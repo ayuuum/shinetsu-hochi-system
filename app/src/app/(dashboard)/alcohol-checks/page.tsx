@@ -1,5 +1,5 @@
 import { createSupabaseServer } from "@/lib/supabase-server";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { AlcoholClient, type AlcoholCheckRow } from "@/components/alcohol/alcohol-client";
 import { getTodayInTokyo, getTokyoCalendarMonthBounds } from "@/lib/date";
 
@@ -18,7 +18,7 @@ export default async function AlcoholChecksPage({
     const params = await searchParams;
     const page = parsePageParam(params.page);
     const from = (page - 1) * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
+    const toPlusOne = from + PAGE_SIZE;
     const currentDate = (params.date || "").trim() || getTodayInTokyo();
     const currentLocation = (params.location || "").trim();
     const currentStatus = (params.status || "").trim();
@@ -27,11 +27,11 @@ export default async function AlcoholChecksPage({
 
     let checksData: AlcoholCheckRow[] = [];
     let empData: { id: string; name: string }[] = [];
-    let totalPages = 1;
+    let hasNextPage = false;
     let monthlySummary: { employeeId: string; employeeName: string; branch: string; recordedDays: number; monthDays: number; completionRate: number }[] = [];
 
     try {
-        const auth = await getAuthSnapshot();
+        const auth = await getFastAuthSnapshot();
         const supabase = await createSupabaseServer();
         const dateStart = `${currentDate}T00:00:00`;
         const dateEnd = `${currentDate}T23:59:59`;
@@ -39,12 +39,12 @@ export default async function AlcoholChecksPage({
 
         let checksQuery = supabase
             .from("alcohol_checks")
-            .select("*, employee:employees!alcohol_checks_employee_id_fkey(id, name), checker:employees!alcohol_checks_checker_id_fkey(id, name)", { count: "exact" })
+            .select("*, employee:employees!alcohol_checks_employee_id_fkey(id, name), checker:employees!alcohol_checks_checker_id_fkey(id, name)")
             .is("deleted_at", null)
             .gte("check_datetime", dateStart)
             .lte("check_datetime", dateEnd)
             .order("check_datetime", { ascending: false })
-            .range(from, to);
+            .range(from, toPlusOne);
 
         if (currentLocation) {
             checksQuery = checksQuery.eq("location", currentLocation);
@@ -83,9 +83,10 @@ export default async function AlcoholChecksPage({
             employeesQuery,
             monthlyQuery,
         ]);
-        checksData = (checksResult.data as AlcoholCheckRow[]) || [];
+        const checks = (checksResult.data as AlcoholCheckRow[]) || [];
+        checksData = checks.slice(0, PAGE_SIZE);
         empData = empResult.data || [];
-        totalPages = Math.max(1, Math.ceil((checksResult.count || 0) / PAGE_SIZE));
+        hasNextPage = checks.length > PAGE_SIZE;
 
         const monthlyChecks = monthlyResult.data || [];
         const recordedDaysByEmployee = new Map<string, Set<string>>();
@@ -133,7 +134,7 @@ export default async function AlcoholChecksPage({
             currentMonth={currentMonth}
             monthlySummary={monthlySummary}
             currentPage={page}
-            totalPages={totalPages}
+            hasNextPage={hasNextPage}
         />
     );
 }

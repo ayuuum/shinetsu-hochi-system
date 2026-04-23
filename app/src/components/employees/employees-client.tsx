@@ -44,7 +44,7 @@ interface EmployeesClientProps {
     currentBranch: string;
     currentQualification: string;
     currentPage?: number;
-    totalPages?: number;
+    hasNextPage?: boolean;
 }
 
 function buildEmployeesHref(pathname: string, {
@@ -84,7 +84,7 @@ export function EmployeesClient({
     currentBranch,
     currentQualification,
     currentPage = 1,
-    totalPages = 1,
+    hasNextPage = false,
 }: EmployeesClientProps) {
     const [search, setSearch] = useState(currentSearch);
     const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
@@ -459,7 +459,7 @@ export function EmployeesClient({
                 </Table>
             </div>
 
-            {totalPages > 1 && (
+            {(currentPage > 1 || hasNextPage) && (
                 <div className="flex items-center justify-center gap-2">
                     <Button
                         variant="outline"
@@ -475,12 +475,12 @@ export function EmployeesClient({
                         前へ
                     </Button>
                     <span className="text-sm text-muted-foreground">
-                        {currentPage} / {totalPages}
+                        {currentPage}ページ
                     </span>
                     <Button
                         variant="outline"
                         size="sm"
-                        disabled={currentPage >= totalPages}
+                        disabled={!hasNextPage}
                         render={<Link href={buildEmployeesHref(pathname, {
                             search: currentSearch,
                             branch: currentBranch,

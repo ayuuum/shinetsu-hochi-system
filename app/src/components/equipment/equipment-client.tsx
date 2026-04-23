@@ -43,12 +43,12 @@ export function EquipmentClient({
     initialItems,
     currentSearch,
     currentPage,
-    totalPages,
+    hasNextPage,
 }: {
     initialItems: EquipmentRow[];
     currentSearch: string;
     currentPage: number;
-    totalPages: number;
+    hasNextPage: boolean;
 }) {
     const [search, setSearch] = useState(currentSearch);
     const [isPending, startTransition] = useTransition();
@@ -263,7 +263,7 @@ export function EquipmentClient({
                 </Table>
             </div>
 
-            {totalPages > 1 && (
+            {(currentPage > 1 || hasNextPage) && (
                 <div className="flex items-center justify-center gap-2">
                     <Button
                         variant="outline"
@@ -281,12 +281,12 @@ export function EquipmentClient({
                         前へ
                     </Button>
                     <span className="text-sm text-muted-foreground">
-                        {currentPage} / {totalPages}
+                        {currentPage}ページ
                     </span>
                     <Button
                         variant="outline"
                         size="sm"
-                        disabled={currentPage >= totalPages}
+                        disabled={!hasNextPage}
                         render={
                             <Link
                                 href={buildEquipmentHref(pathname, new URLSearchParams(urlSearch.toString()), {

@@ -53,7 +53,7 @@ interface QualificationsClientProps {
     currentCategory: string;
     currentLevel: string;
     currentPage: number;
-    totalPages: number;
+    hasNextPage: boolean;
     employees?: Employee[];
 }
 
@@ -95,7 +95,7 @@ export function QualificationsClient({
     currentCategory,
     currentLevel,
     currentPage,
-    totalPages,
+    hasNextPage,
     employees = [],
 }: QualificationsClientProps) {
     const [search, setSearch] = useState(currentSearch);
@@ -589,7 +589,7 @@ export function QualificationsClient({
                 </Table>
             </div>
 
-            {totalPages > 1 && (
+            {(currentPage > 1 || hasNextPage) && (
                 <div className="flex items-center justify-center gap-2">
                     <Button
                         variant="outline"
@@ -605,12 +605,12 @@ export function QualificationsClient({
                         前へ
                     </Button>
                     <span className="text-sm text-muted-foreground">
-                        {currentPage} / {totalPages}
+                        {currentPage}ページ
                     </span>
                     <Button
                         variant="outline"
                         size="sm"
-                        disabled={currentPage >= totalPages}
+                        disabled={!hasNextPage}
                         render={<Link href={buildQualificationsHref(pathname, {
                             search: currentSearch,
                             category: currentCategory,

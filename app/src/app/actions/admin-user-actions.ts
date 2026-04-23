@@ -1,8 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getStrictAuthSnapshot } from "@/lib/auth-server";
 
 type UserRole = "admin" | "hr" | "technician";
 
@@ -21,7 +21,7 @@ function createAdminClient() {
 async function requireAdmin(): Promise<
     { ok: true; userId: string } | { ok: false; error: string }
 > {
-    const { user, role } = await getAuthSnapshot();
+    const { user, role } = await getStrictAuthSnapshot();
     if (!user || role !== "admin") {
         return { ok: false, error: "権限がありません" };
     }
@@ -60,6 +60,7 @@ export async function inviteUserAction(
         }
 
         revalidatePath("/admin/users");
+        updateTag("user-roles");
         return { success: true };
     } catch (error) {
         console.error("Unexpected error while inviting user:", error);
@@ -92,6 +93,7 @@ export async function updateUserRoleAction(
         }
 
         revalidatePath("/admin/users");
+        updateTag("user-roles");
         return { success: true };
     } catch (error) {
         console.error("Unexpected error while updating user role:", error);
@@ -119,6 +121,7 @@ export async function deleteUserAction(userId: string): Promise<ActionResult> {
         }
 
         revalidatePath("/admin/users");
+        updateTag("user-roles");
         return { success: true };
     } catch (error) {
         console.error("Unexpected error while deleting user:", error);

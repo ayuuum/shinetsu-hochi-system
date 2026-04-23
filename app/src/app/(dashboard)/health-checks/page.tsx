@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { HealthChecksClient, type HealthCheckWithEmployee } from "@/components/health-checks/health-checks-client";
 import { normalizeHealthCheckListResultValue } from "@/lib/display-labels";
 import { getCachedEmployeeList, getCachedHealthChecksPage } from "@/lib/cached-queries";
@@ -21,7 +21,7 @@ export default async function HealthChecksPage({
 }: {
     searchParams: Promise<{ page?: string; q?: string; type?: string; result?: string }>;
 }) {
-    const authPromise = getAuthSnapshot();
+    const authPromise = getFastAuthSnapshot();
     const paramsPromise = searchParams;
     const [auth, params] = await Promise.all([authPromise, paramsPromise]);
     if (auth.role === "technician") {
