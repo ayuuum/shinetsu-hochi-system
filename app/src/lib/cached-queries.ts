@@ -1,0 +1,85 @@
+import "server-only";
+import { unstable_cache } from "next/cache";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
+import { getAlertLevel, type AlertLevel } from "@/lib/alert-utils";
+
+// Qualification categories — changes only when qualification master is edited
+export const getCachedQualificationCategories = unstable_cache(
+    async (): Promise<string[]> => {
+        const supabase = createSupabaseAdmin();
+        if (!supabase) return [];
+        const { data } = await supabase
+            .from("qualification_master")
+            .select("category")
+            .not("category", "is", null)
+            .order("category");
+        return [...new Set((data || []).map((d) => d.category).filter(Boolean))] as string[];
+    },
+    ["qual-categories"],
+    { revalidate: 300, tags: ["qualification-master"] }
+);
+
+// Employee list for dropdowns — changes when employees are added/removed/updated
+export const getCachedEmployeeList = unstable_cache(
+    async (): Promise<{ id: string; name: string; branch: string | null }[]> => {
+        const supabase = createSupabaseAdmin();
+        if (!supabase) return [];
+        const { data } = await supabase
+            .from("employees")
+            .select("id, name, branch")
+            .is("deleted_at", null)
+            .order("branch")
+            .order("name");
+        return (data || []) as { id: string; name: string; branch: string | null }[];
+    },
+    ["employee-list"],
+    { revalidate: 300, tags: ["employees"] }
+);
+
+// Pre-aggregated alert counts (no filter) — used for badge tabs on qualifications page
+export const getCachedQualificationCounts = unstable_cache(
+    async (): Promise<Record<AlertLevel, number>> => {
+        const supabase = createSupabaseAdmin();
+        const empty: Record<AlertLevel, number> = { danger: 0, urgent: 0, warning: 0, info: 0, ok: 0 };
+        if (!supabase) return empty;
+        const { data } = await supabase
+            .from("employee_qualifications")
+            .select("expiry_date, employees!inner(id)")
+            .is("employees.deleted_at", null)
+            .is("deleted_at", null);
+        const counts = { ...empty };
+        for (const row of data || []) {
+            counts[getAlertLevel((row as { expiry_date: string | null }).expiry_date)] += 1;
+        }
+        return counts;
+    },
+    ["qual-counts"],
+    { revalidate: 300, tags: ["qualifications", "employees"] }
+);
+
+// Qual counts per employee — used to eliminate RT3 waterfall on employees page
+export const getCachedQualCountsByEmployee = unstable_cache(
+    async (): Promise<Record<string, { total: number; expiring: number }>> => {
+        const supabase = createSupabaseAdmin();
+        if (!supabase) return {};
+        const { data } = await supabase
+            .from("employee_qualifications")
+            .select("employee_id, expiry_date")
+            .is("deleted_at", null);
+        const now = new Date();
+        const result: Record<string, { total: number; expiring: number }> = {};
+        for (const q of data || []) {
+            if (!q.employee_id) continue;
+            const entry = result[q.employee_id] ?? { total: 0, expiring: 0 };
+            entry.total += 1;
+            if (q.expiry_date) {
+                const diff = new Date(q.expiry_date).getTime() - now.getTime();
+                if (diff < 30 * 24 * 60 * 60 * 1000) entry.expiring += 1;
+            }
+            result[q.employee_id] = entry;
+        }
+        return result;
+    },
+    ["qual-counts-by-employee"],
+    { revalidate: 300, tags: ["qualifications", "employees"] }
+);

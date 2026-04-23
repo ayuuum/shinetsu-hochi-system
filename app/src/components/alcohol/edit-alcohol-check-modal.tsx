@@ -101,9 +101,13 @@ export function EditAlcoholCheckModal({ check, employees, open, onOpenChange }: 
                         <FormField control={form.control} name="employee_id" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>対象社員 *</FormLabel>
-                                <Select items={employeeOptions} onValueChange={field.onChange} value={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
-                                        <SelectTrigger><SelectValue placeholder="社員を選択" /></SelectTrigger>
+                                        <SelectTrigger>
+                                            <span className="flex-1 text-left">
+                                                {employees.find(e => e.id === field.value)?.name ?? <span className="text-muted-foreground">社員を選択</span>}
+                                            </span>
+                                        </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
                                         {employees.map(emp => (
@@ -143,9 +147,13 @@ export function EditAlcoholCheckModal({ check, employees, open, onOpenChange }: 
                         <FormField control={form.control} name="checker_id" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>確認者 *</FormLabel>
-                                <Select items={employeeOptions} onValueChange={field.onChange} value={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
-                                        <SelectTrigger><SelectValue placeholder="確認者を選択" /></SelectTrigger>
+                                        <SelectTrigger>
+                                            <span className="flex-1 text-left">
+                                                {employees.find(e => e.id === field.value)?.name ?? <span className="text-muted-foreground">確認者を選択</span>}
+                                            </span>
+                                        </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
                                         {employees.map(emp => (

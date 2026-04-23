@@ -115,7 +115,7 @@ export function AddAlcoholCheckModal({
 
         if (values.is_abnormal === "不適正") {
             triggerHaptic("error");
-            toast.error("不適正として記録しました。運転は禁止です！安全運転管理者の指示を仰いでください。", { duration: 8000 });
+            toast.error("不適正（陽性）として記録しました。直ちに安全運転管理者へ報告してください。", { duration: 8000 });
         } else {
             triggerHaptic("success");
             toast.success("アルコールチェックを記録しました");
@@ -152,7 +152,11 @@ export function AddAlcoholCheckModal({
                                     <FormLabel className="text-muted-foreground font-semibold">👤 対象社員</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl>
-                                            <SelectTrigger className="h-12 text-base md:text-lg"><SelectValue placeholder="タップして社員を選択" /></SelectTrigger>
+                                            <SelectTrigger className="h-12 text-base md:text-lg">
+                                            <span className="flex-1 text-left">
+                                                {employees.find(e => e.id === field.value)?.name ?? <span className="text-muted-foreground">タップして社員を選択</span>}
+                                            </span>
+                                        </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
                                             {employees.map(emp => (
@@ -235,7 +239,11 @@ export function AddAlcoholCheckModal({
                                     <FormLabel className="text-muted-foreground font-semibold">👮 安全運転管理者</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl>
-                                            <SelectTrigger className="h-12 text-base"><SelectValue placeholder="タップして確認者を選択" /></SelectTrigger>
+                                            <SelectTrigger className="h-12 text-base">
+                                            <span className="flex-1 text-left">
+                                                {employees.find(e => e.id === field.value)?.name ?? <span className="text-muted-foreground">タップして確認者を選択</span>}
+                                            </span>
+                                        </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
                                             {employees.map(emp => (

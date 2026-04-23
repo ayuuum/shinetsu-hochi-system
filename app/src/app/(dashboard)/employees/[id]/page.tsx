@@ -3,23 +3,16 @@ import { createSupabaseServer } from "@/lib/supabase-server";
 import { getAuthSnapshot } from "@/lib/auth-server";
 import { EmployeeDetailClient, type EmployeeDetail, type EmployeeDetailTab } from "@/components/employees/employee-detail-client";
 import { Tables } from "@/types/supabase";
-import {
-    getEmployeeDetailSelect,
-    shouldLoadConstructionRecords,
-    shouldLoadEmployeeItAccounts,
-    shouldLoadHealthChecks,
-    shouldLoadQualificationCertificateUrls,
-} from "@/lib/employee-detail";
 
 type EmployeeQualification = Tables<"employee_qualifications"> & {
     qualification_master: Tables<"qualification_master"> | null;
 };
 
 type EmployeePageRow = Tables<"employees"> & {
-    employee_qualifications?: EmployeeQualification[] | null;
-    employee_family?: Tables<"employee_family">[] | null;
-    employee_life_insurances?: Tables<"employee_life_insurances">[] | null;
-    employee_damage_insurances?: Tables<"employee_damage_insurances">[] | null;
+    employee_qualifications: EmployeeQualification[] | null;
+    employee_family: Tables<"employee_family">[] | null;
+    employee_life_insurances: Tables<"employee_life_insurances">[] | null;
+    employee_damage_insurances: Tables<"employee_damage_insurances">[] | null;
 };
 
 const VALID_TABS: EmployeeDetailTab[] = ["basic", "insurance", "it", "qualifications", "construction", "family", "health"];
@@ -49,12 +42,42 @@ export default async function EmployeeDetailPage({
         currentTab = "basic";
     }
 
-    const employeeResult = await supabase
-        .from("employees")
-        .select(getEmployeeDetailSelect(currentTab))
-        .eq("id", id)
-        .is("deleted_at", null)
-        .maybeSingle();
+    const isAdminOrHr = auth.role === "admin" || auth.role === "hr";
+
+    const [employeeResult, constructionResult, healthResult, itResult] = await Promise.all([
+        supabase
+            .from("employees")
+            .select(`
+                *,
+                employee_qualifications(*, qualification_master(*)),
+                employee_family(*),
+                employee_life_insurances(*),
+                employee_damage_insurances(*)
+            `)
+            .eq("id", id)
+            .is("deleted_at", null)
+            .maybeSingle(),
+        supabase
+            .from("construction_records")
+            .select("*")
+            .eq("employee_id", id)
+            .is("deleted_at", null)
+            .order("construction_date", { ascending: false }),
+        supabase
+            .from("health_checks")
+            .select("*")
+            .eq("employee_id", id)
+            .is("deleted_at", null)
+            .order("check_date", { ascending: false }),
+        isAdminOrHr
+            ? supabase
+                  .from("employee_it_accounts")
+                  .select("*")
+                  .eq("employee_id", id)
+                  .order("sort_order", { ascending: true })
+                  .order("created_at", { ascending: true })
+            : Promise.resolve({ data: [] as Tables<"employee_it_accounts">[], error: null }),
+    ]);
 
     if (employeeResult.error) {
         console.error("Failed to load employee detail:", employeeResult.error);
@@ -67,56 +90,16 @@ export default async function EmployeeDetailPage({
         notFound();
     }
 
-    let employee_it_accounts: Tables<"employee_it_accounts">[] = [];
-    let construction_records: Tables<"construction_records">[] = [];
-    let health_checks: Tables<"health_checks">[] = [];
-    const loadIt = shouldLoadEmployeeItAccounts(currentTab, auth.role === "admin" || auth.role === "hr");
-    const loadConstruction = shouldLoadConstructionRecords(currentTab);
-    const loadHealth = shouldLoadHealthChecks(currentTab);
-
-    const [itResult, constructionResult, healthResult] = await Promise.all([
-        loadIt
-            ? supabase
-                .from("employee_it_accounts")
-                .select("*")
-                .eq("employee_id", id)
-                .order("sort_order", { ascending: true })
-                .order("created_at", { ascending: true })
-            : Promise.resolve({ data: null, error: null }),
-        loadConstruction
-            ? supabase
-                .from("construction_records")
-                .select("*")
-                .eq("employee_id", id)
-                .is("deleted_at", null)
-                .order("construction_date", { ascending: false })
-            : Promise.resolve({ data: null, error: null }),
-        loadHealth
-            ? supabase
-                .from("health_checks")
-                .select("*")
-                .eq("employee_id", id)
-                .is("deleted_at", null)
-                .order("check_date", { ascending: false })
-            : Promise.resolve({ data: null, error: null }),
-    ]);
-
-    if (itResult.error) {
-        console.error("Failed to load employee IT accounts:", itResult.error);
-    } else {
-        employee_it_accounts = itResult.data ?? [];
-    }
-
     if (constructionResult.error) {
         console.error("Failed to load construction records:", constructionResult.error);
-    } else {
-        construction_records = constructionResult.data ?? [];
     }
 
     if (healthResult.error) {
         console.error("Failed to load health checks:", healthResult.error);
-    } else {
-        health_checks = healthResult.data ?? [];
+    }
+
+    if (itResult.error) {
+        console.error("Failed to load employee IT accounts:", itResult.error);
     }
 
     const employee: EmployeeDetail = {
@@ -125,83 +108,46 @@ export default async function EmployeeDetailPage({
         employee_family: employeeRow.employee_family ?? [],
         employee_life_insurances: employeeRow.employee_life_insurances ?? [],
         employee_damage_insurances: employeeRow.employee_damage_insurances ?? [],
-        employee_it_accounts,
-        construction_records,
-        health_checks,
+        employee_it_accounts: itResult.data ?? [],
+        construction_records: constructionResult.data || [],
+        health_checks: healthResult.data || [],
     };
 
-    const buildCertificateEntriesPromise = async () => {
-        if (!shouldLoadQualificationCertificateUrls(currentTab)) {
-            return [] as (readonly [string, string] | null)[];
-        }
+    // Collect all storage paths to fetch signed URLs in parallel
+    const certPaths = employee.employee_qualifications
+        .filter((q) => q.certificate_url)
+        .map((q) => ({ id: q.id, path: q.certificate_url! }));
 
-        const qualificationIds = employee.employee_qualifications.map((qualification) => qualification.id);
-        const primaryCertificatePathByQualificationId = new Map<string, string>();
+    const allPaths = [
+        ...certPaths.map((c) => c.path),
+        ...(employee.photo_url ? [employee.photo_url] : []),
+    ];
 
-        for (const qualification of employee.employee_qualifications) {
-            if (qualification.certificate_url) {
-                primaryCertificatePathByQualificationId.set(qualification.id, qualification.certificate_url);
-            }
-        }
+    let certUrls: Record<string, string> = {};
+    let photoUrl: string | null = null;
 
-        if (qualificationIds.length > 0) {
-            const { data: certificateImages, error: certificateImagesError } = await supabase
-                .from("certificate_images")
-                .select("qualification_id, storage_path, sort_order")
-                .in("qualification_id", qualificationIds)
-                .order("sort_order", { ascending: true });
+    if (allPaths.length > 0) {
+        const { data: signedData } = await supabase.storage
+            .from("certificates")
+            .createSignedUrls(allPaths, 3600);
 
-            if (certificateImagesError) {
-                console.error("Failed to load certificate images:", certificateImagesError);
-            } else {
-                for (const row of certificateImages ?? []) {
-                    if (!row.qualification_id || !row.storage_path) continue;
-                    if (!primaryCertificatePathByQualificationId.has(row.qualification_id)) {
-                        primaryCertificatePathByQualificationId.set(row.qualification_id, row.storage_path);
-                    }
+        if (signedData) {
+            for (const entry of signedData) {
+                if (!entry.signedUrl) continue;
+                const certEntry = certPaths.find((c) => c.path === entry.path);
+                if (certEntry) {
+                    certUrls[certEntry.id] = entry.signedUrl;
+                } else if (entry.path === employee.photo_url) {
+                    photoUrl = entry.signedUrl;
                 }
             }
         }
-
-        return Promise.all(
-            employee.employee_qualifications.map(async (qualification) => {
-                const storagePath = primaryCertificatePathByQualificationId.get(qualification.id);
-                if (!storagePath) return null;
-
-                try {
-                    const { data, error } = await supabase.storage
-                        .from("certificates")
-                        .createSignedUrl(storagePath, 3600);
-
-                    if (error || !data?.signedUrl) {
-                        if (error) {
-                            console.error(`Failed to create signed URL for qualification ${qualification.id}:`, error);
-                        }
-                        return null;
-                    }
-
-                    return [qualification.id, data.signedUrl] as const;
-                } catch (error) {
-                    console.error(`Failed to fetch certificate URL for qualification ${qualification.id}:`, error);
-                    return null;
-                }
-            })
-        );
-    };
-
-    const [certificateEntries, photoResult] = await Promise.all([
-        buildCertificateEntriesPromise(),
-        employee.photo_url
-            ? supabase.storage.from("certificates").createSignedUrl(employee.photo_url, 3600)
-            : Promise.resolve(null),
-    ]);
-
-    const photoUrl = photoResult?.data?.signedUrl || null;
+    }
 
     return (
         <EmployeeDetailClient
             employee={employee}
-            certUrls={Object.fromEntries(certificateEntries.filter((entry): entry is readonly [string, string] => entry !== null))}
+            certUrls={certUrls}
             initialTab={currentTab}
             photoUrl={photoUrl}
         />

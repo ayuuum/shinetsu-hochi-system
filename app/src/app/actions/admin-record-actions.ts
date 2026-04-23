@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import { getAuthSnapshot } from "@/lib/auth-server";
 import { createSupabaseServer } from "@/lib/supabase-server";
@@ -93,6 +93,16 @@ async function requireAdminOrHr() {
     return { ok: true as const, user };
 }
 
+async function requireAuthenticated() {
+    const { user } = await getAuthSnapshot();
+
+    if (!user) {
+        return { ok: false as const, error: "ログインが必要です。" };
+    }
+
+    return { ok: true as const, user };
+}
+
 async function recordAuditLog({
     actorId,
     actorEmail,
@@ -138,6 +148,8 @@ function revalidateEmployeePaths(employeeId?: string) {
     revalidatePath("/projects");
     revalidatePath("/health-checks");
     revalidatePath("/alcohol-checks");
+    updateTag("employees");
+    updateTag("qualifications");
     if (employeeId) {
         revalidatePath(`/employees/${employeeId}`);
     }
@@ -1004,7 +1016,7 @@ export async function updateAlcoholCheckAction(
     alcoholCheckId: string,
     values: AlcoholCheckValues
 ): Promise<ActionResult<keyof AlcoholCheckValues>> {
-    const auth = await requireAdminOrHr();
+    const auth = await requireAuthenticated();
     if (!auth.ok) {
         return { success: false, error: auth.error };
     }

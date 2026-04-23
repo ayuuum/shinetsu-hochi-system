@@ -118,7 +118,7 @@ export function AddConstructionModal({ employeeId, onSuccess }: AddConstructionM
                         <div className="grid grid-cols-2 gap-4">
                             <FormField control={form.control} name="construction_date" render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>施工日 *</FormLabel>
+                                    <FormLabel>着工日 *</FormLabel>
                                     <FormControl><Input type="date" {...field} /></FormControl>
                                     <FormMessage />
                                 </FormItem>

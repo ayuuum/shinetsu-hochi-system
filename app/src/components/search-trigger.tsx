@@ -27,8 +27,7 @@ export function SearchTrigger({ className }: { className?: string }) {
                 </span>
             </div>
             <div className="ml-3 hidden shrink-0 items-center gap-1 rounded bg-muted/50 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground md:flex border border-border/50">
-                <Command aria-hidden="true" className="h-3 w-3" />
-                <span>K</span>
+                <span>Ctrl K</span>
             </div>
         </button>
     );

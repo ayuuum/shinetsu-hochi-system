@@ -145,7 +145,7 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
 
                 if (uploadError) {
                     await supabase.storage.from("certificates").remove(uploadedPaths);
-                    toast.error("証書画像のアップロードに失敗しました: " + uploadError.message);
+                    toast.error("証書画像のアップロードに失敗しました。");
                     return;
                 }
                 uploadedPaths.push(filePath);
@@ -172,7 +172,7 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                 if (uploadedPaths.length) {
                     await supabase.storage.from("certificates").remove(uploadedPaths);
                 }
-                toast.error("登録に失敗しました: " + (error?.message ?? "unknown"));
+                toast.error("登録に失敗しました。時間を置いて再度お試しください。");
                 return;
             }
 
@@ -187,7 +187,7 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                     .insert(imageRows);
                 if (imageError) {
                     console.error("certificate_images insert failed:", imageError);
-                    toast.warning("資格は登録しましたが、証書画像の関連付けに失敗しました。");
+                    toast.warning("資格は登録しましたが、証書画像の保存に失敗しました。");
                 }
             }
 

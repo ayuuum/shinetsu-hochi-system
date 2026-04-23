@@ -124,7 +124,7 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
                     .upload(filePath, certificateFile);
 
                 if (uploadError) {
-                    toast.error("証書画像のアップロードに失敗しました: " + uploadError.message);
+                    toast.error("証書画像のアップロードに失敗しました。");
                     return;
                 }
                 uploadedPath = filePath;
@@ -156,7 +156,7 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
                 if (uploadedPath) {
                     await supabase.storage.from("certificates").remove([uploadedPath]);
                 }
-                toast.error("更新に失敗しました: " + error.message);
+                toast.error("更新に失敗しました。時間を置いて再度お試しください。");
                 return;
             }
 
@@ -175,7 +175,7 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
                         .upload(filePath, file);
                     if (upErr) {
                         await supabase.storage.from("certificates").remove(uploadedExtras);
-                        toast.error("追加画像のアップロードに失敗しました: " + upErr.message);
+                        toast.error("追加画像のアップロードに失敗しました。");
                         return;
                     }
                     uploadedExtras.push(filePath);
@@ -193,7 +193,7 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
                         );
                     if (imgErr) {
                         console.error("certificate_images insert failed:", imgErr);
-                        toast.warning("画像は保存しましたが、関連付けに失敗しました。");
+                        toast.warning("画像は保存しましたが、資格への紐づけに失敗しました。");
                     }
                 }
             }

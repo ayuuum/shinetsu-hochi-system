@@ -107,7 +107,7 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
             if (error.message.includes("relation") && error.message.includes("does not exist")) {
                 toast.error("講習履歴テーブルが未作成です。マイグレーションを実行してください。");
             } else {
-                toast.error("登録に失敗しました: " + error.message);
+                toast.error("登録に失敗しました。時間を置いて再度お試しください。");
             }
         } else {
             toast.success("講習履歴を登録しました");
@@ -125,7 +125,7 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
             <DialogContent className="sm:max-w-[540px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>講習履歴の登録</DialogTitle>
-                    <DialogDescription>受講した講習の情報を登録します。</DialogDescription>
+                    <DialogDescription>受講した講習の日時・内容を入力してください。</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

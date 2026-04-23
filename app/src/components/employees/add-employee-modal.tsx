@@ -152,7 +152,7 @@ export function AddEmployeeModal() {
             <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto bg-background/95 backdrop-blur-xl">
                 <DialogHeader className="pb-4">
                     <DialogTitle className="text-2xl font-bold tracking-tight">新規社員登録</DialogTitle>
-                    <DialogDescription className="text-muted-foreground">従業員の基本情報と雇用詳細を入力して保存してください。</DialogDescription>
+                    <DialogDescription className="text-muted-foreground">従業員の基本情報と雇用情報を入力してください。</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit((v) => submitData(v, false))} className="space-y-6">

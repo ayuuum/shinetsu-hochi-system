@@ -71,53 +71,53 @@ export default async function AlcoholChecksPage({
             employeesQuery = employeesQuery.eq("id", auth.linkedEmployeeId);
         }
 
-        const [checksResult, empResult] = await Promise.all([
+        const monthlyQuery = supabase
+            .from("alcohol_checks")
+            .select("employee_id, check_datetime, employees!alcohol_checks_employee_id_fkey(name, branch)")
+            .is("deleted_at", null)
+            .gte("check_datetime", `${monthBounds.start}T00:00:00`)
+            .lte("check_datetime", `${monthBounds.end}T23:59:59`);
+
+        const [checksResult, empResult, monthlyResult] = await Promise.all([
             checksQuery,
             employeesQuery,
+            monthlyQuery,
         ]);
         checksData = (checksResult.data as AlcoholCheckRow[]) || [];
         empData = empResult.data || [];
         totalPages = Math.max(1, Math.ceil((checksResult.count || 0) / PAGE_SIZE));
 
-        if (empData.length > 0) {
-            const { data: monthlyChecks } = await supabase
-                .from("alcohol_checks")
-                .select("employee_id, check_datetime, employees!alcohol_checks_employee_id_fkey(name, branch)")
-                .is("deleted_at", null)
-                .gte("check_datetime", `${monthBounds.start}T00:00:00`)
-                .lte("check_datetime", `${monthBounds.end}T23:59:59`);
+        const monthlyChecks = monthlyResult.data || [];
+        const recordedDaysByEmployee = new Map<string, Set<string>>();
+        const metaByEmployee = new Map<string, { name: string; branch: string }>();
 
-            const recordedDaysByEmployee = new Map<string, Set<string>>();
-            const metaByEmployee = new Map<string, { name: string; branch: string }>();
-
-            for (const row of monthlyChecks || []) {
-                if (!row.employee_id) continue;
-                const dateKey = row.check_datetime?.slice(0, 10);
-                if (!dateKey) continue;
-                const current = recordedDaysByEmployee.get(row.employee_id) ?? new Set<string>();
-                current.add(dateKey);
-                recordedDaysByEmployee.set(row.employee_id, current);
-                const employeeMeta = row.employees as { name: string | null; branch: string | null } | null;
-                metaByEmployee.set(row.employee_id, {
-                    name: employeeMeta?.name || "不明",
-                    branch: employeeMeta?.branch || "未設定",
-                });
-            }
-
-            const monthDays = Number(monthBounds.end.slice(-2));
-            monthlySummary = empData.map((employee) => {
-                const recordedDays = recordedDaysByEmployee.get(employee.id)?.size ?? 0;
-                const meta = metaByEmployee.get(employee.id);
-                return {
-                    employeeId: employee.id,
-                    employeeName: meta?.name || employee.name,
-                    branch: meta?.branch || "未設定",
-                    recordedDays,
-                    monthDays,
-                    completionRate: monthDays > 0 ? Math.round((recordedDays / monthDays) * 100) : 0,
-                };
-            }).sort((a, b) => b.completionRate - a.completionRate || a.employeeName.localeCompare(b.employeeName, "ja"));
+        for (const row of monthlyChecks) {
+            if (!row.employee_id) continue;
+            const dateKey = row.check_datetime?.slice(0, 10);
+            if (!dateKey) continue;
+            const current = recordedDaysByEmployee.get(row.employee_id) ?? new Set<string>();
+            current.add(dateKey);
+            recordedDaysByEmployee.set(row.employee_id, current);
+            const employeeMeta = row.employees as { name: string | null; branch: string | null } | null;
+            metaByEmployee.set(row.employee_id, {
+                name: employeeMeta?.name || "不明",
+                branch: employeeMeta?.branch || "未設定",
+            });
         }
+
+        const monthDays = Number(monthBounds.end.slice(-2));
+        monthlySummary = empData.map((employee) => {
+            const recordedDays = recordedDaysByEmployee.get(employee.id)?.size ?? 0;
+            const meta = metaByEmployee.get(employee.id);
+            return {
+                employeeId: employee.id,
+                employeeName: meta?.name || employee.name,
+                branch: meta?.branch || "未設定",
+                recordedDays,
+                monthDays,
+                completionRate: monthDays > 0 ? Math.round((recordedDays / monthDays) * 100) : 0,
+            };
+        }).sort((a, b) => b.completionRate - a.completionRate || a.employeeName.localeCompare(b.employeeName, "ja"));
     } catch (e) {
         console.error("Failed to load alcohol checks:", e);
     }

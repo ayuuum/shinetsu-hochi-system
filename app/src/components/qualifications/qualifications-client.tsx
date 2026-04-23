@@ -23,7 +23,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, FileImage, Tags } from "lucide-react";
+import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, FileImage, Tags, Plus } from "lucide-react";
 import { differenceInDays } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { alertStyles, getAlertLevel, type AlertLevel } from "@/lib/alert-utils";
@@ -35,8 +35,6 @@ import { formatDisplayDate } from "@/lib/date";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { AddQualificationFromListModal } from "./add-qualification-from-list-modal";
-import { PageHeader } from "@/components/shared/page-header";
-import { getQualificationLevelLabel } from "@/lib/display-labels";
 
 export type QualificationRow = Tables<"employee_qualifications"> & {
     employees: { id: string; name: string; branch: string | null } | null;
@@ -110,7 +108,14 @@ export function QualificationsClient({
     const pathname = usePathname();
     const { isAdminOrHr } = useAuth();
     const showActions = isAdminOrHr;
-    const columnCount = showActions ? 7 : 6;
+    const columnCount = showActions ? 10 : 9;
+    const levelLabels: Record<string, string> = {
+        danger: "期限切れ",
+        urgent: "14日以内",
+        warning: "30日以内",
+        info: "60日以内",
+        ok: "正常",
+    };
     const activeFilters = [
         currentSearch
             ? {
@@ -134,7 +139,7 @@ export function QualificationsClient({
         currentLevel
             ? {
                 key: "level",
-                label: `状態: ${getQualificationLevelLabel(currentLevel)}`,
+                label: `状態: ${levelLabels[currentLevel] || currentLevel}`,
                 onRemove: () => updateFilters({ level: "", page: 1 }),
             }
             : null,
@@ -214,11 +219,14 @@ export function QualificationsClient({
 
     return (
         <div className="space-y-6 animate-in fade-in duration-200">
-            <PageHeader
-                title="資格・講習管理"
-                description="全従業員の資格・免状の期限と更新予定を一元管理します。"
-                actions={isAdminOrHr ? (
-                    <>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">資格・講習管理</h1>
+                    <p className="text-muted-foreground mt-2">全従業員の資格・免状の期限と更新予定を一元管理します。</p>
+                </div>
+                {/* Fix: add qualification button for direct addition from list page */}
+                {isAdminOrHr && (
+                    <div className="flex items-center gap-2 shrink-0">
                         <AddQualificationFromListModal employees={employees} onSuccess={() => router.refresh()} />
                         <Button
                             variant="outline"
@@ -228,47 +236,76 @@ export function QualificationsClient({
                             <Tags className="mr-2 h-4 w-4" />
                             資格マスタ
                         </Button>
-                    </>
-                ) : undefined}
-            />
+                    </div>
+                )}
+            </div>
 
-            {/* Summary KPI Strip */}
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                {(
-                    [
-                        { level: "danger", label: "期限切れ", icon: AlertCircle },
-                        { level: "urgent", label: "14日以内", icon: ShieldAlert },
-                        { level: "warning", label: "30日以内", icon: Clock },
-                        { level: "ok", label: "正常", icon: ShieldCheck },
-                    ] as const
-                ).map(({ level, label, icon: Icon }) => {
-                    const isActive = currentLevel === level;
-                    const style = alertStyles[level];
-                    return (
-                        <button
-                            key={level}
-                            type="button"
-                            aria-pressed={isActive}
-                            onClick={() => toggleLevelFilter(level)}
-                            className={`group relative rounded-2xl border text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
-                                isActive
-                                    ? `${style.icon} border-current/20 shadow-sm`
-                                    : "border-border/60 bg-card hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(38,42,46,0.08)]"
-                            }`}
-                        >
-                            <div className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full transition-opacity duration-200 ${style.icon} ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-40"}`} />
-                            <div className="px-5 py-4">
-                                <div className={`mb-2 inline-flex rounded-lg p-1.5 ${isActive ? "bg-white/30" : style.icon}`}>
-                                    <Icon className="h-4 w-4" />
-                                </div>
-                                <p className={`text-3xl font-bold tabular-nums tracking-tight ${isActive ? "text-current" : style.strong}`}>
-                                    {counts[level] || 0}
-                                </p>
-                                <p className={`mt-0.5 whitespace-nowrap text-xs font-medium ${isActive ? "text-current/80" : "text-muted-foreground"}`}>{label}</p>
+            {/* Summary Cards */}
+            <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+                <Card className="transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_1px_2px_rgba(38,42,46,0.04),0_12px_24px_rgba(38,42,46,0.06)]">
+                    <button
+                        type="button"
+                        aria-pressed={currentLevel === "danger"}
+                        onClick={() => toggleLevelFilter("danger")}
+                        className="w-full rounded-[20px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                    >
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <div className={`p-2 rounded-lg ${alertStyles.danger.icon}`}><AlertCircle className="h-5 w-5" /></div>
+                            <div>
+                                <p className={`text-2xl font-bold ${alertStyles.danger.strong}`}>{counts.danger || 0}</p>
+                                <p className="text-sm text-muted-foreground">期限切れ</p>
                             </div>
-                        </button>
-                    );
-                })}
+                        </CardContent>
+                    </button>
+                </Card>
+                <Card className="transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_1px_2px_rgba(38,42,46,0.04),0_12px_24px_rgba(38,42,46,0.06)]">
+                    <button
+                        type="button"
+                        aria-pressed={currentLevel === "urgent"}
+                        onClick={() => toggleLevelFilter("urgent")}
+                        className="w-full rounded-[20px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                    >
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <div className={`p-2 rounded-lg ${alertStyles.urgent.icon}`}><ShieldAlert className="h-5 w-5" /></div>
+                            <div>
+                                <p className={`text-2xl font-bold ${alertStyles.urgent.strong}`}>{counts.urgent || 0}</p>
+                                <p className="text-sm text-muted-foreground">14日以内</p>
+                            </div>
+                        </CardContent>
+                    </button>
+                </Card>
+                <Card className="transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_1px_2px_rgba(38,42,46,0.04),0_12px_24px_rgba(38,42,46,0.06)]">
+                    <button
+                        type="button"
+                        aria-pressed={currentLevel === "warning"}
+                        onClick={() => toggleLevelFilter("warning")}
+                        className="w-full rounded-[20px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                    >
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <div className={`p-2 rounded-lg ${alertStyles.warning.icon}`}><Clock className="h-5 w-5" /></div>
+                            <div>
+                                <p className={`text-2xl font-bold ${alertStyles.warning.strong}`}>{counts.warning || 0}</p>
+                                <p className="text-sm text-muted-foreground">30日以内</p>
+                            </div>
+                        </CardContent>
+                    </button>
+                </Card>
+                <Card className="transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_1px_2px_rgba(38,42,46,0.04),0_12px_24px_rgba(38,42,46,0.06)]">
+                    <button
+                        type="button"
+                        aria-pressed={currentLevel === "ok"}
+                        onClick={() => toggleLevelFilter("ok")}
+                        className="w-full rounded-[20px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                    >
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <div className={`p-2 rounded-lg ${alertStyles.ok.icon}`}><ShieldCheck className="h-5 w-5" /></div>
+                            <div>
+                                <p className={`text-2xl font-bold ${alertStyles.ok.strong}`}>{counts.ok || 0}</p>
+                                <p className="text-sm text-muted-foreground">正常</p>
+                            </div>
+                        </CardContent>
+                    </button>
+                </Card>
             </div>
 
             {/* Filters */}
@@ -471,11 +508,14 @@ export function QualificationsClient({
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-muted/50">
-                            <TableHead className="sticky left-0 z-20 bg-muted/50 shadow-[inset_-1px_0_0_hsl(var(--border))] min-w-[140px]">社員名</TableHead>
-                            <TableHead className="min-w-[180px]">資格名</TableHead>
-                            <TableHead className="min-w-[100px]">取得日</TableHead>
-                            <TableHead className="min-w-[100px]">有効期限</TableHead>
-                            <TableHead className="min-w-[110px]">ステータス</TableHead>
+                            <TableHead className="sticky left-0 z-20 bg-muted/50 shadow-[inset_-1px_0_0_hsl(var(--border))]">社員名</TableHead>
+                            <TableHead>拠点</TableHead>
+                            <TableHead>資格名</TableHead>
+                            <TableHead>カテゴリ</TableHead>
+                            <TableHead>取得日</TableHead>
+                            <TableHead>有効期限</TableHead>
+                            <TableHead>ステータス</TableHead>
+                            <TableHead>申込状況</TableHead>
                             <TableHead className="w-[52px] text-center">証書</TableHead>
                             {showActions && <TableHead className="w-[80px]">操作</TableHead>}
                         </TableRow>
@@ -493,48 +533,42 @@ export function QualificationsClient({
                                 const config = levelConfig[level];
                                 const days = q.expiry_date ? differenceInDays(new Date(q.expiry_date), new Date()) : null;
                                 return (
-                                    <TableRow key={q.id} className="hover:bg-muted/20 transition-colors">
-                                        <TableCell className="sticky left-0 z-10 bg-card shadow-[inset_-1px_0_0_hsl(var(--border))] group-hover:bg-muted/20">
+                                    <TableRow key={q.id} className="hover:bg-muted/30">
+                                        <TableCell className="sticky left-0 z-10 bg-card py-4 font-bold shadow-[inset_-1px_0_0_hsl(var(--border))]">
                                             {q.employees?.id ? (
-                                                <TableCellLink href={`/employees/${q.employees.id}`} className="font-semibold hover:underline">
+                                                <TableCellLink href={`/employees/${q.employees.id}`} className="font-bold hover:underline">
                                                     {q.employees.name}
                                                 </TableCellLink>
                                             ) : (
-                                                <span className="font-semibold">{q.employees?.name || "-"}</span>
-                                            )}
-                                            {q.employees?.branch && (
-                                                <p className="text-xs text-muted-foreground mt-0.5">{q.employees.branch}</p>
+                                                q.employees?.name || "-"
                                             )}
                                         </TableCell>
-                                        <TableCell>
-                                            <TableCellLink href={`/qualifications/${q.id}`} className="font-medium hover:underline">
+                                        <TableCell className="py-4 text-sm">{q.employees?.branch || "-"}</TableCell>
+                                        <TableCell className="py-4 text-sm font-medium">
+                                            <TableCellLink href={`/qualifications/${q.id}`} className="text-sm font-medium hover:underline">
                                                 {q.qualification_master?.name || "-"}
                                             </TableCellLink>
-                                            {q.qualification_master?.category && (
-                                                <p className="text-xs text-muted-foreground mt-0.5">{q.qualification_master.category}</p>
-                                            )}
                                         </TableCell>
-                                        <TableCell className="text-sm tabular-nums text-muted-foreground">{formatDisplayDate(q.acquired_date)}</TableCell>
-                                        <TableCell className={`text-sm font-medium tabular-nums ${config.color}`}>
+                                        <TableCell className="py-4 text-sm text-muted-foreground">{q.qualification_master?.category || "-"}</TableCell>
+                                        <TableCell className="py-4 text-sm tabular-nums">{formatDisplayDate(q.acquired_date)}</TableCell>
+                                        <TableCell className={`py-4 text-sm font-semibold tabular-nums ${config.color}`}>
                                             {formatDisplayDate(q.expiry_date, "期限なし")}
                                         </TableCell>
-                                        <TableCell>
-                                            <Badge variant="secondary" className={`${config.badge} text-xs`}>
+                                        <TableCell className="py-4">
+                                            <Badge variant="secondary" className={`${config.badge} text-xs font-semibold px-2 py-0.5`}>
                                                 {days !== null
                                                     ? days < 0 ? `${Math.abs(days)}日超過` : days === 0 ? "本日" : `残${days}日`
                                                     : "−"}
                                             </Badge>
-                                            {q.status && q.status !== "未着手" && (
-                                                <p className="text-xs text-muted-foreground mt-1">{q.status}</p>
-                                            )}
                                         </TableCell>
+                                        <TableCell className="py-4 text-sm text-muted-foreground">{q.status || "未着手"}</TableCell>
                                         <TableCell className="text-center">
                                             {q.certificate_url ? (
                                                 <span className="inline-flex text-primary" title="証書画像あり">
                                                     <FileImage className="h-4 w-4" aria-label="証書画像あり" />
                                                 </span>
                                             ) : (
-                                                <span className="text-muted-foreground/40">—</span>
+                                                <span className="text-muted-foreground">—</span>
                                             )}
                                         </TableCell>
                                         {showActions && (

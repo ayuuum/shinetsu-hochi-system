@@ -544,7 +544,7 @@ export function AlcoholClient({
                 )}
             </div>
 
-            <div className="hidden overflow-x-auto rounded-xl border bg-card md:block">
+            <div className="hidden overflow-x-auto rounded-[24px] border border-border/60 bg-card shadow-[0_1px_2px_rgba(38,42,46,0.04),0_12px_28px_rgba(38,42,46,0.05)] md:block">
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-muted/50">
@@ -568,8 +568,8 @@ export function AlcoholClient({
                             </TableRow>
                         ) : (
                             initialChecks.map((check) => (
-                                <TableRow key={check.id} className={check.is_abnormal ? "bg-destructive/5 hover:bg-destructive/10" : "hover:bg-transparent"}>
-                                    <TableCell className={`sticky left-0 z-10 font-medium shadow-[inset_-1px_0_0_hsl(var(--border))] ${check.is_abnormal ? "bg-background" : "bg-card"}`}>
+                                <TableRow key={check.id} className={check.is_abnormal ? "group bg-destructive/5 hover:bg-destructive/10" : "group hover:bg-muted/30 transition-colors"}>
+                                    <TableCell className={`sticky left-0 z-10 font-medium shadow-[inset_-1px_0_0_hsl(var(--border))] ${check.is_abnormal ? "bg-background group-hover:bg-destructive/10" : "bg-card group-hover:bg-muted/30"}`}>
                                         {check.employee?.id ? (
                                             <TableCellLink href={`/employees/${check.employee.id}`} className="font-medium hover:underline">
                                                 {check.employee.name}

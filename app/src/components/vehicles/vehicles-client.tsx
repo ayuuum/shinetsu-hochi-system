@@ -38,8 +38,6 @@ import { deleteVehicleAction } from "@/app/actions/admin-record-actions";
 import { formatDisplayDate } from "@/lib/date";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { getVehicleExpiryFilterLabel, getVehicleSortLabel } from "@/lib/display-labels";
-import { PageHeader } from "@/components/shared/page-header";
 
 export type VehicleWithUser = Tables<"vehicles"> & {
     employees?: { id: string; name: string } | null;
@@ -155,7 +153,7 @@ export function VehiclesClient({
         } : null,
         currentSort !== "plate" ? {
             key: "sort",
-            label: `並び順: ${getVehicleSortLabel(currentSort)}`,
+            label: `並び順: ${currentSort === "inspection" ? "車検満了日" : currentSort === "liability" ? "自賠責満期" : "任意保険満期"}`,
             onRemove: () => updateFilters({ sort: "plate", page: 1 }),
         } : null,
     ].filter((f): f is NonNullable<typeof f> => f !== null);
@@ -198,13 +196,13 @@ export function VehiclesClient({
                     </div>
                 ) : null
             ) : (
-                <PageHeader
-                    title="車両"
-                    description="社用車の車検・保険期限を管理します。"
-                    actions={isAdminOrHr ? <AddVehicleModal employees={employees} /> : undefined}
-                    titleAs="h2"
-                    className="space-y-0"
-                />
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-2xl font-bold tracking-tight">車両</h2>
+                        <p className="text-muted-foreground mt-2">社用車の車検・保険期限を管理します。</p>
+                    </div>
+                    {isAdminOrHr && <AddVehicleModal employees={employees} />}
+                </div>
             )}
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -224,7 +222,9 @@ export function VehiclesClient({
                         onValueChange={(val: string | null) => updateFilters({ expiry: val === "all" ? "" : (val ?? ""), page: 1 })}
                     >
                         <SelectTrigger className="h-11 w-[130px]">
-                            <SelectValue>{getVehicleExpiryFilterLabel(currentExpiry || "all")}</SelectValue>
+                            <span className="flex-1 text-left text-sm">
+                                {currentExpiry === "expired" ? "期限切れ" : currentExpiry === "soon" ? "30日以内" : "すべて"}
+                            </span>
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">すべて</SelectItem>
@@ -237,8 +237,10 @@ export function VehiclesClient({
                         onValueChange={(val: string | null) => updateFilters({ sort: val ?? "plate", page: 1 })}
                     >
                         <SelectTrigger className="h-11 w-[150px]">
-                            <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
-                            <SelectValue>{getVehicleSortLabel(currentSort)}</SelectValue>
+                            <ArrowUpDown className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+                            <span className="flex-1 text-left text-sm">
+                                {currentSort === "inspection" ? "車検満了日順" : currentSort === "liability" ? "自賠責満期順" : currentSort === "voluntary" ? "任意保険満期順" : "ナンバー順"}
+                            </span>
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="plate">ナンバー順</SelectItem>
@@ -356,8 +358,8 @@ export function VehiclesClient({
                             </TableRow>
                         ) : (
                             initialVehicles.map((vehicle) => (
-                                <TableRow key={vehicle.id} className="hover:bg-transparent">
-                                    <TableCell className="sticky left-0 z-10 bg-card font-bold shadow-[inset_-1px_0_0_hsl(var(--border))]">
+                                <TableRow key={vehicle.id} className="group hover:bg-muted/30 transition-colors">
+                                    <TableCell className="sticky left-0 z-10 bg-card font-bold shadow-[inset_-1px_0_0_hsl(var(--border))] group-hover:bg-muted/30">
                                         <div className="flex items-center gap-2">
                                             <Truck className="h-4 w-4 text-muted-foreground shrink-0" />
                                             {vehicle.plate_number}
