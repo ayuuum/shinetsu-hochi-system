@@ -55,12 +55,12 @@ export function AppSidebar() {
                     />
                 </div>
             </SidebarHeader>
-            <SidebarContent className="py-2.5">
+            <SidebarContent className="py-3">
                 {navigationSections.map((section, index) => (
-                    <div key={section.id} className="px-2.5">
-                        {index > 0 && <SidebarSeparator className="my-2.5" />}
+                    <div key={section.id} className="px-3">
+                        {index > 0 && <SidebarSeparator className="my-3" />}
                         <SidebarGroup className="p-0">
-                            <SidebarGroupLabel className="px-1.5 mb-1.5 text-xs font-medium tracking-[0.08em] text-sidebar-foreground/52">
+                            <SidebarGroupLabel className="px-2 mb-1 text-xs font-medium tracking-[0.08em] text-sidebar-foreground/52">
                                 {section.title}
                             </SidebarGroupLabel>
                             <SidebarGroupContent>
@@ -93,7 +93,7 @@ export function AppSidebar() {
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
-                <div className="mt-3 px-1.5 text-sm group-data-[collapsible=icon]:hidden">
+                <div className="mt-3 px-2 text-sm group-data-[collapsible=icon]:hidden">
                     <p className="truncate font-medium text-foreground/88">{displayName}</p>
                     <p className="mt-0.5 truncate text-muted-foreground">{roleLabel}</p>
                 </div>
