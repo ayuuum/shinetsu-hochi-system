@@ -15,7 +15,7 @@ type EmployeePageRow = Tables<"employees"> & {
     employee_damage_insurances: Tables<"employee_damage_insurances">[] | null;
 };
 
-const VALID_TABS: EmployeeDetailTab[] = ["basic", "insurance", "it", "qualifications", "construction", "family", "health"];
+const VALID_TABS: EmployeeDetailTab[] = ["basic", "insurance", "it", "qualifications", "construction", "family", "health", "seminars"];
 
 export default async function EmployeeDetailPage({
     params,
@@ -44,7 +44,7 @@ export default async function EmployeeDetailPage({
 
     const isAdminOrHr = auth.role === "admin" || auth.role === "hr";
 
-    const [employeeResult, constructionResult, healthResult, itResult] = await Promise.all([
+    const [employeeResult, constructionResult, healthResult, itResult, examHistoryResult, seminarResult, deletedQualsResult] = await Promise.all([
         supabase
             .from("employees")
             .select(`
@@ -77,6 +77,22 @@ export default async function EmployeeDetailPage({
                   .order("sort_order", { ascending: true })
                   .order("created_at", { ascending: true })
             : Promise.resolve({ data: [] as Tables<"employee_it_accounts">[], error: null }),
+        supabase
+            .from("qualification_exam_history")
+            .select("*")
+            .eq("employee_id", id)
+            .order("exam_date", { ascending: false }),
+        supabase
+            .from("seminar_records")
+            .select("*")
+            .eq("employee_id", id)
+            .order("held_date", { ascending: false }),
+        supabase
+            .from("employee_qualifications")
+            .select("*, qualification_master(*)")
+            .eq("employee_id", id)
+            .not("deleted_at", "is", null)
+            .order("deleted_at", { ascending: false }),
     ]);
 
     if (employeeResult.error) {
@@ -102,19 +118,25 @@ export default async function EmployeeDetailPage({
         console.error("Failed to load employee IT accounts:", itResult.error);
     }
 
+    const allQuals = (employeeRow.employee_qualifications ?? []) as EmployeeQualification[];
+    const activeQuals = allQuals.filter((q) => !q.deleted_at);
+
     const employee: EmployeeDetail = {
         ...employeeRow,
-        employee_qualifications: employeeRow.employee_qualifications ?? [],
+        employee_qualifications: activeQuals,
         employee_family: employeeRow.employee_family ?? [],
         employee_life_insurances: employeeRow.employee_life_insurances ?? [],
         employee_damage_insurances: employeeRow.employee_damage_insurances ?? [],
         employee_it_accounts: itResult.data ?? [],
         construction_records: constructionResult.data || [],
         health_checks: healthResult.data || [],
+        exam_history: examHistoryResult.data || [],
+        seminar_records: seminarResult.data || [],
+        deleted_qualifications: (deletedQualsResult.data as EmployeeQualification[]) || [],
     };
 
     // Collect all storage paths to fetch signed URLs in parallel
-    const certPaths = employee.employee_qualifications
+    const certPaths = [...employee.employee_qualifications, ...employee.deleted_qualifications]
         .filter((q) => q.certificate_url)
         .map((q) => ({ id: q.id, path: q.certificate_url! }));
 

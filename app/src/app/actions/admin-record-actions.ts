@@ -93,6 +93,16 @@ async function requireAdminOrHr() {
     return { ok: true as const, user };
 }
 
+async function requireAdmin() {
+    const { user, role } = await getAuthSnapshot();
+
+    if (!user || role !== "admin") {
+        return { ok: false as const, error: "この操作を実行する権限がありません。" };
+    }
+
+    return { ok: true as const, user };
+}
+
 async function requireAuthenticated() {
     const { user } = await getAuthSnapshot();
 
@@ -155,9 +165,10 @@ function revalidateEmployeePaths(employeeId?: string) {
     }
 }
 
-function revalidateVehiclePaths() {
+function revalidateVehiclePaths(vehicleId?: string) {
     revalidatePath("/");
     revalidatePath("/vehicles");
+    if (vehicleId) revalidatePath(`/vehicles/${vehicleId}`);
 }
 
 function revalidateProjectPaths(employeeId?: string | null) {
@@ -1114,8 +1125,9 @@ export async function deleteQualificationAction(qualificationId: string): Promis
 
         const { data: deletedQualification, error } = await supabase
             .from("employee_qualifications")
-            .delete()
+            .update({ deleted_at: new Date().toISOString(), deleted_by: auth.user.id })
             .eq("id", qualificationId)
+            .is("deleted_at", null)
             .select("id")
             .maybeSingle();
 
@@ -1125,16 +1137,6 @@ export async function deleteQualificationAction(qualificationId: string): Promis
         }
         if (!deletedQualification) {
             return { success: false, error: "資格情報が見つかりません。" };
-        }
-
-        if (qualification.certificate_url) {
-            const { error: storageError } = await supabase.storage
-                .from("certificates")
-                .remove([qualification.certificate_url]);
-
-            if (storageError) {
-                console.error("Failed to delete qualification certificate:", storageError);
-            }
         }
 
         await recordAuditLog({
@@ -2142,5 +2144,394 @@ export async function deleteItAccountAction(accountId: string): Promise<DeleteAc
     } catch (error) {
         console.error("Unexpected error while deleting IT account:", error);
         return { success: false, error: "IT利用情報の削除に失敗しました。" };
+    }
+}
+
+// ─── Exam History ──────────────────────────────────────────────────────────
+
+export async function createExamHistoryAction(data: {
+    employee_id: string;
+    qualification_id?: string | null;
+    qualification_name?: string | null;
+    exam_date: string;
+    result: "合格" | "不合格";
+    notes?: string | null;
+}): Promise<{ success: true; id: string } | { success: false; error: string }> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) return { success: false, error: auth.error };
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: row, error } = await supabase
+            .from("qualification_exam_history")
+            .insert([{ ...data, created_by: auth.user.id }])
+            .select("id")
+            .single();
+
+        if (error || !row) {
+            console.error("Failed to create exam history:", error);
+            return { success: false, error: "受験履歴の登録に失敗しました。" };
+        }
+
+        revalidateEmployeePaths(data.employee_id);
+        return { success: true, id: row.id };
+    } catch (error) {
+        console.error("Unexpected error while creating exam history:", error);
+        return { success: false, error: "受験履歴の登録に失敗しました。" };
+    }
+}
+
+export async function deleteExamHistoryAction(id: string): Promise<DeleteActionResult> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) return { success: false, error: auth.error };
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: row, error: fetchError } = await supabase
+            .from("qualification_exam_history")
+            .select("employee_id, qualification_name")
+            .eq("id", id)
+            .maybeSingle();
+
+        if (fetchError || !row) return { success: false, error: "受験履歴が見つかりません。" };
+
+        const { error } = await supabase.from("qualification_exam_history").delete().eq("id", id);
+        if (error) {
+            console.error("Failed to delete exam history:", error);
+            return { success: false, error: "受験履歴の削除に失敗しました。" };
+        }
+
+        revalidateEmployeePaths(row.employee_id);
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while deleting exam history:", error);
+        return { success: false, error: "受験履歴の削除に失敗しました。" };
+    }
+}
+
+// ─── Seminar Records ───────────────────────────────────────────────────────
+
+export async function createSeminarRecordAction(data: {
+    employee_id: string;
+    seminar_name: string;
+    held_date: string;
+    hours?: number | null;
+    organizer?: string | null;
+    notes?: string | null;
+    photo_url?: string | null;
+}): Promise<{ success: true; id: string } | { success: false; error: string }> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) return { success: false, error: auth.error };
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: row, error } = await supabase
+            .from("seminar_records")
+            .insert([{ ...data, created_by: auth.user.id }])
+            .select("id")
+            .single();
+
+        if (error || !row) {
+            console.error("Failed to create seminar record:", error);
+            return { success: false, error: "セミナー受講履歴の登録に失敗しました。" };
+        }
+
+        revalidateEmployeePaths(data.employee_id);
+        return { success: true, id: row.id };
+    } catch (error) {
+        console.error("Unexpected error while creating seminar record:", error);
+        return { success: false, error: "セミナー受講履歴の登録に失敗しました。" };
+    }
+}
+
+export async function deleteSeminarRecordAction(id: string): Promise<DeleteActionResult> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) return { success: false, error: auth.error };
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: row, error: fetchError } = await supabase
+            .from("seminar_records")
+            .select("employee_id, seminar_name")
+            .eq("id", id)
+            .maybeSingle();
+
+        if (fetchError || !row) return { success: false, error: "セミナー履歴が見つかりません。" };
+
+        const { error } = await supabase.from("seminar_records").delete().eq("id", id);
+        if (error) {
+            console.error("Failed to delete seminar record:", error);
+            return { success: false, error: "セミナー履歴の削除に失敗しました。" };
+        }
+
+        revalidateEmployeePaths(row.employee_id);
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while deleting seminar record:", error);
+        return { success: false, error: "セミナー履歴の削除に失敗しました。" };
+    }
+}
+
+// ─── Vehicle Extensions ────────────────────────────────────────────────────
+
+export async function createVehicleTireAction(data: {
+    vehicle_id: string;
+    purchase_date?: string | null;
+    manufacture_year?: number | null;
+    notes?: string | null;
+}): Promise<{ success: true; id: string } | { success: false; error: string }> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) return { success: false, error: auth.error };
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: row, error } = await supabase
+            .from("vehicle_tires")
+            .insert([{ ...data, created_by: auth.user.id }])
+            .select("id")
+            .single();
+
+        if (error || !row) {
+            console.error("Failed to create vehicle tire:", error);
+            return { success: false, error: "タイヤ情報の登録に失敗しました。" };
+        }
+
+        revalidateVehiclePaths(data.vehicle_id);
+        return { success: true, id: row.id };
+    } catch (error) {
+        console.error("Unexpected error while creating vehicle tire:", error);
+        return { success: false, error: "タイヤ情報の登録に失敗しました。" };
+    }
+}
+
+export async function deleteVehicleTireAction(id: string): Promise<DeleteActionResult> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) return { success: false, error: auth.error };
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: row, error: fetchError } = await supabase
+            .from("vehicle_tires")
+            .select("vehicle_id")
+            .eq("id", id)
+            .maybeSingle();
+
+        if (fetchError || !row) return { success: false, error: "タイヤ情報が見つかりません。" };
+
+        const { error } = await supabase.from("vehicle_tires").delete().eq("id", id);
+        if (error) {
+            console.error("Failed to delete vehicle tire:", error);
+            return { success: false, error: "タイヤ情報の削除に失敗しました。" };
+        }
+
+        revalidateVehiclePaths(row.vehicle_id);
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while deleting vehicle tire:", error);
+        return { success: false, error: "タイヤ情報の削除に失敗しました。" };
+    }
+}
+
+export async function createVehicleRepairAction(data: {
+    vehicle_id: string;
+    repair_date: string;
+    description: string;
+    cost?: number | null;
+    repaired_by?: string | null;
+    notes?: string | null;
+}): Promise<{ success: true; id: string } | { success: false; error: string }> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) return { success: false, error: auth.error };
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: row, error } = await supabase
+            .from("vehicle_repairs")
+            .insert([{ ...data, created_by: auth.user.id }])
+            .select("id")
+            .single();
+
+        if (error || !row) {
+            console.error("Failed to create vehicle repair:", error);
+            return { success: false, error: "修理履歴の登録に失敗しました。" };
+        }
+
+        revalidateVehiclePaths(data.vehicle_id);
+        return { success: true, id: row.id };
+    } catch (error) {
+        console.error("Unexpected error while creating vehicle repair:", error);
+        return { success: false, error: "修理履歴の登録に失敗しました。" };
+    }
+}
+
+export async function deleteVehicleRepairAction(id: string): Promise<DeleteActionResult> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) return { success: false, error: auth.error };
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: row, error: fetchError } = await supabase
+            .from("vehicle_repairs")
+            .select("vehicle_id, description")
+            .eq("id", id)
+            .maybeSingle();
+
+        if (fetchError || !row) return { success: false, error: "修理履歴が見つかりません。" };
+
+        const { error } = await supabase.from("vehicle_repairs").delete().eq("id", id);
+        if (error) {
+            console.error("Failed to delete vehicle repair:", error);
+            return { success: false, error: "修理履歴の削除に失敗しました。" };
+        }
+
+        revalidateVehiclePaths(row.vehicle_id);
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while deleting vehicle repair:", error);
+        return { success: false, error: "修理履歴の削除に失敗しました。" };
+    }
+}
+
+export async function createVehicleAccidentAction(data: {
+    vehicle_id: string;
+    accident_date: string;
+    driver_id?: string | null;
+    description: string;
+    notes?: string | null;
+}): Promise<{ success: true; id: string } | { success: false; error: string }> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) return { success: false, error: auth.error };
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: row, error } = await supabase
+            .from("vehicle_accidents")
+            .insert([{ ...data, created_by: auth.user.id }])
+            .select("id")
+            .single();
+
+        if (error || !row) {
+            console.error("Failed to create vehicle accident:", error);
+            return { success: false, error: "事故記録の登録に失敗しました。" };
+        }
+
+        revalidateVehiclePaths(data.vehicle_id);
+        return { success: true, id: row.id };
+    } catch (error) {
+        console.error("Unexpected error while creating vehicle accident:", error);
+        return { success: false, error: "事故記録の登録に失敗しました。" };
+    }
+}
+
+export async function deleteVehicleAccidentAction(id: string): Promise<DeleteActionResult> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) return { success: false, error: auth.error };
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: row, error: fetchError } = await supabase
+            .from("vehicle_accidents")
+            .select("vehicle_id, description")
+            .eq("id", id)
+            .maybeSingle();
+
+        if (fetchError || !row) return { success: false, error: "事故記録が見つかりません。" };
+
+        const { error } = await supabase.from("vehicle_accidents").delete().eq("id", id);
+        if (error) {
+            console.error("Failed to delete vehicle accident:", error);
+            return { success: false, error: "事故記録の削除に失敗しました。" };
+        }
+
+        revalidateVehiclePaths(row.vehicle_id);
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while deleting vehicle accident:", error);
+        return { success: false, error: "事故記録の削除に失敗しました。" };
+    }
+}
+
+// ─── Annual Schedule ───────────────────────────────────────────────────────
+
+export async function createAnnualScheduleAction(data: {
+    fiscal_year: number;
+    title: string;
+    scheduled_date?: string | null;
+    description?: string | null;
+}): Promise<{ success: true; id: string } | { success: false; error: string }> {
+    const auth = await requireAdmin();
+    if (!auth.ok) return { success: false, error: auth.error };
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: row, error } = await supabase
+            .from("annual_schedules")
+            .insert([{ ...data, created_by: auth.user.id }])
+            .select("id")
+            .single();
+
+        if (error || !row) {
+            console.error("Failed to create annual schedule:", error);
+            return { success: false, error: "年間スケジュールの登録に失敗しました。" };
+        }
+
+        revalidatePath("/schedule");
+        return { success: true, id: row.id };
+    } catch (error) {
+        console.error("Unexpected error while creating annual schedule:", error);
+        return { success: false, error: "年間スケジュールの登録に失敗しました。" };
+    }
+}
+
+export async function updateAnnualScheduleAction(
+    id: string,
+    data: {
+        fiscal_year?: number;
+        title?: string;
+        scheduled_date?: string | null;
+        description?: string | null;
+    }
+): Promise<{ success: true } | { success: false; error: string }> {
+    const auth = await requireAdmin();
+    if (!auth.ok) return { success: false, error: auth.error };
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { error } = await supabase
+            .from("annual_schedules")
+            .update({ ...data, updated_at: new Date().toISOString() })
+            .eq("id", id);
+
+        if (error) {
+            console.error("Failed to update annual schedule:", error);
+            return { success: false, error: "年間スケジュールの更新に失敗しました。" };
+        }
+
+        revalidatePath("/schedule");
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while updating annual schedule:", error);
+        return { success: false, error: "年間スケジュールの更新に失敗しました。" };
+    }
+}
+
+export async function deleteAnnualScheduleAction(id: string): Promise<DeleteActionResult> {
+    const auth = await requireAdmin();
+    if (!auth.ok) return { success: false, error: auth.error };
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { error } = await supabase.from("annual_schedules").delete().eq("id", id);
+
+        if (error) {
+            console.error("Failed to delete annual schedule:", error);
+            return { success: false, error: "年間スケジュールの削除に失敗しました。" };
+        }
+
+        revalidatePath("/schedule");
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while deleting annual schedule:", error);
+        return { success: false, error: "年間スケジュールの削除に失敗しました。" };
     }
 }

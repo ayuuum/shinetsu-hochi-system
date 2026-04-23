@@ -291,6 +291,9 @@ export function VehiclesClient({
                                                 : status === 2
                                                     ? <Badge variant="secondary" className={alertStyles.warning.badge}>注意</Badge>
                                                     : <Badge variant="secondary" className={alertStyles.ok.badge}>正常</Badge>}
+                                            <Button size="sm" variant="ghost" className="text-xs h-7 px-2" render={<Link href={`/vehicles/${vehicle.id}`} />}>
+                                                詳細
+                                            </Button>
                                             {showActions ? (
                                                 <RecordActionsMenu label={vehicle.plate_number}>
                                                     <DropdownMenuItem onClick={() => setEditingVehicle(vehicle)}>
@@ -346,7 +349,7 @@ export function VehiclesClient({
                             <TableHead className="min-w-[120px]">自賠責満期</TableHead>
                             <TableHead className="min-w-[120px]">任意保険満期</TableHead>
                             <TableHead className="min-w-[80px]">ステータス</TableHead>
-                            {showActions && <TableHead className="min-w-[100px]">操作</TableHead>}
+                            <TableHead className="min-w-[100px]">操作</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -401,20 +404,25 @@ export function VehiclesClient({
                                                 : <Badge variant="secondary" className={alertStyles.ok.badge}>正常</Badge>
                                         }
                                     </TableCell>
-                                    {showActions && (
-                                        <TableCell>
-                                            <RecordActionsMenu label={vehicle.plate_number}>
-                                                <DropdownMenuItem onClick={() => setEditingVehicle(vehicle)}>
-                                                    <Pencil className="h-4 w-4" />
-                                                    編集
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem variant="destructive" onClick={() => setDeletingVehicle(vehicle)}>
-                                                    <Trash2 className="h-4 w-4" />
-                                                    削除
-                                                </DropdownMenuItem>
-                                            </RecordActionsMenu>
-                                        </TableCell>
-                                    )}
+                                    <TableCell>
+                                        <div className="flex items-center gap-1">
+                                            <Button size="sm" variant="ghost" className="text-xs h-7 px-2" render={<Link href={`/vehicles/${vehicle.id}`} />}>
+                                                詳細
+                                            </Button>
+                                            {showActions && (
+                                                <RecordActionsMenu label={vehicle.plate_number}>
+                                                    <DropdownMenuItem onClick={() => setEditingVehicle(vehicle)}>
+                                                        <Pencil className="h-4 w-4" />
+                                                        編集
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem variant="destructive" onClick={() => setDeletingVehicle(vehicle)}>
+                                                        <Trash2 className="h-4 w-4" />
+                                                        削除
+                                                    </DropdownMenuItem>
+                                                </RecordActionsMenu>
+                                            )}
+                                        </div>
+                                    </TableCell>
                                 </TableRow>
                             ))
                         )}
