@@ -37,6 +37,21 @@ export const getCachedQualificationCategories = unstable_cache(
     { revalidate: 300, tags: ["qualification-master"] }
 );
 
+// Full qualification master list for dropdowns
+export const getCachedQualificationMasters = unstable_cache(
+    async () => {
+        const supabase = createSupabaseAdmin();
+        if (!supabase) return [];
+        const { data } = await supabase
+            .from("qualification_master")
+            .select("*")
+            .order("category");
+        return data || [];
+    },
+    ["qual-masters"],
+    { revalidate: 300, tags: ["qualification-master"] }
+);
+
 // Employee list for dropdowns — changes when employees are added/removed/updated
 export const getCachedEmployeeList = unstable_cache(
     async (): Promise<{ id: string; name: string; branch: string | null }[]> => {
