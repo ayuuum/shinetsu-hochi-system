@@ -123,11 +123,11 @@ export function VehicleDetailClient({
             </div>
 
             <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="inline-flex h-auto bg-muted/30 p-1.5 rounded-xl">
-                    <TabsTrigger value="basic" className="rounded-lg px-4 py-3 text-sm"><Car className="mr-1 h-3.5 w-3.5 hidden md:inline" />基本情報</TabsTrigger>
-                    <TabsTrigger value="tires" className="rounded-lg px-4 py-3 text-sm"><Layers className="mr-1 h-3.5 w-3.5 hidden md:inline" />タイヤ</TabsTrigger>
-                    <TabsTrigger value="repairs" className="rounded-lg px-4 py-3 text-sm"><Wrench className="mr-1 h-3.5 w-3.5 hidden md:inline" />修理履歴</TabsTrigger>
-                    <TabsTrigger value="accidents" className="rounded-lg px-4 py-3 text-sm"><AlertTriangle className="mr-1 h-3.5 w-3.5 hidden md:inline" />事故記録</TabsTrigger>
+                <TabsList variant="line" className="inline-flex h-auto border-b border-border/50 gap-0 pb-0 rounded-none">
+                    <TabsTrigger value="basic" className="px-4 py-2.5 text-sm gap-1.5"><Car className="h-3.5 w-3.5 hidden md:inline" />基本情報</TabsTrigger>
+                    <TabsTrigger value="tires" className="px-4 py-2.5 text-sm gap-1.5"><Layers className="h-3.5 w-3.5 hidden md:inline" />タイヤ</TabsTrigger>
+                    <TabsTrigger value="repairs" className="px-4 py-2.5 text-sm gap-1.5"><Wrench className="h-3.5 w-3.5 hidden md:inline" />修理履歴</TabsTrigger>
+                    <TabsTrigger value="accidents" className="px-4 py-2.5 text-sm gap-1.5"><AlertTriangle className="h-3.5 w-3.5 hidden md:inline" />事故記録</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="basic" className="mt-6">

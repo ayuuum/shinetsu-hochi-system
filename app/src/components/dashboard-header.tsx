@@ -40,12 +40,16 @@ export function DashboardHeader() {
                         </span>
                     </Button>
                     
-                    <div className="hidden min-w-0 items-center gap-2 text-sm font-medium tracking-wide md:flex">
-                        <span className="min-w-0 truncate text-muted-foreground">
+                    <div className="hidden min-w-0 items-center gap-2 text-sm md:flex">
+                        <span className="min-w-0 truncate text-muted-foreground/70 text-xs tracking-wide">
                             {section.title}
                         </span>
-                        <span aria-hidden="true" className="text-border/60 shrink-0">•</span>
-                        <span className="hidden whitespace-nowrap text-muted-foreground/80 lg:inline">
+                        <span aria-hidden="true" className="text-border shrink-0">/</span>
+                        <span className="min-w-0 truncate font-medium text-foreground">
+                            {activeItem.title}
+                        </span>
+                        <span aria-hidden="true" className="text-border/60 shrink-0 hidden lg:inline">•</span>
+                        <span className="hidden whitespace-nowrap text-muted-foreground/70 text-xs lg:inline">
                             {headerDateFormatter.format(new Date())}
                         </span>
                     </div>
