@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { getTodayInTokyo, getTokyoCalendarMonthBounds } from "@/lib/date";
 import { getSupabaseEnv } from "@/lib/supabase-env";
+import { getAuthSnapshot } from "@/lib/auth-server";
 import { Tables } from "@/types/supabase";
 
 type AlcoholCheckExportRow = Tables<"alcohol_checks"> & {
@@ -33,6 +34,11 @@ export async function GET(request: NextRequest) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const auth = await getAuthSnapshot();
+    if (auth.role !== "admin" && auth.role !== "hr") {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const searchParams = request.nextUrl.searchParams;

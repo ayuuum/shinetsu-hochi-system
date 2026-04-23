@@ -228,7 +228,7 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
             <DialogTrigger
                 render={<Button size="sm"><Plus className="mr-1 h-3.5 w-3.5" />資格追加</Button>}
             />
-            <DialogContent className="sm:max-w-[425px] max-h-[85vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[560px] max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Award className="h-5 w-5 text-primary" />
@@ -273,18 +273,25 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                                         disabled={loadingMasters || !!mastersError || masters.length === 0}
                                     >
                                         <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder={loadingMasters ? "資格マスタを読み込み中..." : "資格を選択"} />
+                                            <SelectTrigger className="min-h-11 h-auto w-full items-start py-2.5 [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal">
+                                                <SelectValue
+                                                    className="whitespace-normal break-words leading-5"
+                                                    placeholder={loadingMasters ? "資格マスタを読み込み中..." : "資格を選択"}
+                                                />
                                             </SelectTrigger>
                                         </FormControl>
-                                        <SelectContent>
+                                        <SelectContent className="min-w-[32rem] max-w-[36rem]">
                                             {loadingMasters ? (
                                                 <SelectItem value="loading" disabled>読み込み中...</SelectItem>
                                             ) : masters.length === 0 ? (
                                                 <SelectItem value="empty" disabled>資格マスタがありません</SelectItem>
                                             ) : (
                                                 masters.map(m => (
-                                                    <SelectItem key={m.id} value={m.id}>
+                                                    <SelectItem
+                                                        key={m.id}
+                                                        value={m.id}
+                                                        className="items-start py-2 [&_[data-slot=select-item-text]]:whitespace-normal"
+                                                    >
                                                         [{m.category}] {m.name}
                                                     </SelectItem>
                                                 ))

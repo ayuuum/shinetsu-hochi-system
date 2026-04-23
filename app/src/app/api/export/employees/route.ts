@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { getTodayInTokyo } from "@/lib/date";
 import { getSupabaseEnv } from "@/lib/supabase-env";
+import { getAuthSnapshot } from "@/lib/auth-server";
 
 export async function GET() {
     const cookieStore = await cookies();
@@ -27,6 +28,11 @@ export async function GET() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const auth = await getAuthSnapshot();
+    if (auth.role !== "admin" && auth.role !== "hr") {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { data: employees, error } = await supabase

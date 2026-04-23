@@ -34,6 +34,7 @@ import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { createHealthCheckAction } from "@/app/actions/admin-record-actions";
 import { healthCheckSchema, type HealthCheckValues } from "@/lib/validation/health-check";
+import { getHealthCheckResultValueLabel, HEALTH_CHECK_RESULT_OPTIONS } from "@/lib/display-labels";
 type Employee = { id: string; name: string };
 
 export function AddHealthCheckModal({ employees }: { employees: Employee[] }) {
@@ -158,11 +159,14 @@ export function AddHealthCheckModal({ employees }: { employees: Employee[] }) {
                                 <FormLabel>結果 *</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectTrigger>
+                                            <SelectValue>{getHealthCheckResultValueLabel(field.value)}</SelectValue>
+                                        </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        <SelectItem value="true">異常なし</SelectItem>
-                                        <SelectItem value="false">要再検査</SelectItem>
+                                        {HEALTH_CHECK_RESULT_OPTIONS.map((option) => (
+                                            <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />

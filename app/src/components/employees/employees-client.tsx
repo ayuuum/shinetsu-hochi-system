@@ -30,6 +30,7 @@ import { TableCellLink } from "@/components/shared/table-cell-link";
 import { ActiveFilters } from "@/components/shared/active-filters";
 import { MobileFiltersSheet } from "@/components/shared/mobile-filters-sheet";
 import { formatDisplayDate } from "@/lib/date";
+import { PageHeader } from "@/components/shared/page-header";
 
 export type EmployeeWithQualCount = Tables<"employees"> & {
     qualification_count: number;
@@ -204,19 +205,19 @@ export function EmployeesClient({
 
     return (
         <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">社員台帳</h1>
-                    <p className="text-muted-foreground mt-2">全従業員の基本情報、所属、資格情報を一元管理します。</p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2">
-                    <Button variant="outline" onClick={() => window.open("/api/export/employees", "_blank")}>
-                        <Download className="mr-2 h-4 w-4" />
-                        CSV出力
-                    </Button>
-                    {isAdminOrHr && <AddEmployeeModal />}
-                </div>
-            </div>
+            <PageHeader
+                title="社員台帳"
+                description="全従業員の基本情報、所属、資格情報を一元管理します。"
+                actions={(
+                    <>
+                        <Button variant="outline" onClick={() => window.open("/api/export/employees", "_blank")}>
+                            <Download className="mr-2 h-4 w-4" />
+                            CSV出力
+                        </Button>
+                        {isAdminOrHr && <AddEmployeeModal />}
+                    </>
+                )}
+            />
 
             <div className="space-y-3 md:hidden">
                 <div className="relative flex-1">

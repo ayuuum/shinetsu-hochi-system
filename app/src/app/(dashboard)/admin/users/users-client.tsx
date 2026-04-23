@@ -25,6 +25,7 @@ import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
 import { InviteUserModal } from "./invite-user-modal";
 import { updateUserRoleAction, deleteUserAction } from "@/app/actions/admin-user-actions";
 import { formatDisplayDate } from "@/lib/date";
+import { getUserRoleLabel } from "@/lib/display-labels";
 
 type UserRoleValue = "admin" | "hr" | "technician" | null;
 
@@ -41,9 +42,9 @@ interface UsersClientProps {
 }
 
 function RoleBadge({ role }: { role: UserRoleValue }) {
-    if (role === "admin") return <Badge variant="default">管理者</Badge>;
-    if (role === "hr") return <Badge variant="secondary">人事</Badge>;
-    if (role === "technician") return <Badge variant="outline">技術者</Badge>;
+    if (role === "admin") return <Badge variant="default">{getUserRoleLabel(role)}</Badge>;
+    if (role === "hr") return <Badge variant="secondary">{getUserRoleLabel(role)}</Badge>;
+    if (role === "technician") return <Badge variant="outline">{getUserRoleLabel(role)}</Badge>;
     return <Badge variant="destructive">未設定</Badge>;
 }
 
@@ -73,14 +74,23 @@ function RoleSelect({
         });
     };
 
+    const roleOptions = [
+        { value: "admin", label: getUserRoleLabel("admin") },
+        { value: "hr", label: getUserRoleLabel("hr") },
+        { value: "technician", label: getUserRoleLabel("technician") },
+    ];
+
     return (
         <Select
+            items={roleOptions}
             value={currentRole ?? undefined}
             onValueChange={(val: string | null) => handleChange(val)}
             disabled={disabled || isPending}
         >
             <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="未設定" />
+                <SelectValue placeholder="未設定">
+                    {getUserRoleLabel(currentRole)}
+                </SelectValue>
             </SelectTrigger>
             <SelectContent>
                 <SelectItem value="admin">管理者</SelectItem>

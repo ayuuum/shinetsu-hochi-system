@@ -65,6 +65,7 @@ import { AddSeminarModal } from "@/components/employees/add-seminar-modal";
 import { formatDisplayDate } from "@/lib/date";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { getHealthCheckResultLabel } from "@/lib/display-labels";
 
 type EmployeeQualification = Tables<"employee_qualifications"> & {
     qualification_master: Tables<"qualification_master"> | null;
@@ -825,8 +826,8 @@ export function EmployeeDetailClient({
                                                     <span className="text-xs font-bold text-primary tabular-nums">{formatDisplayDate(healthCheck.check_date)} 実施</span>
                                                     <h4 className="font-bold">{healthCheck.hospital_name || "健診機関未登録"}</h4>
                                                 </div>
-                                                <Badge variant={healthCheck.is_normal ? "outline" : "destructive"}>
-                                                    {healthCheck.is_normal ? "異常なし" : "要再検査"}
+                                                <Badge variant={healthCheck.is_normal == null ? "secondary" : healthCheck.is_normal ? "outline" : "destructive"}>
+                                                    {getHealthCheckResultLabel(healthCheck.is_normal)}
                                                 </Badge>
                                             </div>
                                             <p className="text-sm text-muted-foreground mt-2 bg-muted/30 p-2 rounded">{healthCheck.notes || "特記事項なし"}</p>

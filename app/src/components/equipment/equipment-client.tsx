@@ -23,6 +23,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { deleteEquipmentAction } from "@/app/actions/admin-record-actions";
 import { ActiveFilters } from "@/components/shared/active-filters";
+import { PageHeader } from "@/components/shared/page-header";
 
 export type EquipmentRow = Tables<"equipment_items">;
 
@@ -109,20 +110,20 @@ export function EquipmentClient({
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                    <h2 className="text-2xl font-bold tracking-tight">備品台帳</h2>
-                    <p className="mt-2 text-muted-foreground">
-                        管理番号・購入日・金額・所属部署を一元管理します（Excel 台帳の代替）。
-                    </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                    <Button variant="outline" size="sm" render={<Link href="/api/export/equipment" />}>
-                        CSVエクスポート
-                    </Button>
-                    {isAdminOrHr && <AddEquipmentModal />}
-                </div>
-            </div>
+            <PageHeader
+                title="備品台帳"
+                description="管理番号・購入日・金額・所属部署を一元管理します（Excel 台帳の代替）。"
+                actions={(
+                    <>
+                        <Button variant="outline" size="sm" render={<Link href="/api/export/equipment" />}>
+                            CSVエクスポート
+                        </Button>
+                        {isAdminOrHr && <AddEquipmentModal />}
+                    </>
+                )}
+                titleAs="h2"
+                actionsClassName="flex-wrap"
+            />
 
             <div className="relative max-w-xl">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

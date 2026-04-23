@@ -17,7 +17,7 @@ export default async function MePage() {
             <div className="space-y-4">
                 <h1 className="text-2xl font-bold tracking-tight">マイプロフィール</h1>
                 <p className="text-muted-foreground">
-                    ログインアカウントと社員マスタの紐づけ（user_roles.employee_id）が設定されていません。管理者に連絡してください。
+                    このアカウントに紐づく社員情報が設定されていません。管理者に連絡してください。
                 </p>
             </div>
         );
