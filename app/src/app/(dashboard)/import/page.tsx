@@ -360,7 +360,7 @@ export default function ImportPage() {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">データインポート</h1>
                     <p className="mt-2 text-muted-foreground">
-                        CSV を dry-run で検証してから、社員データを一括登録します。
+                        1) CSVをアップロード → 2) 自動チェック（必須項目・日付形式・社員番号重複）→ 3) 問題なければ一括登録、の流れで進みます。
                     </p>
                 </div>
                 <Button variant="outline" render={<Link href="/operations-log" />}>
@@ -376,7 +376,7 @@ export default function ImportPage() {
                         ファイルアップロード
                     </CardTitle>
                     <CardDescription>
-                        UTF-8 の CSV をアップロードしてください。server 側で必須項目、日付形式、社員番号重複を検証します。
+                        UTF-8 のCSVを選択すると、サーバー側で「必須項目」「日付形式」「社員番号の重複」を自動チェックします。
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -409,7 +409,7 @@ export default function ImportPage() {
 
                     <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                         <Badge variant="outline">必須: 社員番号 / 氏名 / フリガナ / 生年月日 / 入社日 / 拠点</Badge>
-                        <Badge variant="outline">重複チェック: 社員番号</Badge>
+                        <Badge variant="outline">重複チェック: 社員番号（既存・CSV内）</Badge>
                         <Badge variant="outline">日付形式: YYYY-MM-DD または YYYY/M/D</Badge>
                     </div>
                 </CardContent>
@@ -418,27 +418,27 @@ export default function ImportPage() {
             {previewSummary && (
                 <Card>
                     <CardHeader>
-                        <CardTitle>dry-run 結果</CardTitle>
+                        <CardTitle>事前チェック結果</CardTitle>
                         <CardDescription>
-                            {previewSummary.total}行中 {previewSummary.valid}行が登録可能、{previewSummary.invalid}行に修正が必要です。
+                            {previewSummary.total}行中 {previewSummary.valid}行が登録OK、{previewSummary.invalid}行にエラーがあります。
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid gap-3 sm:grid-cols-4">
                             <div className="rounded-2xl border border-border/60 bg-background/75 p-4">
-                                <p className="text-xs text-muted-foreground">登録可能</p>
+                                <p className="text-xs text-muted-foreground">登録OK</p>
                                 <p className="mt-2 text-2xl font-semibold">{previewSummary.valid}</p>
                             </div>
                             <div className="rounded-2xl border border-border/60 bg-background/75 p-4">
-                                <p className="text-xs text-muted-foreground">修正必要</p>
+                                <p className="text-xs text-muted-foreground">エラー</p>
                                 <p className="mt-2 text-2xl font-semibold">{previewSummary.invalid}</p>
                             </div>
                             <div className="rounded-2xl border border-border/60 bg-background/75 p-4">
-                                <p className="text-xs text-muted-foreground">ファイル内重複</p>
+                                <p className="text-xs text-muted-foreground">ファイル内で重複</p>
                                 <p className="mt-2 text-2xl font-semibold">{previewSummary.duplicateInFile}</p>
                             </div>
                             <div className="rounded-2xl border border-border/60 bg-background/75 p-4">
-                                <p className="text-xs text-muted-foreground">既存重複</p>
+                                <p className="text-xs text-muted-foreground">既に登録済み</p>
                                 <p className="mt-2 text-2xl font-semibold">{previewSummary.duplicateInDb}</p>
                             </div>
                         </div>
@@ -484,7 +484,7 @@ export default function ImportPage() {
                             >
                                 {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {previewSummary.invalid > 0
-                                    ? `有効行 ${previewSummary.valid}件だけインポート`
+                                    ? `エラーなし行のみ登録（${previewSummary.valid}件）`
                                     : `${previewSummary.valid}件をインポート`}
                             </Button>
                             {previewSummary.invalid > 0 && (

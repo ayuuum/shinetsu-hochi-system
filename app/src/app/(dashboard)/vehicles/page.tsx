@@ -70,8 +70,11 @@ export default async function VehiclesPage({
             : currentSort === "voluntary" ? "voluntary_insurance_expiry"
             : "plate_number";
 
-        const today = new Date().toISOString().slice(0, 10);
-        const soon = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        const now = new Date();
+        const today = now.toISOString().slice(0, 10);
+        const soonDate = new Date(now);
+        soonDate.setDate(soonDate.getDate() + 30);
+        const soon = soonDate.toISOString().slice(0, 10);
 
         let vehicleQuery = supabase
             .from("vehicles")

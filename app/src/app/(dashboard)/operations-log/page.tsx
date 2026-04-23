@@ -50,7 +50,7 @@ export default async function OperationsLogPage() {
             <div className="space-y-6">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">運用履歴</h1>
-                    <p className="mt-2 text-muted-foreground">インポートや通知ジョブの実行履歴を確認します。</p>
+                    <p className="mt-2 text-muted-foreground">インポートや自動通知の実行履歴を確認します。</p>
                 </div>
                 <Card>
                     <CardContent className="space-y-4 pt-6">
@@ -92,7 +92,7 @@ export default async function OperationsLogPage() {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">運用履歴</h1>
                     <p className="mt-2 text-muted-foreground">
-                        インポート結果と通知ジョブの実行状況をまとめて確認します。
+                        インポート結果と自動通知の実行状況をまとめて確認します。
                     </p>
                 </div>
                 <ManualDailyAlertButton />
@@ -134,7 +134,7 @@ export default async function OperationsLogPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <ShieldAlert className="h-4 w-4 text-muted-foreground" />
-                            最新通知ジョブ
+                            最新の自動通知
                         </CardTitle>
                         <CardDescription>資格期限アラートの実行結果</CardDescription>
                     </CardHeader>
@@ -147,15 +147,15 @@ export default async function OperationsLogPage() {
                                 </div>
                                 <p className="text-sm text-muted-foreground">
                                     {latestJob.status === "failed"
-                                        ? latestJob.error_message || "ジョブの実行に失敗しました"
-                                        : `対象 ${latestJob.total_items}件 / 通知対象 ${latestJob.processed_items}件`}
+                                        ? latestJob.error_message || "自動通知の実行に失敗しました"
+                                        : `対象 ${latestJob.total_items}名 / 通知送信 ${latestJob.processed_items}名`}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
                                     {formatDateTime(latestJob.started_at)}
                                 </p>
                             </div>
                         ) : (
-                            <p className="text-sm text-muted-foreground">まだ通知ジョブ履歴はありません。</p>
+                            <p className="text-sm text-muted-foreground">まだ自動通知の履歴はありません。</p>
                         )}
                     </CardContent>
                 </Card>
@@ -164,9 +164,9 @@ export default async function OperationsLogPage() {
             {!hasServiceRole && (
                 <Card className="border-amber-200 bg-amber-50/80">
                     <CardHeader>
-                        <CardTitle className="text-base">cron 履歴の記録設定が未完了です</CardTitle>
+                        <CardTitle className="text-base">自動通知の履歴記録が設定されていません</CardTitle>
                         <CardDescription className="text-amber-900/80">
-                            `SUPABASE_SERVICE_ROLE_KEY` が未設定のため、API cron 実行分の `job_runs` は自動保存されません。
+                            サーバーの認証キーが未設定のため、自動実行分の履歴が保存されません。
                             この画面からの手動実行ログは保存されます。
                         </CardDescription>
                     </CardHeader>
@@ -213,13 +213,13 @@ export default async function OperationsLogPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Activity className="h-4 w-4 text-muted-foreground" />
-                        ジョブ実行履歴
+                        自動通知の実行履歴
                     </CardTitle>
-                    <CardDescription>直近 20 件の通知ジョブ実行結果</CardDescription>
+                    <CardDescription>直近 20 件の自動通知実行結果</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                     {jobRuns.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">まだジョブ履歴はありません。</p>
+                        <p className="text-sm text-muted-foreground">まだ実行履歴はありません。</p>
                     ) : (
                         jobRuns.map((run) => (
                             <div
@@ -230,12 +230,12 @@ export default async function OperationsLogPage() {
                                     <div className="flex flex-wrap items-center gap-2">
                                         <p className="font-medium">{run.job_label}</p>
                                         {renderStatusBadge(run.status as "running" | "completed" | "failed")}
-                                        <Badge variant="outline">{run.trigger_type === "manual" ? "手動" : "cron"}</Badge>
+                                        <Badge variant="outline">{run.trigger_type === "manual" ? "手動" : "自動"}</Badge>
                                     </div>
                                     <p className="text-sm text-muted-foreground">
                                         {run.status === "failed"
-                                            ? run.error_message || "ジョブの実行に失敗しました"
-                                            : `総件数 ${run.total_items} / 通知対象 ${run.processed_items}`}
+                                            ? run.error_message || "自動通知の実行に失敗しました"
+                                            : `対象 ${run.total_items}名 / 通知送信 ${run.processed_items}名`}
                                     </p>
                                     {run.triggered_email && (
                                         <p className="text-xs text-muted-foreground">{run.triggered_email}</p>

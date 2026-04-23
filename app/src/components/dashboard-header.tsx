@@ -25,30 +25,33 @@ export function DashboardHeader() {
     return (
         <header className="sticky top-0 z-20 border-b border-border/40 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80 print:hidden">
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-3 md:px-6">
-                <div className="flex min-w-0 items-center gap-2 md:gap-4">
+                <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-4">
                     <Button
                         type="button"
                         variant="ghost"
-                        size="icon"
+                        size="sm"
                         aria-label={sidebarActionLabel}
                         onClick={toggleSidebar}
-                        className="hidden md:flex shrink-0 -ml-2 text-foreground/70 hover:text-foreground hover:bg-muted"
+                        className="hidden shrink-0 -ml-1 items-center gap-1.5 px-2 text-foreground/70 hover:bg-muted hover:text-foreground md:flex"
                     >
-                        <PanelLeftIcon className="h-5 w-5" />
+                        <PanelLeftIcon className="h-4 w-4" />
+                        <span className="hidden text-xs font-medium lg:inline">
+                            {state === "expanded" ? "閉じる" : "開く"}
+                        </span>
                     </Button>
                     
-                    <div className="hidden sm:flex items-center gap-2.5 text-sm font-medium tracking-wide">
-                        <span className="text-muted-foreground">
+                    <div className="hidden min-w-0 items-center gap-2 text-sm font-medium tracking-wide md:flex">
+                        <span className="min-w-0 truncate text-muted-foreground">
                             {section.title}
                         </span>
-                        <span aria-hidden="true" className="text-border/60">•</span>
-                        <span className="text-muted-foreground/80">
+                        <span aria-hidden="true" className="text-border/60 shrink-0">•</span>
+                        <span className="hidden whitespace-nowrap text-muted-foreground/80 lg:inline">
                             {headerDateFormatter.format(new Date())}
                         </span>
                     </div>
                 </div>
 
-                <div className="w-full max-w-[300px] md:max-w-[400px]">
+                <div className="w-[120px] shrink-0 sm:w-[160px] md:w-[200px] lg:w-[240px]">
                     <SearchTrigger className="w-full" />
                 </div>
             </div>

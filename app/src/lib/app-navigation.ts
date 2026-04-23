@@ -1,6 +1,7 @@
 import {
     Activity,
     BriefcaseBusiness,
+    ClipboardCheck,
     HeartPulse,
     LayoutDashboard,
     ScrollText,
@@ -10,7 +11,6 @@ import {
     UserCog,
     UserCircle,
     Users,
-    Wine,
     type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/lib/auth-types";
@@ -143,7 +143,7 @@ export const appNavItems: AppNavItem[] = [
         title: "アルコールチェック",
         description: "当日の検査記録を確認",
         url: "/alcohol-checks",
-        icon: Wine,
+        icon: ClipboardCheck,
         section: "safety",
         keywords: ["alcohol", "daily", "safety"],
     },

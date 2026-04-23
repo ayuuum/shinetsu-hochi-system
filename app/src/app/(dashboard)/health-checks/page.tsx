@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { getAuthSnapshot } from "@/lib/auth-server";
 import { HealthChecksClient, type HealthCheckWithEmployee } from "@/components/health-checks/health-checks-client";
+import { normalizeHealthCheckListResultValue } from "@/lib/display-labels";
 
 const PAGE_SIZE = 50;
 
@@ -30,7 +31,7 @@ export default async function HealthChecksPage({
     const to = from + PAGE_SIZE - 1;
     const currentSearch = (params.q || "").trim();
     const currentType = (params.type || "").trim();
-    const currentResult = (params.result || "").trim();
+    const currentResult = normalizeHealthCheckListResultValue((params.result || "").trim());
 
     let checkData: HealthCheckWithEmployee[] = [];
     let empData: { id: string; name: string }[] = [];

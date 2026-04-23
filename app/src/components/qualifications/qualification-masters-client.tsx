@@ -48,6 +48,7 @@ import {
     deleteQualificationMasterAction,
 } from "@/app/actions/qualification-master-actions";
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
+import { PageHeader } from "@/components/shared/page-header";
 
 type MasterRow = Tables<"qualification_master">;
 
@@ -329,13 +330,19 @@ export function QualificationMastersClient({ masters }: { masters: MasterRow[] }
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <Button render={<Link href="/qualifications" />} variant="ghost" className="w-fit -ml-2">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    資格・講習一覧へ
-                </Button>
-                <AddMasterModal />
-            </div>
+            <PageHeader
+                title="資格マスタ"
+                description="資格の種類、カテゴリ、更新ルールを管理します。"
+                actions={(
+                    <>
+                        <Button render={<Link href="/qualifications" />} variant="ghost" className="w-fit -ml-2">
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            資格・講習一覧へ
+                        </Button>
+                        <AddMasterModal />
+                    </>
+                )}
+            />
 
             <div className="rounded-xl border border-border/60 bg-card/80 shadow-sm overflow-hidden">
                 <Table>
