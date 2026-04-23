@@ -49,9 +49,22 @@ function LoginForm() {
     async function handleLogin(e: React.FormEvent) {
         e.preventDefault();
         setError("");
-        setLoading(true);
 
         const trimmedEmail = email.trim().toLowerCase();
+        if (!trimmedEmail) {
+            setError("メールアドレスを入力してください。");
+            return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+            setError("有効なメールアドレスを入力してください。");
+            return;
+        }
+        if (!password) {
+            setError("パスワードを入力してください。");
+            return;
+        }
+
+        setLoading(true);
         if (
             process.env.NODE_ENV === "development"
             && trimmedEmail === "test@gmail.com"
@@ -128,7 +141,7 @@ function LoginForm() {
 
     return (
         <>
-        <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleLogin} className="space-y-6" noValidate>
             {authError === "callback" && (
                 <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
                     認証リンクの処理に失敗しました。リンクの有効期限が切れている可能性があります。再度「パスワードを忘れた場合」からお試しください。
@@ -139,7 +152,7 @@ function LoginForm() {
                 <Input
                     id="email"
                     type="email"
-                    placeholder="example@shinetsu-hochi.co.jp…"
+                    placeholder="example@shinetsu-hochi.co.jp"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -153,7 +166,7 @@ function LoginForm() {
                 <Input
                     id="password"
                     type="password"
-                    placeholder="パスワードを入力…"
+                    placeholder="パスワードを入力"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required

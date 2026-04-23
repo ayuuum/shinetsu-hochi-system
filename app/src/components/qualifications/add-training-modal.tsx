@@ -42,6 +42,7 @@ const formSchema = z.object({
     certificate_number: z.string().optional(),
     next_due_date: z.string().optional(),
     notes: z.string().optional(),
+    photo_url: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -64,6 +65,7 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
             certificate_number: "",
             next_due_date: "",
             notes: "",
+            photo_url: "",
         },
     });
 
@@ -75,6 +77,7 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
             certificate_number: "",
             next_due_date: "",
             notes: "",
+            photo_url: "",
         });
     };
 
@@ -98,6 +101,7 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
                 certificate_number: values.certificate_number || null,
                 next_due_date: values.next_due_date || null,
                 notes: values.notes || null,
+                photo_url: values.photo_url || null,
             }]);
 
         setIsSubmitting(false);
@@ -107,7 +111,7 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
             if (error.message.includes("relation") && error.message.includes("does not exist")) {
                 toast.error("講習履歴テーブルが未作成です。マイグレーションを実行してください。");
             } else {
-                toast.error("登録に失敗しました: " + error.message);
+                toast.error("登録に失敗しました。時間を置いて再度お試しください。");
             }
         } else {
             toast.success("講習履歴を登録しました");
@@ -125,7 +129,7 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
             <DialogContent className="sm:max-w-[540px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>講習履歴の登録</DialogTitle>
-                    <DialogDescription>受講した講習の情報を登録します。</DialogDescription>
+                    <DialogDescription>受講した講習の日時・内容を入力してください。</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -182,6 +186,14 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
                             <FormItem>
                                 <FormLabel>備考</FormLabel>
                                 <FormControl><Input placeholder="特記事項" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+
+                        <FormField control={form.control} name="photo_url" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>写真URL</FormLabel>
+                                <FormControl><Input placeholder="https://..." {...field} /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )} />

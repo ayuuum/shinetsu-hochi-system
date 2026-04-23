@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
+import { getCachedEmployeeList } from "@/lib/cached-queries";
 import { getAuthSnapshot } from "@/lib/auth-server";
 import { VehiclesClient, type VehicleWithUser } from "@/components/vehicles/vehicles-client";
 import { VehiclesEquipmentShell } from "@/components/vehicles/vehicles-equipment-shell";
@@ -21,7 +22,7 @@ function buildInCondition(column: string, ids: string[]) {
 export default async function VehiclesPage({
     searchParams,
 }: {
-    searchParams: Promise<{ page?: string; q?: string; eq?: string; eqPage?: string }>;
+    searchParams: Promise<{ page?: string; q?: string; eq?: string; eqPage?: string; sort?: string; expiry?: string }>;
 }) {
     const auth = await getAuthSnapshot();
     if (auth.role === "technician") {
@@ -33,6 +34,8 @@ export default async function VehiclesPage({
     const from = (currentPage - 1) * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
     const currentSearch = (params.q || "").trim();
+    const currentSort = (params.sort || "plate") as "plate" | "inspection" | "liability" | "voluntary";
+    const currentExpiry = (params.expiry || "") as "" | "expired" | "soon";
 
     const eqPage = parsePageParam(params.eqPage);
     const eqFrom = (eqPage - 1) * PAGE_SIZE;
@@ -60,15 +63,36 @@ export default async function VehiclesPage({
                       .ilike("name", searchPattern!)
                       .limit(100)
                 : Promise.resolve({ data: [] as { id: string }[], error: null }),
-            supabase.from("employees").select("id, name").is("deleted_at", null).order("name"),
+            getCachedEmployeeList(),
         ]);
+
+        const sortColumn = currentSort === "inspection" ? "inspection_expiry"
+            : currentSort === "liability" ? "liability_insurance_expiry"
+            : currentSort === "voluntary" ? "voluntary_insurance_expiry"
+            : "plate_number";
+
+        const now = new Date();
+        const today = now.toISOString().slice(0, 10);
+        const soonDate = new Date(now);
+        soonDate.setDate(soonDate.getDate() + 30);
+        const soon = soonDate.toISOString().slice(0, 10);
 
         let vehicleQuery = supabase
             .from("vehicles")
             .select("*, employees(id, name)", { count: "exact" })
             .is("deleted_at", null)
-            .order("plate_number", { ascending: true })
+            .order(sortColumn, { ascending: true, nullsFirst: false })
             .range(from, to);
+
+        if (currentExpiry === "expired") {
+            vehicleQuery = vehicleQuery.or(
+                `inspection_expiry.lt.${today},liability_insurance_expiry.lt.${today},voluntary_insurance_expiry.lt.${today}`
+            );
+        } else if (currentExpiry === "soon") {
+            vehicleQuery = vehicleQuery.or(
+                `inspection_expiry.lte.${soon},liability_insurance_expiry.lte.${soon},voluntary_insurance_expiry.lte.${soon}`
+            );
+        }
 
         if (currentSearch && searchPattern) {
             const primaryUserCondition = buildInCondition(
@@ -105,7 +129,7 @@ export default async function VehiclesPage({
 
         vehicleData = (vehicleResult.data as VehicleWithUser[]) || [];
         totalPages = Math.max(1, Math.ceil((vehicleResult.count || 0) / PAGE_SIZE));
-        empData = empResult.data || [];
+        empData = empResult;
 
         equipmentData = (equipmentResult.data as EquipmentRow[]) || [];
         equipmentTotalPages = Math.max(1, Math.ceil((equipmentResult.count || 0) / PAGE_SIZE));
@@ -129,6 +153,8 @@ export default async function VehiclesPage({
                         initialVehicles={vehicleData}
                         employees={empData}
                         currentSearch={currentSearch}
+                        currentSort={currentSort}
+                        currentExpiry={currentExpiry}
                         currentPage={currentPage}
                         totalPages={totalPages}
                     />

@@ -36,6 +36,7 @@ import { EQUIPMENT_OPTIONS } from "@/lib/validation/project";
 import { formatDisplayDate } from "@/lib/date";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { PageHeader } from "@/components/shared/page-header";
 
 export type ConstructionWithEmployee = Tables<"construction_records"> & {
     employees: { id: string; name: string; branch: string | null } | null;
@@ -74,14 +75,14 @@ export function ProjectsClient({
     currentSearch,
     currentCategory,
     currentPage,
-    totalPages,
+    hasNextPage,
 }: {
     initialRecords: ConstructionWithEmployee[];
     employees: Employee[];
     currentSearch: string;
     currentCategory: string;
     currentPage: number;
-    totalPages: number;
+    hasNextPage: boolean;
 }) {
     const [search, setSearch] = useState(currentSearch);
     const [editingItem, setEditingItem] = useState<ConstructionWithEmployee | null>(null);
@@ -193,18 +194,19 @@ export function ProjectsClient({
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">施工実績ログ</h1>
-                    <p className="text-muted-foreground mt-2">現場ごとの担当者、設備情報、契約金額から完工状態まで一元管理します。</p>
-                </div>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                    <Button variant="outline" onClick={handleExport} className="rounded-full shadow-sm">
-                        <Download className="mr-2 h-4 w-4" />Excel出力
-                    </Button>
-                    {isAdminOrHr && <AddProjectModal employees={employees} />}
-                </div>
-            </div>
+            <PageHeader
+                title="施工実績ログ"
+                description="現場ごとの担当者、設備情報、契約金額から完工状態まで一元管理します。"
+                actions={(
+                    <>
+                        <Button variant="outline" onClick={handleExport} className="rounded-full shadow-sm">
+                            <Download className="mr-2 h-4 w-4" />Excel出力
+                        </Button>
+                        {isAdminOrHr && <AddProjectModal employees={employees} />}
+                    </>
+                )}
+                actionsClassName="items-stretch sm:items-center"
+            />
 
             <div className="space-y-3 md:hidden">
                 <div className="relative">
@@ -446,7 +448,7 @@ export function ProjectsClient({
                 </Table>
             </div>
 
-            {totalPages > 1 && (
+            {(currentPage > 1 || hasNextPage) && (
                 <div className="flex items-center justify-center gap-2 mt-8">
                     <Button
                         variant="outline"
@@ -462,12 +464,12 @@ export function ProjectsClient({
                         前へ
                     </Button>
                     <span className="text-sm font-bold text-muted-foreground px-2">
-                        {currentPage} / {totalPages}
+                        {currentPage}ページ
                     </span>
                     <Button
                         variant="outline"
                         size="sm"
-                        disabled={currentPage >= totalPages}
+                        disabled={!hasNextPage}
                         className="rounded-full px-4 font-semibold"
                         render={<Link href={buildProjectsHref(pathname, {
                             search: currentSearch,

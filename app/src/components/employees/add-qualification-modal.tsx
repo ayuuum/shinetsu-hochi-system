@@ -38,11 +38,14 @@ import { Tables } from "@/types/supabase";
 import { calculateFireDefenseExpiry, calculateGeneralExpiry } from "@/lib/qualification-logic";
 import { format } from "date-fns";
 
+const ACQUISITION_TYPES = ["試験", "講習", "実務経験"] as const;
+
 const formSchema = z.object({
     qualification_id: z.string().min(1, "資格を選択してください"),
     acquired_date: z.string().min(1, "取得日は必須です"),
     expiry_date: z.string().optional(),
     is_initial: z.boolean(),
+    acquisition_type: z.enum(ACQUISITION_TYPES).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -58,7 +61,7 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
     const [masters, setMasters] = useState<Tables<"qualification_master">[]>([]);
     const [loadingMasters, setLoadingMasters] = useState(false);
     const [mastersError, setMastersError] = useState<string | null>(null);
-    const [certificateFile, setCertificateFile] = useState<File | null>(null);
+    const [certificateFiles, setCertificateFiles] = useState<File[]>([]);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -67,6 +70,7 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
             acquired_date: "",
             expiry_date: "",
             is_initial: false,
+            acquisition_type: undefined,
         },
     });
     const qualificationOptions = masters.map((master) => ({
@@ -129,40 +133,62 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
     async function submitData(values: FormValues, continuous: boolean) {
         setIsSubmitting(true);
 
-        let certificateUrl: string | null = null;
+        const uploadedPaths: string[] = [];
 
         try {
-            if (certificateFile) {
-                const ext = certificateFile.name.split(".").pop();
+            for (const file of certificateFiles) {
+                const ext = file.name.split(".").pop();
                 const filePath = `${employeeId}/${crypto.randomUUID()}.${ext}`;
                 const { error: uploadError } = await supabase.storage
                     .from("certificates")
-                    .upload(filePath, certificateFile);
+                    .upload(filePath, file);
 
                 if (uploadError) {
-                    toast.error("証書画像のアップロードに失敗しました: " + uploadError.message);
+                    await supabase.storage.from("certificates").remove(uploadedPaths);
+                    toast.error("証書画像のアップロードに失敗しました。");
                     return;
                 }
-
-                certificateUrl = filePath;
+                uploadedPaths.push(filePath);
             }
 
-            const { error } = await supabase.from("employee_qualifications").insert([
-                {
-                    employee_id: employeeId,
-                    qualification_id: values.qualification_id,
-                    acquired_date: values.acquired_date,
-                    expiry_date: values.expiry_date || null,
-                    certificate_url: certificateUrl,
-                },
-            ]);
+            const primaryPath = uploadedPaths[0] ?? null;
 
-            if (error) {
-                if (certificateUrl) {
-                    await supabase.storage.from("certificates").remove([certificateUrl]);
+            const { data: insertedQualification, error } = await supabase
+                .from("employee_qualifications")
+                .insert([
+                    {
+                        employee_id: employeeId,
+                        qualification_id: values.qualification_id,
+                        acquired_date: values.acquired_date,
+                        expiry_date: values.expiry_date || null,
+                        acquisition_type: values.acquisition_type ?? null,
+                        certificate_url: primaryPath,
+                    },
+                ])
+                .select("id")
+                .single();
+
+            if (error || !insertedQualification) {
+                if (uploadedPaths.length) {
+                    await supabase.storage.from("certificates").remove(uploadedPaths);
                 }
-                toast.error("登録に失敗しました: " + error.message);
+                toast.error("登録に失敗しました。時間を置いて再度お試しください。");
                 return;
+            }
+
+            if (uploadedPaths.length > 0) {
+                const imageRows = uploadedPaths.map((storage_path, sort_order) => ({
+                    qualification_id: insertedQualification.id,
+                    storage_path,
+                    sort_order,
+                }));
+                const { error: imageError } = await supabase
+                    .from("certificate_images")
+                    .insert(imageRows);
+                if (imageError) {
+                    console.error("certificate_images insert failed:", imageError);
+                    toast.warning("資格は登録しましたが、証書画像の保存に失敗しました。");
+                }
             }
 
             toast.success("資格を登録しました");
@@ -173,13 +199,14 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                     acquired_date: values.acquired_date,
                     expiry_date: "",
                     is_initial: false,
+                    acquisition_type: undefined,
                 });
-                setCertificateFile(null);
+                setCertificateFiles([]);
                 onSuccess?.();
             } else {
                 setOpen(false);
                 form.reset();
-                setCertificateFile(null);
+                setCertificateFiles([]);
                 onSuccess?.();
             }
         } finally {
@@ -191,7 +218,7 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
         setOpen(nextOpen);
         if (!nextOpen) {
             form.reset();
-            setCertificateFile(null);
+            setCertificateFiles([]);
             setMastersError(null);
         }
     };
@@ -201,7 +228,7 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
             <DialogTrigger
                 render={<Button size="sm"><Plus className="mr-1 h-3.5 w-3.5" />資格追加</Button>}
             />
-            <DialogContent className="sm:max-w-[425px] max-h-[85vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[560px] max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Award className="h-5 w-5 text-primary" />
@@ -246,18 +273,25 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                                         disabled={loadingMasters || !!mastersError || masters.length === 0}
                                     >
                                         <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder={loadingMasters ? "資格マスタを読み込み中..." : "資格を選択"} />
+                                            <SelectTrigger className="min-h-11 h-auto w-full items-start py-2.5 [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal">
+                                                <SelectValue
+                                                    className="whitespace-normal break-words leading-5"
+                                                    placeholder={loadingMasters ? "資格マスタを読み込み中..." : "資格を選択"}
+                                                />
                                             </SelectTrigger>
                                         </FormControl>
-                                        <SelectContent>
+                                        <SelectContent className="min-w-[32rem] max-w-[36rem]">
                                             {loadingMasters ? (
                                                 <SelectItem value="loading" disabled>読み込み中...</SelectItem>
                                             ) : masters.length === 0 ? (
                                                 <SelectItem value="empty" disabled>資格マスタがありません</SelectItem>
                                             ) : (
                                                 masters.map(m => (
-                                                    <SelectItem key={m.id} value={m.id}>
+                                                    <SelectItem
+                                                        key={m.id}
+                                                        value={m.id}
+                                                        className="items-start py-2 [&_[data-slot=select-item-text]]:whitespace-normal"
+                                                    >
                                                         [{m.category}] {m.name}
                                                     </SelectItem>
                                                 ))
@@ -327,19 +361,55 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                             )}
                         />
 
+                        <FormField
+                            control={form.control}
+                            name="acquisition_type"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>取得区分（任意）</FormLabel>
+                                    <Select
+                                        onValueChange={(val: string | null) => field.onChange(val ?? undefined)}
+                                        value={field.value ?? ""}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="試験 / 講習 / 実務経験" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {ACQUISITION_TYPES.map((t) => (
+                                                <SelectItem key={t} value={t}>{t}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
                         <div>
-                            <label className="text-sm font-medium">証書画像（任意）</label>
+                            <label className="text-sm font-medium">証書画像（複数選択可・任意）</label>
                             <div className="mt-1.5">
                                 <label className="flex items-center gap-2 px-3 py-2 border border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors text-sm text-muted-foreground">
                                     <Upload className="h-4 w-4" />
-                                    {certificateFile ? certificateFile.name : "画像を選択..."}
+                                    {certificateFiles.length > 0
+                                        ? `${certificateFiles.length}枚を選択中`
+                                        : "画像を選択..."}
                                     <input
                                         type="file"
                                         accept="image/*,.pdf"
+                                        multiple
                                         className="hidden"
-                                        onChange={(e) => setCertificateFile(e.target.files?.[0] || null)}
+                                        onChange={(e) => setCertificateFiles(Array.from(e.target.files ?? []))}
                                     />
                                 </label>
+                                {certificateFiles.length > 0 && (
+                                    <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                                        {certificateFiles.map((f, i) => (
+                                            <li key={`${f.name}-${i}`} className="truncate">• {f.name}</li>
+                                        ))}
+                                    </ul>
+                                )}
                             </div>
                         </div>
 

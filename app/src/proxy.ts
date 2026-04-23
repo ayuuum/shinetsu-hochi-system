@@ -4,6 +4,7 @@ import { createSupabaseMiddleware } from "@/lib/supabase-middleware";
 function isPublicPath(pathname: string) {
     return (
         pathname === "/login"
+        || pathname === "/setup"
         || pathname.startsWith("/auth/callback")
     );
 }

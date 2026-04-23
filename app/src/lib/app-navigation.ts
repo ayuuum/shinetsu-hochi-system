@@ -1,15 +1,17 @@
 import {
     Activity,
     BriefcaseBusiness,
+    CalendarDays,
+    ClipboardCheck,
     HeartPulse,
     LayoutDashboard,
     ScrollText,
     Tags,
     Truck,
     Upload,
+    UserCog,
     UserCircle,
     Users,
-    Wine,
     type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/lib/auth-types";
@@ -24,6 +26,8 @@ export type AppNavItem = {
     section: AppNavSectionId;
     keywords: string[];
     managerOnly?: boolean;
+    /** admin ロールのみ表示 */
+    adminOnly?: boolean;
     /** 技術者ロールではサイドバー・検索から除外 */
     hideForTechnician?: boolean;
     /** 技術者ロールのみ表示（例: マイプロフィール） */
@@ -140,9 +144,18 @@ export const appNavItems: AppNavItem[] = [
         title: "アルコールチェック",
         description: "当日の検査記録を確認",
         url: "/alcohol-checks",
-        icon: Wine,
+        icon: ClipboardCheck,
         section: "safety",
         keywords: ["alcohol", "daily", "safety"],
+    },
+    {
+        title: "年間スケジュール",
+        description: "会社の年間行事・スケジュールと目標管理",
+        url: "/schedule",
+        icon: CalendarDays,
+        section: "operations",
+        keywords: ["schedule", "annual", "goal", "plan"],
+        hideForTechnician: true,
     },
     {
         title: "データインポート",
@@ -154,13 +167,13 @@ export const appNavItems: AppNavItem[] = [
         managerOnly: true,
     },
     {
-        title: "運用履歴",
-        description: "インポートと通知ジョブの履歴を確認",
-        url: "/operations-log",
-        icon: Activity,
+        title: "ユーザー管理",
+        description: "システムアカウントの招待・権限設定",
+        url: "/admin/users",
+        icon: UserCog,
         section: "admin",
-        keywords: ["history", "ops", "job", "import", "cron"],
-        managerOnly: true,
+        keywords: ["user", "account", "invite", "permission"],
+        adminOnly: true,
     },
 ];
 
@@ -208,6 +221,7 @@ export function getVisibleAppNavItems(
     linkedEmployeeId: string | null = null
 ) {
     return appNavItems.filter((item) => {
+        if (item.adminOnly && role !== "admin") return false;
         if (item.managerOnly && !isAdminOrHr) return false;
         if (item.technicianOnly) {
             return role === "technician" && !!linkedEmployeeId;

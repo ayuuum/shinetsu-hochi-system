@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 export default function TableSkeletonLoading() {
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-2">
                     <Skeleton className="h-9 w-48" />
                     <Skeleton className="h-4 w-72" />

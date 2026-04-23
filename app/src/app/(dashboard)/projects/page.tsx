@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { getAuthSnapshot } from "@/lib/auth-server";
 import { ProjectsClient, type ConstructionWithEmployee } from "@/components/projects/projects-client";
+import { getCachedEmployeeList, getCachedProjectsPage } from "@/lib/cached-queries";
 
 const PAGE_SIZE = 50;
 
@@ -19,68 +20,78 @@ export default async function ProjectsPage({
 }: {
     searchParams: Promise<{ page?: string; q?: string; category?: string }>;
 }) {
-    const auth = await getAuthSnapshot();
+    const authPromise = getAuthSnapshot();
+    const paramsPromise = searchParams;
+    const [auth, params] = await Promise.all([authPromise, paramsPromise]);
     if (auth.role === "technician") {
         redirect("/me");
     }
 
-    const params = await searchParams;
     const currentPage = parsePageParam(params.page);
     const from = (currentPage - 1) * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
+    const toPlusOne = from + PAGE_SIZE;
     const currentSearch = (params.q || "").trim();
     const currentCategory = (params.category || "").trim();
 
     let recordsData: ConstructionWithEmployee[] = [];
     let empData: { id: string; name: string; branch: string | null }[] = [];
-    let totalPages = 1;
+    let hasNextPage = false;
 
     try {
-        const supabase = await createSupabaseServer();
-        const searchPattern = currentSearch ? `%${currentSearch.replace(/,/g, " ").trim()}%` : null;
+        const employeeListPromise = getCachedEmployeeList();
 
-        const [employeeSearchResult, empResult] = await Promise.all([
-            currentSearch
-                ? supabase
-                    .from("employees")
-                    .select("id")
-                    .is("deleted_at", null)
-                    .ilike("name", searchPattern!)
-                    .limit(100)
-                : Promise.resolve({ data: [] as { id: string }[], error: null }),
-            supabase
-                .from("employees")
-                .select("id, name, branch")
+        if (!currentSearch && !currentCategory) {
+            const [cachedPage, empResult] = await Promise.all([
+                getCachedProjectsPage(currentPage),
+                employeeListPromise,
+            ]);
+
+            recordsData = cachedPage.items as ConstructionWithEmployee[];
+            hasNextPage = cachedPage.hasNextPage;
+            empData = empResult;
+        } else {
+            const supabase = await createSupabaseServer();
+            const searchPattern = currentSearch ? `%${currentSearch.replace(/,/g, " ").trim()}%` : null;
+
+            const [employeeSearchResult, empResult] = await Promise.all([
+                currentSearch
+                    ? supabase
+                        .from("employees")
+                        .select("id")
+                        .is("deleted_at", null)
+                        .ilike("name", searchPattern!)
+                        .limit(100)
+                    : Promise.resolve({ data: [] as { id: string }[], error: null }),
+                employeeListPromise,
+            ]);
+
+            let recordsQuery = supabase
+                .from("construction_records")
+                .select("*, employees!inner(id, name, branch)")
                 .is("deleted_at", null)
-                .order("name"),
-        ]);
+                .is("employees.deleted_at", null)
+                .order("construction_date", { ascending: false })
+                .range(from, toPlusOne);
 
-        let recordsQuery = supabase
-            .from("construction_records")
-            .select("*, employees!inner(id, name, branch)", { count: "exact" })
-            .is("deleted_at", null)
-            .is("employees.deleted_at", null)
-            .order("construction_date", { ascending: false })
-            .range(from, to);
+            if (currentCategory) {
+                recordsQuery = recordsQuery.eq("category", currentCategory);
+            }
 
-        if (currentCategory) {
-            recordsQuery = recordsQuery.eq("category", currentCategory);
+            if (currentSearch) {
+                const employeeCondition = buildInCondition("employee_id", (employeeSearchResult.data || []).map((item) => item.id));
+                recordsQuery = recordsQuery.or([
+                    `construction_name.ilike.${searchPattern}`,
+                    `location.ilike.${searchPattern}`,
+                    employeeCondition,
+                ].filter(Boolean).join(","));
+            }
+
+            const recordsResult = await recordsQuery;
+            const items = (recordsResult.data as ConstructionWithEmployee[]) || [];
+            recordsData = items.slice(0, PAGE_SIZE);
+            hasNextPage = items.length > PAGE_SIZE;
+            empData = empResult;
         }
-
-        if (currentSearch) {
-            const employeeCondition = buildInCondition("employee_id", (employeeSearchResult.data || []).map((item) => item.id));
-            recordsQuery = recordsQuery.or([
-                `construction_name.ilike.${searchPattern}`,
-                `location.ilike.${searchPattern}`,
-                employeeCondition,
-            ].filter(Boolean).join(","));
-        }
-
-        const recordsResult = await recordsQuery;
-
-        recordsData = (recordsResult.data as ConstructionWithEmployee[]) || [];
-        totalPages = Math.max(1, Math.ceil((recordsResult.count || 0) / PAGE_SIZE));
-        empData = empResult.data || [];
     } catch (e) {
         console.error("Failed to load construction records:", e);
     }
@@ -92,7 +103,7 @@ export default async function ProjectsPage({
             currentSearch={currentSearch}
             currentCategory={currentCategory}
             currentPage={currentPage}
-            totalPages={totalPages}
+            hasNextPage={hasNextPage}
         />
     );
 }

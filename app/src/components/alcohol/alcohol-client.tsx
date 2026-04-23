@@ -22,7 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Pencil, Trash2, Download } from "lucide-react";
+import { Pencil, Trash2, Download, ShieldAlert } from "lucide-react";
 import { AddAlcoholCheckModal } from "./add-alcohol-check-modal";
 import { EditAlcoholCheckModal } from "./edit-alcohol-check-modal";
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
@@ -36,6 +36,7 @@ import { getTodayInTokyo } from "@/lib/date";
 import { deleteAlcoholCheckAction } from "@/app/actions/admin-record-actions";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { PageHeader } from "@/components/shared/page-header";
 
 export type AlcoholCheckRow = {
     id: string;
@@ -207,13 +208,10 @@ export function AlcoholClient({
         window.open(`/api/export/alcohol-checks?${params.toString()}`, "_blank");
     };
 
+    // Fix: point monthly export to the dedicated monthly CSV API
     const handleMonthlyExport = () => {
-        const params = new URLSearchParams({
-            report: "monthly",
-            month: currentMonth,
-            format: "excel",
-        });
-        window.open(`/api/export/alcohol-checks?${params.toString()}`, "_blank");
+        const params = new URLSearchParams({ month: currentMonth });
+        window.open(`/api/export/alcohol-checks-monthly?${params.toString()}`, "_blank");
     };
 
     const clearFilters = () => {
@@ -245,29 +243,30 @@ export function AlcoholClient({
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">アルコールチェック</h1>
-                    <p className="text-muted-foreground mt-2">法令に基づく飲酒検査記録を管理します。</p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2">
-                    <Button variant="outline" onClick={handleExport}>
-                        <Download className="mr-2 h-4 w-4" />
-                        Excel出力
-                    </Button>
-                    {canRecordAlcohol && (
-                        <AddAlcoholCheckModal
-                            employees={employees}
-                            initialEmployeeId={currentEmployee}
-                            initialDate={currentDate}
-                            initialLocation={currentLocation}
-                        />
-                    )}
-                </div>
-            </div>
+            <PageHeader
+                title="アルコールチェック"
+                description="法令に基づく飲酒検査記録を管理します。"
+                actions={(
+                    <>
+                        <Button variant="outline" onClick={handleExport}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Excel出力
+                        </Button>
+                        {canRecordAlcohol && (
+                            <AddAlcoholCheckModal
+                                employees={employees}
+                                initialEmployeeId={currentEmployee}
+                                initialDate={currentDate}
+                                initialLocation={currentLocation}
+                            />
+                        )}
+                    </>
+                )}
+            />
 
             {abnormalCount > 0 && (
-                <div className="p-4 rounded-[16px] bg-destructive/10 border border-destructive/20">
+                <div className="flex items-start gap-3 p-4 rounded-[16px] bg-destructive/10 border border-destructive/20">
+                    <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
                     <p className="text-sm font-bold text-destructive">
                         不適正記録が {abnormalCount} 件あります。安全運転管理者の対応が必要です。
                     </p>
@@ -276,12 +275,12 @@ export function AlcoholClient({
 
             <Card className="border-border/60 shadow-sm">
                 <CardContent className="space-y-4 p-5">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <h2 className="text-lg font-bold">月次記録率レポート</h2>
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="min-w-0 flex-1">
+                            <h2 className="text-lg font-bold text-balance">月次記録率レポート</h2>
                             <p className="text-sm text-muted-foreground">拠点別・社員別に月内の記録率を確認できます。</p>
                         </div>
-                        <div className="flex flex-col gap-2 sm:flex-row">
+                        <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
                             <Input
                                 aria-label="レポート対象月"
                                 type="month"
@@ -299,8 +298,9 @@ export function AlcoholClient({
                             </Button>
                         </div>
                     </div>
+                    {/* Fix: removed .slice(0, 6) so all employees are shown */}
                     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                        {monthlySummary.slice(0, 6).map((summary) => (
+                        {monthlySummary.map((summary) => (
                             <Card key={summary.employeeId} className="border-border/50">
                                 <CardContent className="space-y-2 p-4">
                                     <div className="flex items-center justify-between gap-3">
@@ -544,7 +544,7 @@ export function AlcoholClient({
                 )}
             </div>
 
-            <div className="hidden overflow-x-auto rounded-xl border bg-card md:block">
+            <div className="hidden overflow-x-auto rounded-[24px] border border-border/60 bg-card shadow-[0_1px_2px_rgba(38,42,46,0.04),0_12px_28px_rgba(38,42,46,0.05)] md:block">
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-muted/50">
@@ -568,8 +568,8 @@ export function AlcoholClient({
                             </TableRow>
                         ) : (
                             initialChecks.map((check) => (
-                                <TableRow key={check.id} className={check.is_abnormal ? "bg-destructive/5 hover:bg-destructive/10" : "hover:bg-transparent"}>
-                                    <TableCell className={`sticky left-0 z-10 font-medium shadow-[inset_-1px_0_0_hsl(var(--border))] ${check.is_abnormal ? "bg-background" : "bg-card"}`}>
+                                <TableRow key={check.id} className={check.is_abnormal ? "group bg-destructive/5 hover:bg-destructive/10" : "group hover:bg-muted/30 transition-colors"}>
+                                    <TableCell className={`sticky left-0 z-10 font-medium shadow-[inset_-1px_0_0_hsl(var(--border))] ${check.is_abnormal ? "bg-background group-hover:bg-destructive/10" : "bg-card group-hover:bg-muted/30"}`}>
                                         {check.employee?.id ? (
                                             <TableCellLink href={`/employees/${check.employee.id}`} className="font-medium hover:underline">
                                                 {check.employee.name}

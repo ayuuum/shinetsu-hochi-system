@@ -63,6 +63,12 @@ export function EditAlcoholCheckModal({ check, employees, open, onOpenChange }: 
     }, [open, check, form]);
 
     async function onSubmit(values: AlcoholCheckValues) {
+        // Fix: show confirmation dialog when marking as abnormal, matching add modal behavior
+        if (values.is_abnormal === "不適正") {
+            const confirmed = window.confirm("不適正（陽性）として記録を更新します。よろしいですか？");
+            if (!confirmed) return;
+        }
+
         setIsSubmitting(true);
         const result = await updateAlcoholCheckAction(check.id, values);
         setIsSubmitting(false);
@@ -95,9 +101,13 @@ export function EditAlcoholCheckModal({ check, employees, open, onOpenChange }: 
                         <FormField control={form.control} name="employee_id" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>対象社員 *</FormLabel>
-                                <Select items={employeeOptions} onValueChange={field.onChange} value={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
-                                        <SelectTrigger><SelectValue placeholder="社員を選択" /></SelectTrigger>
+                                        <SelectTrigger>
+                                            <span className="flex-1 text-left">
+                                                {employees.find(e => e.id === field.value)?.name ?? <span className="text-muted-foreground">社員を選択</span>}
+                                            </span>
+                                        </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
                                         {employees.map(emp => (
@@ -137,9 +147,13 @@ export function EditAlcoholCheckModal({ check, employees, open, onOpenChange }: 
                         <FormField control={form.control} name="checker_id" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>確認者 *</FormLabel>
-                                <Select items={employeeOptions} onValueChange={field.onChange} value={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
-                                        <SelectTrigger><SelectValue placeholder="確認者を選択" /></SelectTrigger>
+                                        <SelectTrigger>
+                                            <span className="flex-1 text-left">
+                                                {employees.find(e => e.id === field.value)?.name ?? <span className="text-muted-foreground">確認者を選択</span>}
+                                            </span>
+                                        </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
                                         {employees.map(emp => (

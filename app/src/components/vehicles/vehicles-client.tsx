@@ -16,7 +16,14 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Truck, AlertTriangle, Pencil, Search, Trash2 } from "lucide-react";
+import { Truck, AlertTriangle, Pencil, Search, Trash2, ArrowUpDown } from "lucide-react";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { isBefore, addDays } from "date-fns";
 import { AddVehicleModal } from "./add-vehicle-modal";
 import { EditVehicleModal } from "./edit-vehicle-modal";
@@ -38,20 +45,20 @@ export type VehicleWithUser = Tables<"vehicles"> & {
 
 function buildVehiclesHref(pathname: string, {
     search,
+    sort,
+    expiry,
     page,
 }: {
     search: string;
+    sort: string;
+    expiry: string;
     page: number;
 }) {
     const params = new URLSearchParams();
-
-    if (search.trim()) {
-        params.set("q", search.trim());
-    }
-    if (page > 1) {
-        params.set("page", String(page));
-    }
-
+    if (search.trim()) params.set("q", search.trim());
+    if (sort && sort !== "plate") params.set("sort", sort);
+    if (expiry) params.set("expiry", expiry);
+    if (page > 1) params.set("page", String(page));
     const query = params.toString();
     return query ? `${pathname}?${query}` : pathname;
 }
@@ -93,6 +100,8 @@ export function VehiclesClient({
     initialVehicles,
     employees,
     currentSearch,
+    currentSort = "plate",
+    currentExpiry = "",
     currentPage,
     totalPages,
     hidePageHeading = false,
@@ -100,6 +109,8 @@ export function VehiclesClient({
     initialVehicles: VehicleWithUser[];
     employees: { id: string; name: string }[];
     currentSearch: string;
+    currentSort?: string;
+    currentExpiry?: string;
     currentPage: number;
     totalPages: number;
     hidePageHeading?: boolean;
@@ -113,37 +124,50 @@ export function VehiclesClient({
     const { isAdminOrHr } = useAuth();
     const showActions = isAdminOrHr;
     const columnCount = showActions ? 8 : 7;
-    const activeFilters = currentSearch
-        ? [{
+
+    const updateFilters = (updates: Partial<{ search: string; sort: string; expiry: string; page: number }>) => {
+        startTransition(() => {
+            router.replace(buildVehiclesHref(pathname, {
+                search: updates.search ?? search,
+                sort: updates.sort ?? currentSort,
+                expiry: updates.expiry ?? currentExpiry,
+                page: updates.page ?? 1,
+            }), { scroll: false });
+        });
+    };
+
+    const activeFilters = [
+        currentSearch ? {
             key: "search",
             label: `検索: ${currentSearch}`,
-            onRemove: () => {
-                setSearch("");
-                startTransition(() => {
-                    router.replace(buildVehiclesHref(pathname, { search: "", page: 1 }), { scroll: false });
-                });
-            },
-        }]
-        : [];
+            onRemove: () => { setSearch(""); updateFilters({ search: "", page: 1 }); },
+        } : null,
+        currentExpiry === "expired" ? {
+            key: "expiry",
+            label: "期限切れのみ",
+            onRemove: () => updateFilters({ expiry: "", page: 1 }),
+        } : currentExpiry === "soon" ? {
+            key: "expiry",
+            label: "30日以内",
+            onRemove: () => updateFilters({ expiry: "", page: 1 }),
+        } : null,
+        currentSort !== "plate" ? {
+            key: "sort",
+            label: `並び順: ${currentSort === "inspection" ? "車検満了日" : currentSort === "liability" ? "自賠責満期" : "任意保険満期"}`,
+            onRemove: () => updateFilters({ sort: "plate", page: 1 }),
+        } : null,
+    ].filter((f): f is NonNullable<typeof f> => f !== null);
 
-    useEffect(() => {
-        setSearch(currentSearch);
-    }, [currentSearch]);
+    useEffect(() => { setSearch(currentSearch); }, [currentSearch]);
 
     useEffect(() => {
         const timer = window.setTimeout(() => {
             if (search === currentSearch) return;
-
-            startTransition(() => {
-                router.replace(buildVehiclesHref(pathname, {
-                    search,
-                    page: 1,
-                }), { scroll: false });
-            });
+            updateFilters({ search, page: 1 });
         }, 250);
-
         return () => window.clearTimeout(timer);
-    }, [currentSearch, pathname, router, search]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [search]);
 
     const handleDelete = async () => {
         if (!isAdminOrHr || !deletingVehicle) return;
@@ -159,7 +183,7 @@ export function VehiclesClient({
     const clearFilters = () => {
         setSearch("");
         startTransition(() => {
-            router.replace(buildVehiclesHref(pathname, { search: "", page: 1 }), { scroll: false });
+            router.replace(buildVehiclesHref(pathname, { search: "", sort: "plate", expiry: "", page: 1 }), { scroll: false });
         });
     };
 
@@ -181,15 +205,51 @@ export function VehiclesClient({
                 </div>
             )}
 
-            <div className="relative max-w-xl">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                    aria-label="ナンバー・車両名・使用者で検索"
-                    placeholder="ナンバー・車両名・使用者で検索…"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="h-11 pl-9"
-                />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="relative flex-1 max-w-xl">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                        aria-label="ナンバー・車両名・使用者で検索"
+                        placeholder="ナンバー・車両名・使用者で検索…"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="h-11 pl-9"
+                    />
+                </div>
+                <div className="flex gap-2 shrink-0">
+                    <Select
+                        value={currentExpiry || "all"}
+                        onValueChange={(val: string | null) => updateFilters({ expiry: val === "all" ? "" : (val ?? ""), page: 1 })}
+                    >
+                        <SelectTrigger className="h-11 w-[130px]">
+                            <span className="flex-1 text-left text-sm">
+                                {currentExpiry === "expired" ? "期限切れ" : currentExpiry === "soon" ? "30日以内" : "すべて"}
+                            </span>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">すべて</SelectItem>
+                            <SelectItem value="expired">期限切れ</SelectItem>
+                            <SelectItem value="soon">30日以内</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select
+                        value={currentSort}
+                        onValueChange={(val: string | null) => updateFilters({ sort: val ?? "plate", page: 1 })}
+                    >
+                        <SelectTrigger className="h-11 w-[150px]">
+                            <ArrowUpDown className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+                            <span className="flex-1 text-left text-sm">
+                                {currentSort === "inspection" ? "車検満了日順" : currentSort === "liability" ? "自賠責満期順" : currentSort === "voluntary" ? "任意保険満期順" : "ナンバー順"}
+                            </span>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="plate">ナンバー順</SelectItem>
+                            <SelectItem value="inspection">車検満了日順</SelectItem>
+                            <SelectItem value="liability">自賠責満期順</SelectItem>
+                            <SelectItem value="voluntary">任意保険満期順</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             <ActiveFilters items={activeFilters} onClearAll={clearFilters} />
@@ -231,6 +291,9 @@ export function VehiclesClient({
                                                 : status === 2
                                                     ? <Badge variant="secondary" className={alertStyles.warning.badge}>注意</Badge>
                                                     : <Badge variant="secondary" className={alertStyles.ok.badge}>正常</Badge>}
+                                            <Button size="sm" variant="ghost" className="text-xs h-7 px-2" render={<Link href={`/vehicles/${vehicle.id}`} />}>
+                                                詳細
+                                            </Button>
                                             {showActions ? (
                                                 <RecordActionsMenu label={vehicle.plate_number}>
                                                     <DropdownMenuItem onClick={() => setEditingVehicle(vehicle)}>
@@ -286,7 +349,7 @@ export function VehiclesClient({
                             <TableHead className="min-w-[120px]">自賠責満期</TableHead>
                             <TableHead className="min-w-[120px]">任意保険満期</TableHead>
                             <TableHead className="min-w-[80px]">ステータス</TableHead>
-                            {showActions && <TableHead className="min-w-[100px]">操作</TableHead>}
+                            <TableHead className="min-w-[100px]">操作</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -298,8 +361,8 @@ export function VehiclesClient({
                             </TableRow>
                         ) : (
                             initialVehicles.map((vehicle) => (
-                                <TableRow key={vehicle.id} className="hover:bg-transparent">
-                                    <TableCell className="sticky left-0 z-10 bg-card font-bold shadow-[inset_-1px_0_0_hsl(var(--border))]">
+                                <TableRow key={vehicle.id} className="group hover:bg-muted/30 transition-colors">
+                                    <TableCell className="sticky left-0 z-10 bg-card font-bold shadow-[inset_-1px_0_0_hsl(var(--border))] group-hover:bg-muted/30">
                                         <div className="flex items-center gap-2">
                                             <Truck className="h-4 w-4 text-muted-foreground shrink-0" />
                                             {vehicle.plate_number}
@@ -341,20 +404,25 @@ export function VehiclesClient({
                                                 : <Badge variant="secondary" className={alertStyles.ok.badge}>正常</Badge>
                                         }
                                     </TableCell>
-                                    {showActions && (
-                                        <TableCell>
-                                            <RecordActionsMenu label={vehicle.plate_number}>
-                                                <DropdownMenuItem onClick={() => setEditingVehicle(vehicle)}>
-                                                    <Pencil className="h-4 w-4" />
-                                                    編集
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem variant="destructive" onClick={() => setDeletingVehicle(vehicle)}>
-                                                    <Trash2 className="h-4 w-4" />
-                                                    削除
-                                                </DropdownMenuItem>
-                                            </RecordActionsMenu>
-                                        </TableCell>
-                                    )}
+                                    <TableCell>
+                                        <div className="flex items-center gap-1">
+                                            <Button size="sm" variant="ghost" className="text-xs h-7 px-2" render={<Link href={`/vehicles/${vehicle.id}`} />}>
+                                                詳細
+                                            </Button>
+                                            {showActions && (
+                                                <RecordActionsMenu label={vehicle.plate_number}>
+                                                    <DropdownMenuItem onClick={() => setEditingVehicle(vehicle)}>
+                                                        <Pencil className="h-4 w-4" />
+                                                        編集
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem variant="destructive" onClick={() => setDeletingVehicle(vehicle)}>
+                                                        <Trash2 className="h-4 w-4" />
+                                                        削除
+                                                    </DropdownMenuItem>
+                                                </RecordActionsMenu>
+                                            )}
+                                        </div>
+                                    </TableCell>
                                 </TableRow>
                             ))
                         )}
@@ -370,6 +438,8 @@ export function VehiclesClient({
                         disabled={currentPage <= 1}
                         render={<Link href={buildVehiclesHref(pathname, {
                             search: currentSearch,
+                            sort: currentSort,
+                            expiry: currentExpiry,
                             page: currentPage - 1,
                         })} />}
                     >
@@ -384,6 +454,8 @@ export function VehiclesClient({
                         disabled={currentPage >= totalPages}
                         render={<Link href={buildVehiclesHref(pathname, {
                             search: currentSearch,
+                            sort: currentSort,
+                            expiry: currentExpiry,
                             page: currentPage + 1,
                         })} />}
                     >

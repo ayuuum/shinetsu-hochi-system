@@ -146,6 +146,39 @@ export type Database = {
           },
         ]
       }
+      annual_schedules: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          fiscal_year: number
+          id: string
+          scheduled_date: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          fiscal_year: number
+          id?: string
+          scheduled_date?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          fiscal_year?: number
+          id?: string
+          scheduled_date?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -181,6 +214,47 @@ export type Database = {
           summary?: string | null
         }
         Relationships: []
+      }
+      certificate_images: {
+        Row: {
+          caption: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          mime_type: string | null
+          qualification_id: string
+          sort_order: number
+          storage_path: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mime_type?: string | null
+          qualification_id: string
+          sort_order?: number
+          storage_path: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mime_type?: string | null
+          qualification_id?: string
+          sort_order?: number
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_images_qualification_id_fkey"
+            columns: ["qualification_id"]
+            isOneToOne: false
+            referencedRelation: "employee_qualifications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       construction_records: {
         Row: {
@@ -447,9 +521,12 @@ export type Database = {
       employee_qualifications: {
         Row: {
           acquired_date: string | null
+          acquisition_type: string | null
           certificate_number: string | null
           certificate_url: string | null
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           employee_id: string | null
           expiry_date: string | null
           id: string
@@ -463,9 +540,12 @@ export type Database = {
         }
         Insert: {
           acquired_date?: string | null
+          acquisition_type?: string | null
           certificate_number?: string | null
           certificate_url?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           employee_id?: string | null
           expiry_date?: string | null
           id?: string
@@ -479,9 +559,12 @@ export type Database = {
         }
         Update: {
           acquired_date?: string | null
+          acquisition_type?: string | null
           certificate_number?: string | null
           certificate_url?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           employee_id?: string | null
           expiry_date?: string | null
           id?: string
@@ -509,51 +592,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      equipment_items: {
-        Row: {
-          branch: string | null
-          category: string | null
-          created_at: string | null
-          deleted_at: string | null
-          deleted_by: string | null
-          id: string
-          management_number: string
-          name: string
-          notes: string | null
-          purchase_amount: number | null
-          purchase_date: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          branch?: string | null
-          category?: string | null
-          created_at?: string | null
-          deleted_at?: string | null
-          deleted_by?: string | null
-          id?: string
-          management_number: string
-          name: string
-          notes?: string | null
-          purchase_amount?: number | null
-          purchase_date?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          branch?: string | null
-          category?: string | null
-          created_at?: string | null
-          deleted_at?: string | null
-          deleted_by?: string | null
-          id?: string
-          management_number?: string
-          name?: string
-          notes?: string | null
-          purchase_amount?: number | null
-          purchase_date?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
       }
       employees: {
         Row: {
@@ -666,6 +704,51 @@ export type Database = {
           updated_at?: string | null
           wage_type?: string | null
           work_time_detail?: string | null
+        }
+        Relationships: []
+      }
+      equipment_items: {
+        Row: {
+          branch: string | null
+          category: string | null
+          created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          management_number: string
+          name: string
+          notes: string | null
+          purchase_amount: number | null
+          purchase_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          branch?: string | null
+          category?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          management_number: string
+          name: string
+          notes?: string | null
+          purchase_amount?: number | null
+          purchase_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          branch?: string | null
+          category?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          management_number?: string
+          name?: string
+          notes?: string | null
+          purchase_amount?: number | null
+          purchase_date?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -840,6 +923,57 @@ export type Database = {
           },
         ]
       }
+      qualification_exam_history: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          employee_id: string
+          exam_date: string
+          id: string
+          notes: string | null
+          qualification_id: string | null
+          qualification_name: string | null
+          result: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          employee_id: string
+          exam_date: string
+          id?: string
+          notes?: string | null
+          qualification_id?: string | null
+          qualification_name?: string | null
+          result: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string
+          exam_date?: string
+          id?: string
+          notes?: string | null
+          qualification_id?: string | null
+          qualification_name?: string | null
+          result?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qualification_exam_history_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qualification_exam_history_qualification_id_fkey"
+            columns: ["qualification_id"]
+            isOneToOne: false
+            referencedRelation: "qualification_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       qualification_master: {
         Row: {
           category: string | null
@@ -867,6 +1001,53 @@ export type Database = {
         }
         Relationships: []
       }
+      seminar_records: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          employee_id: string
+          held_date: string
+          hours: number | null
+          id: string
+          notes: string | null
+          organizer: string | null
+          photo_url: string | null
+          seminar_name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          employee_id: string
+          held_date: string
+          hours?: number | null
+          id?: string
+          notes?: string | null
+          organizer?: string | null
+          photo_url?: string | null
+          seminar_name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string
+          held_date?: string
+          hours?: number | null
+          id?: string
+          notes?: string | null
+          organizer?: string | null
+          photo_url?: string | null
+          seminar_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seminar_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_history: {
         Row: {
           certificate_number: string | null
@@ -875,6 +1056,7 @@ export type Database = {
           id: string
           next_due_date: string | null
           notes: string | null
+          photo_url: string | null
           provider: string | null
           training_date: string
           training_type: string
@@ -886,6 +1068,7 @@ export type Database = {
           id?: string
           next_due_date?: string | null
           notes?: string | null
+          photo_url?: string | null
           provider?: string | null
           training_date: string
           training_type?: string
@@ -897,6 +1080,7 @@ export type Database = {
           id?: string
           next_due_date?: string | null
           notes?: string | null
+          photo_url?: string | null
           provider?: string | null
           training_date?: string
           training_type?: string
@@ -936,6 +1120,143 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_accidents: {
+        Row: {
+          accident_date: string
+          created_at: string
+          created_by: string | null
+          description: string
+          driver_id: string | null
+          id: string
+          notes: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          accident_date: string
+          created_at?: string
+          created_by?: string | null
+          description: string
+          driver_id?: string | null
+          id?: string
+          notes?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          accident_date?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          driver_id?: string | null
+          id?: string
+          notes?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_accidents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_accidents_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_repairs: {
+        Row: {
+          cost: number | null
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          notes: string | null
+          repair_date: string
+          repaired_by: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string
+          created_by?: string | null
+          description: string
+          id?: string
+          notes?: string | null
+          repair_date: string
+          repaired_by?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          notes?: string | null
+          repair_date?: string
+          repaired_by?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_repairs_repaired_by_fkey"
+            columns: ["repaired_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_repairs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_tires: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          manufacture_year: number | null
+          notes: string | null
+          purchase_date: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          manufacture_year?: number | null
+          notes?: string | null
+          purchase_date?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          manufacture_year?: number | null
+          notes?: string | null
+          purchase_date?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_tires_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
         ]
@@ -992,6 +1313,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_auth_employee_id: { Args: never; Returns: string }
       get_user_role: { Args: never; Returns: string }
       soft_delete_employee: {
         Args: { p_deleted_by: string; p_employee_id: string }

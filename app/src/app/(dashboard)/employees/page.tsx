@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { EmployeesClient, type EmployeeWithQualCount } from "@/components/employees/employees-client";
 import { getAuthSnapshot } from "@/lib/auth-server";
+import { getCachedQualCountsByEmployee, getCachedQualificationMasters } from "@/lib/cached-queries";
 import { Tables } from "@/types/supabase";
 
 const PAGE_SIZE = 50;
@@ -37,8 +38,8 @@ export default async function EmployeesPage({
         const supabase = await createSupabaseServer();
         const searchPattern = currentSearch ? `%${currentSearch.replace(/,/g, " ").trim()}%` : null;
 
-        const [{ data: masters }, qualificationFilterResult] = await Promise.all([
-            supabase.from("qualification_master").select("*").order("category"),
+        const [masters, qualificationFilterResult, cachedQualCounts] = await Promise.all([
+            getCachedQualificationMasters(),
             currentQualification
                 ? supabase
                     .from("employee_qualifications")
@@ -46,9 +47,10 @@ export default async function EmployeesPage({
                     .eq("qualification_id", currentQualification)
                     .limit(5000)
                 : Promise.resolve({ data: [] as { employee_id: string | null }[], error: null }),
+            getCachedQualCountsByEmployee(),
         ]);
 
-        mastersData = masters || [];
+        mastersData = masters as typeof mastersData;
         const qualificationEmployeeIds = (qualificationFilterResult.data || [])
             .map((item) => item.employee_id)
             .filter((employeeId): employeeId is string => !!employeeId);
@@ -80,38 +82,8 @@ export default async function EmployeesPage({
             const { data: empData, count: totalCount } = await employeeQuery;
             totalPages = Math.max(1, Math.ceil((totalCount || 0) / PAGE_SIZE));
 
-            const now = new Date();
-            const employeeIds = (empData || []).map((emp) => emp.id);
-            const qualificationCounts = new Map<string, { total: number; expiring: number }>();
-
-            if (employeeIds.length > 0) {
-                const { data: qualData } = await supabase
-                    .from("employee_qualifications")
-                    .select("employee_id, expiry_date")
-                    .in("employee_id", employeeIds);
-
-                for (const qualification of qualData || []) {
-                    if (!qualification.employee_id) continue;
-
-                    const current = qualificationCounts.get(qualification.employee_id) || {
-                        total: 0,
-                        expiring: 0,
-                    };
-                    current.total += 1;
-
-                    if (qualification.expiry_date) {
-                        const diff = new Date(qualification.expiry_date).getTime() - now.getTime();
-                        if (diff < 30 * 24 * 60 * 60 * 1000) {
-                            current.expiring += 1;
-                        }
-                    }
-
-                    qualificationCounts.set(qualification.employee_id, current);
-                }
-            }
-
             employees = (empData || []).map((emp) => {
-                const counts = qualificationCounts.get(emp.id);
+                const counts = cachedQualCounts[emp.id];
                 return {
                     ...emp,
                     qualification_count: counts?.total || 0,

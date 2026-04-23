@@ -5,6 +5,7 @@ import { getAuthSnapshot } from "@/lib/auth-server";
 import { QualificationsClient, type QualificationRow } from "@/components/qualifications/qualifications-client";
 import { formatDateInTokyo, getTodayInTokyo } from "@/lib/date";
 import { getAlertLevel, type AlertLevel } from "@/lib/alert-utils";
+import { getCachedQualificationCategories, getCachedEmployeeList, getCachedQualificationCounts } from "@/lib/cached-queries";
 
 const PAGE_SIZE = 50;
 
@@ -53,6 +54,8 @@ export default async function QualificationsPage({
         ok: 0,
     };
     let totalPages = 1;
+    // Fix: fetch employees list to enable direct qualification addition from this page
+    let employees: { id: string; name: string; branch: string | null }[] = [];
 
     try {
         const supabase = await createSupabaseServer();
@@ -62,120 +65,119 @@ export default async function QualificationsPage({
         const infoLimit = formatDateInTokyo(addDays(new Date(), 60));
         const searchPattern = currentSearch ? `%${currentSearch.replace(/,/g, " ").trim()}%` : null;
 
-        const [
-            categoryResult,
-            employeeSearchResult,
-            qualificationSearchResult,
-            categoryQualificationResult,
-        ] = await Promise.all([
-            supabase
-                .from("qualification_master")
-                .select("category")
-                .not("category", "is", null)
-                .order("category"),
-            currentSearch
-                ? supabase
-                    .from("employees")
-                    .select("id")
-                    .is("deleted_at", null)
-                    .ilike("name", searchPattern!)
-                    .limit(100)
-                : Promise.resolve({ data: [] as { id: string }[], error: null }),
-            currentSearch
-                ? supabase
-                    .from("qualification_master")
-                    .select("id")
-                    .ilike("name", searchPattern!)
-                    .limit(100)
-                : Promise.resolve({ data: [] as { id: string }[], error: null }),
-            currentCategory
-                ? supabase
-                    .from("qualification_master")
-                    .select("id")
-                    .eq("category", currentCategory)
-                    .limit(500)
-                : Promise.resolve({ data: [] as { id: string }[], error: null }),
-        ]);
+        // Build main queries early so they can run in parallel with lookup queries when no filter is active
+        const basePageQuery = () => supabase
+            .from("employee_qualifications")
+            .select(`*, employees!inner(id, name, branch), qualification_master(name, category)`, { count: "exact" })
+            .is("employees.deleted_at", null)
+            .order("expiry_date", { ascending: true })
+            .range(from, to);
 
-        categories = [...new Set((categoryResult.data || []).map((item) => item.category).filter(Boolean))] as string[];
+        const noFilter = !currentSearch && !currentCategory;
 
-        const employeeIds = (employeeSearchResult.data || []).map((item) => item.id);
-        const qualificationIds = (qualificationSearchResult.data || []).map((item) => item.id);
-        const categoryQualificationIds = (categoryQualificationResult.data || []).map((item) => item.id);
+        let pageResult: { data: unknown[] | null; count: number | null; error: unknown };
+        let summaryData: { expiry_date: string | null }[] = [];
 
-        const searchConditions = [
-            buildInCondition("employee_id", employeeIds),
-            buildInCondition("qualification_id", qualificationIds),
-        ].filter(Boolean) as string[];
-        const searchGroup = searchConditions.length > 0 ? buildBooleanGroup("or", searchConditions) : null;
+        if (noFilter) {
+            let pq = basePageQuery();
+            if (currentLevel === "danger") pq = pq.lt("expiry_date", today);
+            if (currentLevel === "urgent") pq = pq.gte("expiry_date", today).lte("expiry_date", urgentLimit);
+            if (currentLevel === "warning") pq = pq.gt("expiry_date", urgentLimit).lte("expiry_date", warningLimit);
+            if (currentLevel === "info") pq = pq.gt("expiry_date", warningLimit).lte("expiry_date", infoLimit);
+            if (currentLevel === "ok") pq = pq.or("expiry_date.is.null,expiry_date.gt." + infoLimit);
 
-        const hasMatches = !currentSearch || searchConditions.length > 0;
-        const hasCategoryMatches = !currentCategory || categoryQualificationIds.length > 0;
+            // All 4 are independent — run in one parallel group
+            const [categories_cached, employees_cached, pqResult, cachedCounts] = await Promise.all([
+                getCachedQualificationCategories(),
+                getCachedEmployeeList(),
+                pq,
+                getCachedQualificationCounts(),
+            ]);
+            categories = categories_cached;
+            employees = employees_cached;
+            pageResult = pqResult as typeof pageResult;
+            counts = cachedCounts;
+        } else {
+            // categories and employee list cached; search lookups are independent — run in one parallel group
+            const [
+                categories_cached,
+                employees_cached,
+                employeeSearchResult,
+                qualificationSearchResult,
+                categoryQualificationResult,
+            ] = await Promise.all([
+                getCachedQualificationCategories(),
+                getCachedEmployeeList(),
+                currentSearch
+                    ? supabase.from("employees").select("id").is("deleted_at", null).ilike("name", searchPattern!).limit(100)
+                    : Promise.resolve({ data: [] as { id: string }[], error: null }),
+                currentSearch
+                    ? supabase.from("qualification_master").select("id").ilike("name", searchPattern!).limit(100)
+                    : Promise.resolve({ data: [] as { id: string }[], error: null }),
+                currentCategory
+                    ? supabase.from("qualification_master").select("id").eq("category", currentCategory).limit(500)
+                    : Promise.resolve({ data: [] as { id: string }[], error: null }),
+            ]);
+            categories = categories_cached;
+            employees = employees_cached;
 
-        if (hasMatches && hasCategoryMatches) {
-            let pageQuery = supabase
-                .from("employee_qualifications")
-                .select(`
-                    *,
-                    employees!inner(id, name, branch),
-                    qualification_master(name, category)
-                `, { count: "exact" })
-                .is("employees.deleted_at", null)
-                .order("expiry_date", { ascending: true })
-                .range(from, to);
+            const employeeIds = (employeeSearchResult.data || []).map((item) => item.id);
+            const qualificationIds = (qualificationSearchResult.data || []).map((item) => item.id);
+            const categoryQualificationIds = (categoryQualificationResult.data || []).map((item) => item.id);
 
-            let summaryQuery = supabase
-                .from("employee_qualifications")
-                .select("expiry_date, employees!inner(id)")
-                .is("employees.deleted_at", null);
+            const searchConditions = [
+                buildInCondition("employee_id", employeeIds),
+                buildInCondition("qualification_id", qualificationIds),
+            ].filter(Boolean) as string[];
+            const searchGroup = searchConditions.length > 0 ? buildBooleanGroup("or", searchConditions) : null;
 
-            if (currentCategory) {
-                pageQuery = pageQuery.in("qualification_id", categoryQualificationIds);
-                summaryQuery = summaryQuery.in("qualification_id", categoryQualificationIds);
-            }
+            const hasMatches = !currentSearch || searchConditions.length > 0;
+            const hasCategoryMatches = !currentCategory || categoryQualificationIds.length > 0;
 
-            if (currentSearch) {
-                summaryQuery = summaryQuery.or(searchConditions.join(","));
+            if (!hasMatches || !hasCategoryMatches) {
+                pageResult = { data: [], count: 0, error: null };
+                summaryData = [];
+            } else {
+                let pq = basePageQuery();
+                let sq = supabase
+                    .from("employee_qualifications")
+                    .select("expiry_date, employees!inner(id)")
+                    .is("employees.deleted_at", null);
 
-                if (currentLevel !== "ok") {
-                    pageQuery = pageQuery.or(searchConditions.join(","));
+                if (currentCategory) {
+                    pq = pq.in("qualification_id", categoryQualificationIds);
+                    sq = sq.in("qualification_id", categoryQualificationIds);
                 }
-            }
+                if (currentSearch) {
+                    sq = sq.or(searchConditions.join(","));
+                    if (currentLevel !== "ok") pq = pq.or(searchConditions.join(","));
+                }
+                if (currentLevel === "danger") pq = pq.lt("expiry_date", today);
+                if (currentLevel === "urgent") pq = pq.gte("expiry_date", today).lte("expiry_date", urgentLimit);
+                if (currentLevel === "warning") pq = pq.gt("expiry_date", urgentLimit).lte("expiry_date", warningLimit);
+                if (currentLevel === "info") pq = pq.gt("expiry_date", warningLimit).lte("expiry_date", infoLimit);
+                if (currentLevel === "ok") {
+                    pq = currentSearch && searchGroup
+                        ? pq.or(`and(${searchGroup},expiry_date.is.null),and(${searchGroup},expiry_date.gt.${infoLimit})`)
+                        : pq.or(`expiry_date.is.null,expiry_date.gt.${infoLimit}`);
+                }
 
-            if (currentLevel === "danger") {
-                pageQuery = pageQuery.lt("expiry_date", today);
+                const [pqResult, sqResult] = await Promise.all([pq, sq]);
+                pageResult = pqResult as typeof pageResult;
+                summaryData = (sqResult.data || []) as { expiry_date: string | null }[];
             }
-            if (currentLevel === "urgent") {
-                pageQuery = pageQuery.gte("expiry_date", today).lte("expiry_date", urgentLimit);
-            }
-            if (currentLevel === "warning") {
-                pageQuery = pageQuery.gt("expiry_date", urgentLimit).lte("expiry_date", warningLimit);
-            }
-            if (currentLevel === "info") {
-                pageQuery = pageQuery.gt("expiry_date", warningLimit).lte("expiry_date", infoLimit);
-            }
-            if (currentLevel === "ok") {
-                pageQuery = currentSearch && searchGroup
-                    ? pageQuery.or(`and(${searchGroup},expiry_date.is.null),and(${searchGroup},expiry_date.gt.${infoLimit})`)
-                    : pageQuery.or(`expiry_date.is.null,expiry_date.gt.${infoLimit}`);
-            }
+        }
 
-            const [pageResult, summaryResult] = await Promise.all([pageQuery, summaryQuery]);
+        qualifications = (pageResult.data || []) as QualificationRow[];
+        totalPages = Math.max(1, Math.ceil(((pageResult.count as number | null) || 0) / PAGE_SIZE));
 
-            qualifications = (pageResult.data || []) as QualificationRow[];
-            totalPages = Math.max(1, Math.ceil((pageResult.count || 0) / PAGE_SIZE));
-
-            counts = (summaryResult.data || []).reduce<Record<AlertLevel, number>>((acc, row) => {
+        // noFilter: counts already set from getCachedQualificationCounts(); else branch uses summaryData
+        if (summaryData.length > 0) {
+            counts = summaryData.reduce<Record<AlertLevel, number>>((acc, row) => {
                 const level = getAlertLevel(row.expiry_date);
                 acc[level] += 1;
                 return acc;
-            }, {
-                danger: 0,
-                urgent: 0,
-                warning: 0,
-                info: 0,
-                ok: 0,
-            });
+            }, { danger: 0, urgent: 0, warning: 0, info: 0, ok: 0 });
         }
     } catch (e) {
         console.error("Failed to load qualifications:", e);
@@ -191,6 +193,7 @@ export default async function QualificationsPage({
             currentLevel={currentLevel}
             currentPage={currentPage}
             totalPages={totalPages}
+            employees={employees}
         />
     );
 }
