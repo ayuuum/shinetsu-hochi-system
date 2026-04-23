@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import {
     LogOut,
 } from "lucide-react";
@@ -20,26 +19,19 @@ import {
     SidebarSeparator,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
+import { useIntentPrefetch } from "@/hooks/use-intent-prefetch";
 import { getGroupedAppNavigation, isAppNavActive } from "@/lib/app-navigation";
 
 export function AppSidebar() {
     const pathname = usePathname();
-    const router = useRouter();
     const { user, role, signOut, isAdminOrHr, linkedEmployeeId } = useAuth();
+    const { getIntentPrefetchProps } = useIntentPrefetch();
 
     const displayName = user?.email?.split("@")[0] || "ユーザー";
     const roleLabel = role === "admin" ? "管理者" : role === "hr" ? "人事" : role === "technician" ? "技術者" : "";
     const navigationSections = getGroupedAppNavigation(isAdminOrHr, role, linkedEmployeeId);
-
-    useEffect(() => {
-        for (const section of navigationSections) {
-            for (const item of section.items) {
-                router.prefetch(item.url);
-            }
-        }
-    }, [navigationSections, router]);
 
     return (
         <Sidebar collapsible="icon" className="border-r border-border bg-sidebar print:hidden">
@@ -68,7 +60,7 @@ export function AppSidebar() {
                                     {section.items.map((item) => (
                                         <SidebarMenuItem key={item.title}>
                                             <SidebarMenuButton
-                                                render={<Link href={item.url} />}
+                                                render={<Link href={item.url} {...getIntentPrefetchProps(item.url)} />}
                                                 isActive={isAppNavActive(pathname, item.url, isAdminOrHr, role, linkedEmployeeId)}
                                                 tooltip={item.title}
                                                 className="transition-[background-color,color,box-shadow] duration-200"

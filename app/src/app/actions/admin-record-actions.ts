@@ -176,6 +176,7 @@ function revalidateProjectPaths(employeeId?: string | null) {
     revalidatePath("/");
     revalidatePath("/projects");
     revalidatePath("/employees");
+    updateTag("projects");
     updateTag("employees");
     if (employeeId) {
         revalidatePath(`/employees/${employeeId}`);

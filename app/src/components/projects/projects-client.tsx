@@ -75,14 +75,14 @@ export function ProjectsClient({
     currentSearch,
     currentCategory,
     currentPage,
-    totalPages,
+    hasNextPage,
 }: {
     initialRecords: ConstructionWithEmployee[];
     employees: Employee[];
     currentSearch: string;
     currentCategory: string;
     currentPage: number;
-    totalPages: number;
+    hasNextPage: boolean;
 }) {
     const [search, setSearch] = useState(currentSearch);
     const [editingItem, setEditingItem] = useState<ConstructionWithEmployee | null>(null);
@@ -448,7 +448,7 @@ export function ProjectsClient({
                 </Table>
             </div>
 
-            {totalPages > 1 && (
+            {(currentPage > 1 || hasNextPage) && (
                 <div className="flex items-center justify-center gap-2 mt-8">
                     <Button
                         variant="outline"
@@ -464,12 +464,12 @@ export function ProjectsClient({
                         前へ
                     </Button>
                     <span className="text-sm font-bold text-muted-foreground px-2">
-                        {currentPage} / {totalPages}
+                        {currentPage}ページ
                     </span>
                     <Button
                         variant="outline"
                         size="sm"
-                        disabled={currentPage >= totalPages}
+                        disabled={!hasNextPage}
                         className="rounded-full px-4 font-semibold"
                         render={<Link href={buildProjectsHref(pathname, {
                             search: currentSearch,

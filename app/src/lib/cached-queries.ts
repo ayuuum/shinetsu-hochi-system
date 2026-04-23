@@ -21,6 +21,21 @@ export type DashboardHealthCheck = Pick<Tables<"health_checks">, "id" | "check_d
     employees: Pick<Tables<"employees">, "name" | "branch"> | null;
 };
 
+export type CachedPage<T> = {
+    items: T[];
+    hasNextPage: boolean;
+};
+
+type CachedProjectRow = Tables<"construction_records"> & {
+    employees: Pick<Tables<"employees">, "id" | "name" | "branch"> | null;
+};
+
+type CachedHealthCheckRow = Tables<"health_checks"> & {
+    employees: Pick<Tables<"employees">, "id" | "name" | "branch"> | null;
+};
+
+const LIST_PAGE_SIZE = 50;
+
 // Qualification categories — changes only when qualification master is edited
 export const getCachedQualificationCategories = unstable_cache(
     async (): Promise<string[]> => {
@@ -67,6 +82,56 @@ export const getCachedEmployeeList = unstable_cache(
     },
     ["employee-list"],
     { revalidate: 300, tags: ["employees"] }
+);
+
+export const getCachedProjectsPage = unstable_cache(
+    async (page: number): Promise<CachedPage<CachedProjectRow>> => {
+        const supabase = createSupabaseAdmin();
+        if (!supabase) return { items: [], hasNextPage: false };
+
+        const from = (page - 1) * LIST_PAGE_SIZE;
+        const toPlusOne = from + LIST_PAGE_SIZE;
+        const { data } = await supabase
+            .from("construction_records")
+            .select("*, employees!inner(id, name, branch)")
+            .is("deleted_at", null)
+            .is("employees.deleted_at", null)
+            .order("construction_date", { ascending: false })
+            .range(from, toPlusOne);
+
+        const items = ((data || []) as unknown as CachedProjectRow[]);
+        return {
+            items: items.slice(0, LIST_PAGE_SIZE),
+            hasNextPage: items.length > LIST_PAGE_SIZE,
+        };
+    },
+    ["projects-page"],
+    { revalidate: 300, tags: ["projects", "employees"] }
+);
+
+export const getCachedHealthChecksPage = unstable_cache(
+    async (page: number): Promise<CachedPage<CachedHealthCheckRow>> => {
+        const supabase = createSupabaseAdmin();
+        if (!supabase) return { items: [], hasNextPage: false };
+
+        const from = (page - 1) * LIST_PAGE_SIZE;
+        const toPlusOne = from + LIST_PAGE_SIZE;
+        const { data } = await supabase
+            .from("health_checks")
+            .select("*, employees!inner(id, name, branch)")
+            .is("deleted_at", null)
+            .is("employees.deleted_at", null)
+            .order("check_date", { ascending: false })
+            .range(from, toPlusOne);
+
+        const items = ((data || []) as unknown as CachedHealthCheckRow[]);
+        return {
+            items: items.slice(0, LIST_PAGE_SIZE),
+            hasNextPage: items.length > LIST_PAGE_SIZE,
+        };
+    },
+    ["health-checks-page"],
+    { revalidate: 300, tags: ["health-checks", "employees"] }
 );
 
 // Pre-aggregated alert counts (no filter) — used for badge tabs on qualifications page
