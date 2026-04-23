@@ -1,6 +1,6 @@
-import { createSupabaseServer } from "@/lib/supabase-server";
 import { getAuthSnapshot } from "@/lib/auth-server";
 import { ScheduleClient } from "@/components/schedule/schedule-client";
+import { getCachedSchedulesByFiscalYear } from "@/lib/cached-queries";
 
 export default async function SchedulePage({
     searchParams,
@@ -17,17 +17,7 @@ export default async function SchedulePage({
 
     const fiscalYear = year ? parseInt(year) : currentFiscalYear;
 
-    const supabase = await createSupabaseServer();
-    const { data: schedules, error } = await supabase
-        .from("annual_schedules")
-        .select("*")
-        .eq("fiscal_year", fiscalYear)
-        .order("scheduled_date", { ascending: true, nullsFirst: false })
-        .order("created_at", { ascending: true });
-
-    if (error) {
-        console.error("Failed to load annual schedules:", error);
-    }
+    const schedules = await getCachedSchedulesByFiscalYear(fiscalYear);
 
     return (
         <div className="space-y-6">
@@ -38,7 +28,7 @@ export default async function SchedulePage({
                 </p>
             </div>
             <ScheduleClient
-                schedules={schedules || []}
+                schedules={schedules as Parameters<typeof ScheduleClient>[0]["schedules"]}
                 fiscalYear={fiscalYear}
                 currentFiscalYear={currentFiscalYear}
                 isAdmin={auth.role === "admin"}

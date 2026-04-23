@@ -198,3 +198,20 @@ export const getCachedMonthlyHealthChecks = unstable_cache(
     ["dashboard-monthly-health"],
     { revalidate: 300, tags: ["health-checks", "employees"] }
 );
+
+// Annual schedules — parameterized by fiscal year, invalidated on schedule CRUD
+export const getCachedSchedulesByFiscalYear = unstable_cache(
+    async (fiscalYear: number) => {
+        const supabase = createSupabaseAdmin();
+        if (!supabase) return [];
+        const { data } = await supabase
+            .from("annual_schedules")
+            .select("*")
+            .eq("fiscal_year", fiscalYear)
+            .order("scheduled_date", { ascending: true, nullsFirst: false })
+            .order("created_at", { ascending: true });
+        return data || [];
+    },
+    ["annual-schedules"],
+    { revalidate: 300, tags: ["annual-schedules"] }
+);

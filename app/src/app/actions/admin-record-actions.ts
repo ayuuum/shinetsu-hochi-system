@@ -2480,6 +2480,7 @@ export async function createAnnualScheduleAction(data: {
         }
 
         revalidatePath("/schedule");
+        updateTag("annual-schedules");
         return { success: true, id: row.id };
     } catch (error) {
         console.error("Unexpected error while creating annual schedule:", error);
@@ -2512,6 +2513,7 @@ export async function updateAnnualScheduleAction(
         }
 
         revalidatePath("/schedule");
+        updateTag("annual-schedules");
         return { success: true };
     } catch (error) {
         console.error("Unexpected error while updating annual schedule:", error);
@@ -2533,6 +2535,7 @@ export async function deleteAnnualScheduleAction(id: string): Promise<DeleteActi
         }
 
         revalidatePath("/schedule");
+        updateTag("annual-schedules");
         return { success: true };
     } catch (error) {
         console.error("Unexpected error while deleting annual schedule:", error);
