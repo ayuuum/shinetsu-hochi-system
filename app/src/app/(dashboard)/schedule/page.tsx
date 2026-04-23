@@ -1,4 +1,4 @@
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { ScheduleClient } from "@/components/schedule/schedule-client";
 import { getCachedSchedulesByFiscalYear } from "@/lib/cached-queries";
 
@@ -7,7 +7,7 @@ export default async function SchedulePage({
 }: {
     searchParams: Promise<{ year?: string }>;
 }) {
-    const auth = await getAuthSnapshot();
+    const auth = await getFastAuthSnapshot();
     const { year } = await searchParams;
 
     const currentFiscalYear = (() => {

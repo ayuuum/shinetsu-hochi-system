@@ -2,7 +2,7 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getStrictAuthSnapshot } from "@/lib/auth-server";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import {
     qualificationMasterCreateSchema,
@@ -13,7 +13,7 @@ import {
 type ActionResult = { success: true } | { success: false; error: string };
 
 async function requireAdmin(): Promise<{ ok: true; userId: string } | { ok: false; error: string }> {
-    const { user, role } = await getAuthSnapshot();
+    const { user, role } = await getStrictAuthSnapshot();
 
     if (!user || role !== "admin") {
         return { ok: false, error: "この操作は管理者のみ実行できます。" };

@@ -1,5 +1,5 @@
 import { createSupabaseServer } from "@/lib/supabase-server";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -34,7 +34,7 @@ function DetailField({ label, value, tone = "default" }: { label: string; value:
 
 export default async function QualificationDetailPage({ params }: PageProps) {
     const { id } = await params;
-    const auth = await getAuthSnapshot();
+    const auth = await getFastAuthSnapshot();
     const supabase = await createSupabaseServer();
 
     const { data: qualification, error } = await supabase
@@ -93,18 +93,7 @@ export default async function QualificationDetailPage({ params }: PageProps) {
         }
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    let canManage = false;
-
-    if (user) {
-        const { data: roleData } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("id", user.id)
-            .single();
-
-        canManage = roleData?.role === "admin" || roleData?.role === "hr";
-    }
+    const canManage = auth.role === "admin" || auth.role === "hr";
 
     // Fetch training history - handle case where table may not exist
     let trainingHistory: {

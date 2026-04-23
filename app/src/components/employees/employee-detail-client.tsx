@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Tables } from "@/types/supabase";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -130,7 +130,8 @@ export function EmployeeDetailClient({
     photoUrl: string | null;
 }) {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<EmployeeDetailTab>(initialTab);
+    const pathname = usePathname();
+    const [isTabPending, startTransition] = useTransition();
     const [editOpen, setEditOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleting, setDeleting] = useState(false);
@@ -172,7 +173,11 @@ export function EmployeeDetailClient({
     };
 
     const handleTabChange = (tab: EmployeeDetailTab) => {
-        setActiveTab(tab);
+        if (tab === initialTab) return;
+        const href = tab === "basic" ? pathname : `${pathname}?tab=${tab}`;
+        startTransition(() => {
+            router.replace(href, { scroll: false });
+        });
     };
 
     const handleDeleteLifeInsurance = async (insuranceId: string) => {
@@ -368,7 +373,7 @@ export function EmployeeDetailClient({
                 </Dialog>
             )}
 
-            <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as EmployeeDetailTab)} className="w-full">
+            <Tabs value={initialTab} onValueChange={(value) => handleTabChange(value as EmployeeDetailTab)} className="w-full" aria-busy={isTabPending}>
                 <div className="overflow-x-auto -mx-1 px-1">
                     <TabsList variant="line" className="inline-flex min-w-full h-auto border-b border-border/50 gap-0 pb-0 rounded-none">
                         <TabsTrigger value="basic" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><User className="h-3.5 w-3.5 hidden md:inline" />基本情報</TabsTrigger>

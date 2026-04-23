@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getStrictAuthSnapshot } from "@/lib/auth-server";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { Json } from "@/types/supabase";
 import {
@@ -53,7 +53,7 @@ type DailyAlertRunResult =
     | ErrorResult;
 
 async function requireAdminOrHr() {
-    const { user, role } = await getAuthSnapshot();
+    const { user, role } = await getStrictAuthSnapshot();
 
     if (!user || (role !== "admin" && role !== "hr")) {
         return { ok: false as const, error: "この操作を実行する権限がありません。" };

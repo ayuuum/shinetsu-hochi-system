@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { EmployeeDetailClient, type EmployeeDetail, type EmployeeDetailTab } from "@/components/employees/employee-detail-client";
 import { Tables } from "@/types/supabase";
 
@@ -26,7 +26,7 @@ export default async function EmployeeDetailPage({
 }) {
     const { id } = await params;
     const { tab } = await searchParams;
-    const auth = await getAuthSnapshot();
+    const auth = await getFastAuthSnapshot();
     if (auth.role === "technician") {
         if (!auth.linkedEmployeeId || auth.linkedEmployeeId !== id) {
             redirect(auth.linkedEmployeeId ? `/employees/${auth.linkedEmployeeId}` : "/me");
@@ -43,7 +43,6 @@ export default async function EmployeeDetailPage({
     }
 
     const isAdminOrHr = auth.role === "admin" || auth.role === "hr";
-
     const [employeeResult, constructionResult, healthResult, itResult, examHistoryResult, seminarResult, deletedQualsResult] = await Promise.all([
         supabase
             .from("employees")
@@ -57,42 +56,52 @@ export default async function EmployeeDetailPage({
             .eq("id", id)
             .is("deleted_at", null)
             .maybeSingle(),
-        supabase
-            .from("construction_records")
-            .select("*")
-            .eq("employee_id", id)
-            .is("deleted_at", null)
-            .order("construction_date", { ascending: false }),
-        supabase
-            .from("health_checks")
-            .select("*")
-            .eq("employee_id", id)
-            .is("deleted_at", null)
-            .order("check_date", { ascending: false }),
-        isAdminOrHr
+        currentTab === "construction"
             ? supabase
-                  .from("employee_it_accounts")
-                  .select("*")
-                  .eq("employee_id", id)
-                  .order("sort_order", { ascending: true })
-                  .order("created_at", { ascending: true })
+                .from("construction_records")
+                .select("*")
+                .eq("employee_id", id)
+                .is("deleted_at", null)
+                .order("construction_date", { ascending: false })
+            : Promise.resolve({ data: [] as Tables<"construction_records">[], error: null }),
+        currentTab === "health"
+            ? supabase
+                .from("health_checks")
+                .select("*")
+                .eq("employee_id", id)
+                .is("deleted_at", null)
+                .order("check_date", { ascending: false })
+            : Promise.resolve({ data: [] as Tables<"health_checks">[], error: null }),
+        currentTab === "it" && isAdminOrHr
+            ? supabase
+                .from("employee_it_accounts")
+                .select("*")
+                .eq("employee_id", id)
+                .order("sort_order", { ascending: true })
+                .order("created_at", { ascending: true })
             : Promise.resolve({ data: [] as Tables<"employee_it_accounts">[], error: null }),
-        supabase
-            .from("qualification_exam_history")
-            .select("*")
-            .eq("employee_id", id)
-            .order("exam_date", { ascending: false }),
-        supabase
-            .from("seminar_records")
-            .select("*")
-            .eq("employee_id", id)
-            .order("held_date", { ascending: false }),
-        supabase
-            .from("employee_qualifications")
-            .select("*, qualification_master(*)")
-            .eq("employee_id", id)
-            .not("deleted_at", "is", null)
-            .order("deleted_at", { ascending: false }),
+        currentTab === "seminars"
+            ? supabase
+                .from("qualification_exam_history")
+                .select("*")
+                .eq("employee_id", id)
+                .order("exam_date", { ascending: false })
+            : Promise.resolve({ data: [] as Tables<"qualification_exam_history">[], error: null }),
+        currentTab === "seminars"
+            ? supabase
+                .from("seminar_records")
+                .select("*")
+                .eq("employee_id", id)
+                .order("held_date", { ascending: false })
+            : Promise.resolve({ data: [] as Tables<"seminar_records">[], error: null }),
+        currentTab === "qualifications"
+            ? supabase
+                .from("employee_qualifications")
+                .select("*, qualification_master(*)")
+                .eq("employee_id", id)
+                .not("deleted_at", "is", null)
+                .order("deleted_at", { ascending: false })
+            : Promise.resolve({ data: [] as EmployeeQualification[], error: null }),
     ]);
 
     if (employeeResult.error) {
@@ -135,35 +144,36 @@ export default async function EmployeeDetailPage({
         deleted_qualifications: (deletedQualsResult.data as EmployeeQualification[]) || [],
     };
 
-    // Collect all storage paths to fetch signed URLs in parallel
-    const certPaths = [...employee.employee_qualifications, ...employee.deleted_qualifications]
-        .filter((q) => q.certificate_url)
-        .map((q) => ({ id: q.id, path: q.certificate_url! }));
-
-    const allPaths = [
-        ...certPaths.map((c) => c.path),
-        ...(employee.photo_url ? [employee.photo_url] : []),
-    ];
-
     let certUrls: Record<string, string> = {};
     let photoUrl: string | null = null;
 
-    if (allPaths.length > 0) {
-        const { data: signedData } = await supabase.storage
-            .from("certificates")
-            .createSignedUrls(allPaths, 3600);
+    if (currentTab === "qualifications") {
+        const certPaths = [...employee.employee_qualifications, ...employee.deleted_qualifications]
+            .filter((qualification) => qualification.certificate_url)
+            .map((qualification) => ({ id: qualification.id, path: qualification.certificate_url! }));
 
-        if (signedData) {
-            for (const entry of signedData) {
-                if (!entry.signedUrl) continue;
-                const certEntry = certPaths.find((c) => c.path === entry.path);
-                if (certEntry) {
-                    certUrls[certEntry.id] = entry.signedUrl;
-                } else if (entry.path === employee.photo_url) {
-                    photoUrl = entry.signedUrl;
+        if (certPaths.length > 0) {
+            const { data: signedData } = await supabase.storage
+                .from("certificates")
+                .createSignedUrls(certPaths.map((entry) => entry.path), 3600);
+
+            if (signedData) {
+                for (const entry of signedData) {
+                    if (!entry.signedUrl) continue;
+                    const certEntry = certPaths.find((candidate) => candidate.path === entry.path);
+                    if (certEntry) {
+                        certUrls[certEntry.id] = entry.signedUrl;
+                    }
                 }
             }
         }
+    }
+
+    if (currentTab === "basic" && employee.photo_url) {
+        const { data: signedPhoto } = await supabase.storage
+            .from("certificates")
+            .createSignedUrl(employee.photo_url, 3600);
+        photoUrl = signedPhoto?.signedUrl || null;
     }
 
     return (

@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { getCachedEmployeeList } from "@/lib/cached-queries";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { VehiclesClient, type VehicleWithUser } from "@/components/vehicles/vehicles-client";
 import { VehiclesEquipmentShell } from "@/components/vehicles/vehicles-equipment-shell";
 import { EquipmentClient, type EquipmentRow } from "@/components/equipment/equipment-client";
@@ -24,30 +24,31 @@ export default async function VehiclesPage({
 }: {
     searchParams: Promise<{ page?: string; q?: string; eq?: string; eqPage?: string; sort?: string; expiry?: string }>;
 }) {
-    const auth = await getAuthSnapshot();
+    const authPromise = getFastAuthSnapshot();
+    const paramsPromise = searchParams;
+    const [auth, params] = await Promise.all([authPromise, paramsPromise]);
     if (auth.role === "technician") {
         redirect("/me");
     }
 
-    const params = await searchParams;
     const currentPage = parsePageParam(params.page);
     const from = (currentPage - 1) * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
+    const toPlusOne = from + PAGE_SIZE;
     const currentSearch = (params.q || "").trim();
     const currentSort = (params.sort || "plate") as "plate" | "inspection" | "liability" | "voluntary";
     const currentExpiry = (params.expiry || "") as "" | "expired" | "soon";
 
     const eqPage = parsePageParam(params.eqPage);
     const eqFrom = (eqPage - 1) * PAGE_SIZE;
-    const eqTo = eqFrom + PAGE_SIZE - 1;
+    const eqToPlusOne = eqFrom + PAGE_SIZE;
     const eqSearch = (params.eq || "").trim();
 
     let vehicleData: VehicleWithUser[] = [];
     let empData: { id: string; name: string }[] = [];
-    let totalPages = 1;
+    let hasNextPage = false;
 
     let equipmentData: EquipmentRow[] = [];
-    let equipmentTotalPages = 1;
+    let equipmentHasNextPage = false;
 
     try {
         const supabase = await createSupabaseServer();
@@ -79,10 +80,10 @@ export default async function VehiclesPage({
 
         let vehicleQuery = supabase
             .from("vehicles")
-            .select("*, employees(id, name)", { count: "exact" })
+            .select("*, employees(id, name)")
             .is("deleted_at", null)
             .order(sortColumn, { ascending: true, nullsFirst: false })
-            .range(from, to);
+            .range(from, toPlusOne);
 
         if (currentExpiry === "expired") {
             vehicleQuery = vehicleQuery.or(
@@ -108,10 +109,10 @@ export default async function VehiclesPage({
 
         let equipmentQuery = supabase
             .from("equipment_items")
-            .select("*", { count: "exact" })
+            .select("*")
             .is("deleted_at", null)
             .order("management_number", { ascending: true })
-            .range(eqFrom, eqTo);
+            .range(eqFrom, eqToPlusOne);
 
         if (eqPattern) {
             equipmentQuery = equipmentQuery.or(
@@ -127,12 +128,14 @@ export default async function VehiclesPage({
 
         const [vehicleResult, equipmentResult] = await Promise.all([vehicleQuery, equipmentQuery]);
 
-        vehicleData = (vehicleResult.data as VehicleWithUser[]) || [];
-        totalPages = Math.max(1, Math.ceil((vehicleResult.count || 0) / PAGE_SIZE));
+        const vehicles = (vehicleResult.data as VehicleWithUser[]) || [];
+        vehicleData = vehicles.slice(0, PAGE_SIZE);
+        hasNextPage = vehicles.length > PAGE_SIZE;
         empData = empResult;
 
-        equipmentData = (equipmentResult.data as EquipmentRow[]) || [];
-        equipmentTotalPages = Math.max(1, Math.ceil((equipmentResult.count || 0) / PAGE_SIZE));
+        const equipmentItems = (equipmentResult.data as EquipmentRow[]) || [];
+        equipmentData = equipmentItems.slice(0, PAGE_SIZE);
+        equipmentHasNextPage = equipmentItems.length > PAGE_SIZE;
     } catch (e) {
         console.error("Failed to load vehicles/equipment:", e);
     }
@@ -156,7 +159,7 @@ export default async function VehiclesPage({
                         currentSort={currentSort}
                         currentExpiry={currentExpiry}
                         currentPage={currentPage}
-                        totalPages={totalPages}
+                        hasNextPage={hasNextPage}
                     />
                 }
                 equipmentTab={
@@ -165,7 +168,7 @@ export default async function VehiclesPage({
                             initialItems={equipmentData}
                             currentSearch={eqSearch}
                             currentPage={eqPage}
-                            totalPages={equipmentTotalPages}
+                            hasNextPage={equipmentHasNextPage}
                         />
                     </Suspense>
                 }

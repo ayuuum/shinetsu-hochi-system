@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
 
 export default async function MePage() {
-    const auth = await getAuthSnapshot();
+    const auth = await getFastAuthSnapshot();
 
     if (!auth.user) {
         redirect("/login");

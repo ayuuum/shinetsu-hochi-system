@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { QualificationMastersClient } from "@/components/qualifications/qualification-masters-client";
 import type { Tables } from "@/types/supabase";
 
 export default async function QualificationMastersPage() {
-    const auth = await getAuthSnapshot();
+    const auth = await getFastAuthSnapshot();
     if (!auth.user || (auth.role !== "admin" && auth.role !== "hr")) {
         redirect(auth.role === "technician" ? "/me" : "/qualifications");
     }

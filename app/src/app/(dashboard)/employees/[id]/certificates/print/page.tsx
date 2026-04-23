@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
 import {
     CertificatePrintClient,
     type CertificatePrintItem,
@@ -18,7 +18,7 @@ interface PageProps {
 
 export default async function EmployeeCertificatePrintPage({ params }: PageProps) {
     const { id: employeeId } = await params;
-    const auth = await getAuthSnapshot();
+    const auth = await getFastAuthSnapshot();
     if (auth.role === "technician") {
         if (!auth.linkedEmployeeId || auth.linkedEmployeeId !== employeeId) {
             redirect(auth.linkedEmployeeId ? `/employees/${auth.linkedEmployeeId}` : "/me");

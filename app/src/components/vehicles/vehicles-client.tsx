@@ -103,7 +103,7 @@ export function VehiclesClient({
     currentSort = "plate",
     currentExpiry = "",
     currentPage,
-    totalPages,
+    hasNextPage,
     hidePageHeading = false,
 }: {
     initialVehicles: VehicleWithUser[];
@@ -112,7 +112,7 @@ export function VehiclesClient({
     currentSort?: string;
     currentExpiry?: string;
     currentPage: number;
-    totalPages: number;
+    hasNextPage: boolean;
     hidePageHeading?: boolean;
 }) {
     const [search, setSearch] = useState(currentSearch);
@@ -430,7 +430,7 @@ export function VehiclesClient({
                 </Table>
             </div>
 
-            {totalPages > 1 && (
+            {(currentPage > 1 || hasNextPage) && (
                 <div className="flex items-center justify-center gap-2">
                     <Button
                         variant="outline"
@@ -446,12 +446,12 @@ export function VehiclesClient({
                         前へ
                     </Button>
                     <span className="text-sm text-muted-foreground">
-                        {currentPage} / {totalPages}
+                        {currentPage}ページ
                     </span>
                     <Button
                         variant="outline"
                         size="sm"
-                        disabled={currentPage >= totalPages}
+                        disabled={!hasNextPage}
                         render={<Link href={buildVehiclesHref(pathname, {
                             search: currentSearch,
                             sort: currentSort,
