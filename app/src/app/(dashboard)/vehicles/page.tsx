@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
+import { getCachedEmployeeList } from "@/lib/cached-queries";
 import { getAuthSnapshot } from "@/lib/auth-server";
 import { VehiclesClient, type VehicleWithUser } from "@/components/vehicles/vehicles-client";
 import { VehiclesEquipmentShell } from "@/components/vehicles/vehicles-equipment-shell";
@@ -62,7 +63,7 @@ export default async function VehiclesPage({
                       .ilike("name", searchPattern!)
                       .limit(100)
                 : Promise.resolve({ data: [] as { id: string }[], error: null }),
-            supabase.from("employees").select("id, name").is("deleted_at", null).order("name"),
+            getCachedEmployeeList(),
         ]);
 
         const sortColumn = currentSort === "inspection" ? "inspection_expiry"
@@ -128,7 +129,7 @@ export default async function VehiclesPage({
 
         vehicleData = (vehicleResult.data as VehicleWithUser[]) || [];
         totalPages = Math.max(1, Math.ceil((vehicleResult.count || 0) / PAGE_SIZE));
-        empData = empResult.data || [];
+        empData = empResult;
 
         equipmentData = (equipmentResult.data as EquipmentRow[]) || [];
         equipmentTotalPages = Math.max(1, Math.ceil((equipmentResult.count || 0) / PAGE_SIZE));

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { EmployeesClient, type EmployeeWithQualCount } from "@/components/employees/employees-client";
 import { getAuthSnapshot } from "@/lib/auth-server";
-import { getCachedQualCountsByEmployee } from "@/lib/cached-queries";
+import { getCachedQualCountsByEmployee, getCachedQualificationMasters } from "@/lib/cached-queries";
 import { Tables } from "@/types/supabase";
 
 const PAGE_SIZE = 50;
@@ -38,8 +38,8 @@ export default async function EmployeesPage({
         const supabase = await createSupabaseServer();
         const searchPattern = currentSearch ? `%${currentSearch.replace(/,/g, " ").trim()}%` : null;
 
-        const [{ data: masters }, qualificationFilterResult, cachedQualCounts] = await Promise.all([
-            supabase.from("qualification_master").select("*").order("category"),
+        const [masters, qualificationFilterResult, cachedQualCounts] = await Promise.all([
+            getCachedQualificationMasters(),
             currentQualification
                 ? supabase
                     .from("employee_qualifications")
@@ -50,7 +50,7 @@ export default async function EmployeesPage({
             getCachedQualCountsByEmployee(),
         ]);
 
-        mastersData = masters || [];
+        mastersData = masters as typeof mastersData;
         const qualificationEmployeeIds = (qualificationFilterResult.data || [])
             .map((item) => item.employee_id)
             .filter((employeeId): employeeId is string => !!employeeId);
