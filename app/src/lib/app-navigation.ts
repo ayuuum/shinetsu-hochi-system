@@ -1,6 +1,7 @@
 import {
     Activity,
     BriefcaseBusiness,
+    CalendarDays,
     HeartPulse,
     LayoutDashboard,
     ScrollText,
@@ -146,6 +147,15 @@ export const appNavItems: AppNavItem[] = [
         icon: Wine,
         section: "safety",
         keywords: ["alcohol", "daily", "safety"],
+    },
+    {
+        title: "年間スケジュール",
+        description: "会社の年間行事・スケジュールと目標管理",
+        url: "/schedule",
+        icon: CalendarDays,
+        section: "operations",
+        keywords: ["schedule", "annual", "goal", "plan"],
+        hideForTechnician: true,
     },
     {
         title: "データインポート",
