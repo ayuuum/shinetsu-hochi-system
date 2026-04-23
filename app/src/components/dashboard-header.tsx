@@ -23,7 +23,7 @@ export function DashboardHeader() {
     const sidebarActionLabel = isMobile ? "メニュー" : state === "expanded" ? "サイドバーを閉じる" : "サイドバーを開く";
 
     return (
-        <header className="sticky top-0 z-20 border-b border-border/40 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80 print:hidden">
+        <header className="sticky top-0 z-20 border-b border-border/40 bg-background print:hidden">
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-3 md:px-6">
                 <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-4">
                     <Button
@@ -32,7 +32,7 @@ export function DashboardHeader() {
                         size="sm"
                         aria-label={sidebarActionLabel}
                         onClick={toggleSidebar}
-                        className="hidden shrink-0 -ml-1 items-center gap-1.5 px-2 text-foreground/70 hover:bg-muted hover:text-foreground md:flex"
+                        className="hidden shrink-0 -ml-1 items-center gap-1.5 px-2 text-muted-foreground hover:bg-muted hover:text-foreground md:flex"
                     >
                         <PanelLeftIcon className="h-4 w-4" />
                         <span className="hidden text-xs font-medium lg:inline">
@@ -41,7 +41,7 @@ export function DashboardHeader() {
                     </Button>
                     
                     <div className="hidden min-w-0 items-center gap-2 text-sm md:flex">
-                        <span className="min-w-0 truncate text-muted-foreground/70 text-xs tracking-wide">
+                        <span className="min-w-0 truncate text-muted-foreground text-xs tracking-wide">
                             {section.title}
                         </span>
                         <span aria-hidden="true" className="text-border shrink-0">/</span>
@@ -49,7 +49,7 @@ export function DashboardHeader() {
                             {activeItem.title}
                         </span>
                         <span aria-hidden="true" className="text-border/60 shrink-0 hidden lg:inline">•</span>
-                        <span className="hidden whitespace-nowrap text-muted-foreground/70 text-xs lg:inline">
+                        <span className="hidden whitespace-nowrap text-muted-foreground text-xs lg:inline">
                             {headerDateFormatter.format(new Date())}
                         </span>
                     </div>
