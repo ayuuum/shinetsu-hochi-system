@@ -504,7 +504,7 @@ export default async function Home() {
 
     return (
         <div className="space-y-5 animate-in fade-in duration-200">
-            <section className="rounded-[22px] border border-border/60 bg-card p-5 shadow-[0_1px_2px_rgba(38,42,46,0.035),0_8px_18px_rgba(38,42,46,0.04)] md:p-6">
+            <section className="rounded-xl border border-border/50 bg-card p-5 md:p-6">
                 <div className="relative grid gap-5 xl:grid-cols-[minmax(0,1.22fr)_minmax(320px,0.88fr)]">
                     <div className="space-y-4">
                         <div className="space-y-1.5">
@@ -526,7 +526,7 @@ export default async function Home() {
                         {dashboardTasks[0] ? (
                             <Link
                                 href={dashboardTasks[0].href}
-                                className={`group block rounded-[18px] p-4 transition-[border-color,background-color] duration-200 ${dashboardTasks[0].surfaceClassName}`}
+                                className={`group block rounded-xl p-4 transition-[border-color,background-color] duration-200 ${dashboardTasks[0].surfaceClassName}`}
                             >
                                 <div className="flex flex-wrap items-start justify-between gap-3">
                                     <div className="space-y-1">
@@ -549,9 +549,9 @@ export default async function Home() {
                                 </div>
                             </Link>
                         ) : (
-                            <div className={`rounded-[18px] p-4 ${alertStyles.ok.subtle}`}>
+                            <div className={`rounded-xl p-4 ${alertStyles.ok.subtle}`}>
                                 <div className="flex items-start gap-3">
-                                    <div className={`flex size-10 items-center justify-center rounded-[18px] ${alertStyles.ok.icon}`}>
+                                    <div className={`flex size-10 items-center justify-center rounded-xl ${alertStyles.ok.icon}`}>
                                         <ShieldCheck className="h-5 w-5" />
                                     </div>
                                     <div>
@@ -573,7 +573,7 @@ export default async function Home() {
                                 <Link
                                     key={card.title}
                                     href={card.href}
-                                className="group rounded-[20px] border border-border/60 bg-background/55 p-4 transition-[border-color,background-color] duration-200 hover:border-primary/12 hover:bg-background/80"
+                                className="group rounded-xl border border-border/50 bg-background/55 p-4 transition-[border-color,background-color] duration-200 hover:border-primary/20 hover:bg-muted/60"
                                 >
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0">
@@ -585,7 +585,7 @@ export default async function Home() {
                                             </p>
                                             <p className="mt-1.5 text-sm font-medium">{card.title}</p>
                                         </div>
-                                        <div className={`flex size-8 shrink-0 items-center justify-center rounded-[14px] ${card.iconClassName}`}>
+                                        <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${card.iconClassName}`}>
                                             <Icon className="h-[18px] w-[18px]" />
                                         </div>
                                     </div>
@@ -599,7 +599,7 @@ export default async function Home() {
                 </div>
             </section>
 
-            <section className="rounded-[20px] border border-border/60 bg-card p-5 shadow-[0_1px_2px_rgba(38,42,46,0.035),0_8px_18px_rgba(38,42,46,0.04)] md:p-6">
+            <section className="rounded-xl border border-border/50 bg-card p-5 md:p-6">
                 <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl flex items-center gap-2">
@@ -613,7 +613,7 @@ export default async function Home() {
                 </div>
                 <div className="mt-4">
                     {monthScheduleItems.length === 0 ? (
-                        <div className="rounded-[18px] border border-dashed border-border/70 bg-muted/25 px-4 py-10 text-center text-sm text-muted-foreground">
+                        <div className="rounded-xl border border-dashed border-border/70 bg-muted/25 px-4 py-10 text-center text-sm text-muted-foreground">
                             今月中に該当する予定・期限はありません。
                         </div>
                     ) : (
@@ -624,9 +624,9 @@ export default async function Home() {
                                     <li key={item.id}>
                                         <Link
                                             href={item.href}
-                                            className="group flex gap-3 rounded-[16px] border border-border/60 bg-background/60 p-3.5 transition-[border-color,background-color,box-shadow] duration-200 hover:border-primary/15 hover:bg-background/90 hover:shadow-[0_1px_2px_rgba(38,42,46,0.04),0_8px_18px_rgba(38,42,46,0.05)]"
+                                            className="group flex gap-3 rounded-xl border border-border/50 bg-background/60 p-3.5 transition-[border-color,background-color] duration-200 hover:border-primary/20 hover:bg-muted/60"
                                         >
-                                            <div className="flex size-9 shrink-0 items-center justify-center rounded-[14px] bg-muted/80 text-muted-foreground">
+                                            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/80 text-muted-foreground">
                                                 <Icon className="h-4 w-4" />
                                             </div>
                                             <div className="min-w-0 flex-1">
@@ -664,7 +664,7 @@ export default async function Home() {
                     </CardHeader>
                     <CardContent>
                         {dashboardTasks.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center rounded-[20px] bg-muted/40 px-4 py-10 text-center">
+                            <div className="flex flex-col items-center justify-center rounded-xl bg-muted/40 px-4 py-10 text-center">
                                 <div className={`mb-3 flex size-12 items-center justify-center rounded-full ${alertStyles.ok.icon}`}>
                                     <ShieldCheck className="h-6 w-6" />
                                 </div>
@@ -682,10 +682,10 @@ export default async function Home() {
                                         <Link
                                             key={task.id}
                                             href={task.href}
-                                            className={`group flex flex-col items-start gap-3 rounded-[20px] p-4 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_1px_2px_rgba(38,42,46,0.04),0_10px_22px_rgba(38,42,46,0.05)] sm:flex-row sm:items-center sm:justify-between ${task.surfaceClassName}`}
+                                            className={`group flex flex-col items-start gap-3 rounded-xl p-4 transition-[border-color,background-color] duration-200 sm:flex-row sm:items-center sm:justify-between ${task.surfaceClassName}`}
                                         >
                                             <div className="flex min-w-0 items-center gap-3">
-                                                <div className={`flex size-10 shrink-0 items-center justify-center rounded-[18px] ${task.iconClassName}`}>
+                                                <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${task.iconClassName}`}>
                                                     <Icon className="h-4 w-4" />
                                                 </div>
                                                 <div className="min-w-0 space-y-1">
@@ -727,7 +727,7 @@ export default async function Home() {
                                 <Link
                                     key={link.title}
                                     href={link.href}
-                                    className="group rounded-[20px] border border-border/60 bg-background/70 p-4 transition-[transform,border-color,background-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-primary/15 hover:bg-white hover:shadow-[0_1px_2px_rgba(38,42,46,0.04),0_10px_22px_rgba(38,42,46,0.05)]"
+                                    className="group rounded-xl border border-border/50 bg-background/70 p-4 transition-[border-color,background-color] duration-200 hover:border-primary/20 hover:bg-muted/60"
                                 >
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
@@ -751,9 +751,9 @@ export default async function Home() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            <div className={`flex flex-col gap-3 rounded-[20px] px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${qualificationSummaryTone?.subtle || neutralSurfaceClassName}`}>
+                            <div className={`flex flex-col gap-3 rounded-xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${qualificationSummaryTone?.subtle || neutralSurfaceClassName}`}>
                                 <div className="flex items-center gap-3">
-                                    <div className={`flex size-9 items-center justify-center rounded-[18px] ${qualificationSummaryTone?.icon || neutralIconClassName}`}>
+                                    <div className={`flex size-9 items-center justify-center rounded-xl ${qualificationSummaryTone?.icon || neutralIconClassName}`}>
                                         <AlertCircle className="h-4 w-4" />
                                     </div>
                                     <div>
@@ -766,9 +766,9 @@ export default async function Home() {
                                     <p className="text-sm text-muted-foreground">緊急 {countFormatter.format(expiredCount)}件</p>
                                 </div>
                             </div>
-                            <div className={`flex flex-col gap-3 rounded-[20px] px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${vehicleTone?.subtle || neutralSurfaceClassName}`}>
+                            <div className={`flex flex-col gap-3 rounded-xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${vehicleTone?.subtle || neutralSurfaceClassName}`}>
                                 <div className="flex items-center gap-3">
-                                    <div className={`flex size-9 items-center justify-center rounded-[18px] ${vehicleTone?.icon || neutralIconClassName}`}>
+                                    <div className={`flex size-9 items-center justify-center rounded-xl ${vehicleTone?.icon || neutralIconClassName}`}>
                                         <Truck className="h-4 w-4" />
                                     </div>
                                     <div>
@@ -781,9 +781,9 @@ export default async function Home() {
                                     <p className="text-sm text-muted-foreground">{vehicleTasks[0]?.inspection_expiry ? `最短 ${vehicleTasks[0].inspection_expiry}` : "直近予定なし"}</p>
                                 </div>
                             </div>
-                            <div className={`flex flex-col gap-3 rounded-[20px] px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${alcoholTone?.subtle || neutralSurfaceClassName}`}>
+                            <div className={`flex flex-col gap-3 rounded-xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${alcoholTone?.subtle || neutralSurfaceClassName}`}>
                                 <div className="flex items-center gap-3">
-                                    <div className={`flex size-9 items-center justify-center rounded-[18px] ${alcoholTone?.icon || neutralIconClassName}`}>
+                                    <div className={`flex size-9 items-center justify-center rounded-xl ${alcoholTone?.icon || neutralIconClassName}`}>
                                         <Wine className="h-4 w-4" />
                                     </div>
                                     <div>
@@ -846,7 +846,7 @@ export default async function Home() {
                 </Card>
             </div>
 
-            <div className="rounded-[20px] border border-border/60 bg-card px-4 py-3">
+            <div className="rounded-xl border border-border/50 bg-card px-4 py-3">
                 <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1">
                     <span className="mr-1">資格アラート内訳</span>
                     <span className={`font-medium tabular-nums ${alertStyles.danger.strong}`}>期限切れ {countFormatter.format(expiredCount)}</span>

@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>開発進捗報告書 – 信越報知システム</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif; font-size: 14px; color: #1a1a1a; background: #f5f5f5; }
+
+  .page { max-width: 860px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.08); overflow: hidden; }
+
+  /* Header */
+  .page-header { background: #1a2b4a; color: #fff; padding: 36px 48px 28px; }
+  .page-header .label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; opacity: .6; margin-bottom: 8px; }
+  .page-header h1 { font-size: 22px; font-weight: 700; letter-spacing: .02em; line-height: 1.4; }
+  .page-header .meta { margin-top: 14px; font-size: 12px; opacity: .7; display: flex; gap: 24px; }
+
+  /* Tab nav */
+  .tab-nav { display: flex; border-bottom: 2px solid #e8e8e8; background: #fafafa; }
+  .tab-nav button { flex: 1; padding: 14px 8px; border: none; background: none; font-size: 13px; font-weight: 600; color: #888; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all .15s; }
+  .tab-nav button.active { color: #1a2b4a; border-bottom-color: #1a2b4a; background: #fff; }
+  .tab-nav button:hover:not(.active) { color: #444; }
+
+  /* Tab content */
+  .tab-content { display: none; padding: 40px 48px 48px; }
+  .tab-content.active { display: block; }
+
+  /* Section heading */
+  h2 { font-size: 15px; font-weight: 700; color: #1a2b4a; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid #e0e4ed; display: flex; align-items: center; gap: 8px; }
+  h2::before { content: ""; display: inline-block; width: 4px; height: 16px; background: #3b6fd4; border-radius: 2px; }
+  h3 { font-size: 13px; font-weight: 700; color: #444; margin: 24px 0 10px; }
+
+  /* Progress bar */
+  .progress-wrap { margin-bottom: 32px; }
+  .progress-label { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .progress-label span:first-child { font-size: 13px; color: #555; }
+  .progress-label .pct { font-size: 22px; font-weight: 800; color: #1a2b4a; }
+  .bar-bg { height: 10px; background: #e8ecf4; border-radius: 9999px; overflow: hidden; }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, #3b6fd4, #5b8ff9); border-radius: 9999px; transition: width .6s ease; }
+
+  /* Feature table */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { background: #f0f3fa; color: #1a2b4a; font-weight: 700; padding: 10px 12px; text-align: left; }
+  tbody td { padding: 9px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #fafbfe; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 700; }
+  .badge-done { background: #e6f4ea; color: #1e7e34; }
+  .badge-testing { background: #fff3cd; color: #856404; }
+  .badge-todo { background: #f0f0f0; color: #666; }
+
+  /* Checklist */
+  .check-group { margin-bottom: 28px; }
+  .check-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .check-table thead th { background: #f0f3fa; color: #1a2b4a; font-weight: 700; padding: 9px 12px; text-align: left; }
+  .check-table thead th:last-child, .check-table thead th:nth-last-child(2) { text-align: center; width: 80px; }
+  .check-table tbody td { padding: 9px 12px; border-bottom: 1px solid #f0f0f0; }
+  .check-table tbody td:last-child, .check-table tbody td:nth-last-child(2) { text-align: center; }
+  .check-box { width: 22px; height: 22px; border: 2px solid #ccc; border-radius: 4px; display: inline-block; cursor: pointer; transition: all .1s; }
+  .check-box:hover { border-color: #3b6fd4; background: #eef2fc; }
+
+  /* Note box */
+  .note { background: #f0f3fa; border-left: 4px solid #3b6fd4; padding: 12px 16px; border-radius: 0 6px 6px 0; font-size: 13px; color: #444; line-height: 1.7; margin: 16px 0; }
+
+  /* Info card */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+  .info-card { background: #f7f8fc; border: 1px solid #e0e4ed; border-radius: 8px; padding: 18px 20px; }
+  .info-card .card-label { font-size: 11px; color: #888; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
+  .info-card .card-value { font-size: 14px; font-weight: 600; color: #1a2b4a; word-break: break-all; }
+  .info-card .card-value a { color: #3b6fd4; text-decoration: none; }
+  .info-card .card-value a:hover { text-decoration: underline; }
+
+  /* Account table */
+  .acct-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .acct-table thead th { background: #f0f3fa; color: #1a2b4a; font-weight: 700; padding: 9px 14px; text-align: left; }
+  .acct-table tbody td { padding: 9px 14px; border-bottom: 1px solid #f0f0f0; font-family: monospace; }
+  .acct-table tbody td:first-child { font-family: inherit; font-weight: 600; }
+
+  /* Schedule */
+  .schedule { list-style: none; position: relative; padding-left: 20px; }
+  .schedule::before { content: ""; position: absolute; left: 6px; top: 6px; bottom: 6px; width: 2px; background: #e0e4ed; }
+  .schedule li { position: relative; padding: 0 0 20px 20px; }
+  .schedule li::before { content: ""; position: absolute; left: -8px; top: 5px; width: 10px; height: 10px; background: #3b6fd4; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 2px #3b6fd4; }
+  .schedule li.done::before { background: #1e7e34; box-shadow: 0 0 0 2px #1e7e34; }
+  .schedule li .s-date { font-size: 11px; color: #888; font-weight: 700; margin-bottom: 3px; }
+  .schedule li .s-label { font-size: 13px; font-weight: 600; color: #1a2b4a; }
+  .schedule li .s-note { font-size: 12px; color: #666; margin-top: 2px; }
+
+  /* Remaining */
+  .remain-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .remain-table thead th { background: #f0f3fa; color: #1a2b4a; font-weight: 700; padding: 9px 12px; text-align: left; }
+  .remain-table tbody td { padding: 9px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+  .priority-high { color: #c0392b; font-weight: 700; }
+  .priority-mid { color: #856404; font-weight: 700; }
+  .priority-low { color: #555; }
+
+  @media print {
+    body { background: #fff; }
+    .page { box-shadow: none; border-radius: 0; margin: 0; max-width: 100%; }
+    .tab-nav { display: none; }
+    .tab-content { display: block !important; page-break-before: always; padding: 32px; }
+    .tab-content:first-of-type { page-break-before: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="label">開発進捗報告書</div>
+    <h1>信越報知 社員・設備管理システム</h1>
+    <div class="meta">
+      <span>報告日：2026年4月22日</span>
+      <span>開発：株式会社 Amber</span>
+      <span>対象：信越報知株式会社 ご担当者様</span>
+    </div>
+  </div>
+
+  <!-- Tab nav -->
+  <div class="tab-nav">
+    <button class="active" onclick="switchTab('progress', this)">① 進捗報告</button>
+    <button onclick="switchTab('checklist', this)">② 機能確認シート</button>
+    <button onclick="switchTab('env', this)">③ 環境・アクセス情報</button>
+  </div>
+
+  <!-- Tab 1: 進捗報告 -->
+  <div class="tab-content active" id="tab-progress">
+
+    <h2>全体進捗</h2>
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>基本機能の実装完了率（実データ移行・UAT除く）</span>
+        <span class="pct">85%</span>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" style="width:85%"></div></div>
+    </div>
+    <div class="note">
+      基本機能の実装はひととおり完了しています。現在は実データを使った動作確認と、運用フローに沿ったテストを進めている段階です。正式な納品は、テスト完了後を予定しています。
+    </div>
+
+    <h2 style="margin-top:32px">機能別ステータス</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>機能</th>
+          <th>状態</th>
+          <th>備考</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>社員台帳（登録・編集・検索）</td><td><span class="badge badge-done">完了</span></td><td>権限ごとの表示制御あり</td></tr>
+        <tr><td>CSVインポート（社員一括登録）</td><td><span class="badge badge-done">完了</span></td><td>事前チェック機能付き</td></tr>
+        <tr><td>CSVエクスポート（各種）</td><td><span class="badge badge-done">完了</span></td><td>管理者・人事のみ利用可</td></tr>
+        <tr><td>アルコールチェック記録</td><td><span class="badge badge-done">完了</span></td><td>月次集計エクスポートあり</td></tr>
+        <tr><td>資格管理</td><td><span class="badge badge-done">完了</span></td><td>期限アラート通知あり</td></tr>
+        <tr><td>工事経歴管理</td><td><span class="badge badge-done">完了</span></td><td></td></tr>
+        <tr><td>機器・備品管理</td><td><span class="badge badge-done">完了</span></td><td></td></tr>
+        <tr><td>ユーザー管理・権限設定</td><td><span class="badge badge-done">完了</span></td><td>管理者のみ操作可</td></tr>
+        <tr><td>自動通知（資格期限）</td><td><span class="badge badge-done">完了</span></td><td>実行履歴確認画面あり</td></tr>
+        <tr><td>実データ移行</td><td><span class="badge badge-testing">確認中</span></td><td>先方データでの動作確認が必要</td></tr>
+        <tr><td>モバイル対応</td><td><span class="badge badge-testing">確認中</span></td><td>スマートフォンでの表示確認</td></tr>
+        <tr><td>操作マニュアル</td><td><span class="badge badge-todo">未作成</span></td><td>納品時に提供予定</td></tr>
+      </tbody>
+    </table>
+
+    <h2 style="margin-top:36px">今後のスケジュール</h2>
+    <ul class="schedule">
+      <li class="done">
+        <div class="s-date">完了</div>
+        <div class="s-label">基本機能の実装</div>
+        <div class="s-note">社員台帳・アルコール・資格・工事経歴・機器管理・権限制御</div>
+      </li>
+      <li>
+        <div class="s-date">〜5月上旬</div>
+        <div class="s-label">実データでの動作確認・UAT</div>
+        <div class="s-note">先方担当者様に実際に操作していただきフィードバックを収集</div>
+      </li>
+      <li>
+        <div class="s-date">〜5月中旬</div>
+        <div class="s-label">フィードバック対応・操作マニュアル作成</div>
+      </li>
+      <li>
+        <div class="s-date">5月下旬（予定）</div>
+        <div class="s-label">正式納品</div>
+      </li>
+    </ul>
+
+    <h2 style="margin-top:36px">残作業と優先度</h2>
+    <table class="remain-table">
+      <thead>
+        <tr><th>項目</th><th>優先度</th><th>対応方針</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>実データでの動作確認</td>
+          <td><span class="priority-high">高</span></td>
+          <td>先方よりデータ提供いただき次第、実施</td>
+        </tr>
+        <tr>
+          <td>UAT（先方による操作確認）</td>
+          <td><span class="priority-high">高</span></td>
+          <td>下記「機能確認シート」をもとに実施</td>
+        </tr>
+        <tr>
+          <td>モバイル表示の最終確認</td>
+          <td><span class="priority-mid">中</span></td>
+          <td>実機（iPhone/Android）での確認</td>
+        </tr>
+        <tr>
+          <td>操作マニュアル作成</td>
+          <td><span class="priority-mid">中</span></td>
+          <td>UAT完了後に作成</td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+
+  <!-- Tab 2: 機能確認シート -->
+  <div class="tab-content" id="tab-checklist">
+
+    <div class="note" style="margin-bottom:28px">
+      実際にシステムを操作しながら確認してください。確認できたら「OK」欄に✔、問題があれば「NG」欄に✔して備考に内容を記入してください。
+    </div>
+
+    <!-- 社員台帳 -->
+    <div class="check-group">
+      <h2>社員台帳</h2>
+      <table class="check-table">
+        <thead><tr><th>確認項目</th><th>OK</th><th>NG</th></tr></thead>
+        <tbody>
+          <tr><td>社員一覧が表示される</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+          <tr><td>社員を名前・拠点で絞り込み検索できる</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+          <tr><td>新しい社員を登録できる</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+          <tr><td>社員情報を編集・保存できる</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+          <tr><td>社員を削除（退職処理）できる</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+          <tr><td>CSVで社員一覧をエクスポートできる</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+          <tr><td>CSVから社員を一括インポートできる</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- アルコールチェック -->
+    <div class="check-group">
+      <h2>アルコールチェック</h2>
+      <table class="check-table">
+        <thead><tr><th>確認項目</th><th>OK</th><th>NG</th></tr></thead>
+        <tbody>
+          <tr><td>アルコールチェック一覧が表示される</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+          <tr><td>新規記録を登録できる</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+          <tr><td>月次集計（記録率）をCSVでエクスポートできる</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 資格管理 -->
+    <div class="check-group">
+      <h2>資格管理</h2>
+      <table class="check-table">
+        <thead><tr><th>確認項目</th><th>OK</th><th>NG</th></tr></thead>
+        <tbody>
+          <tr><td>資格一覧が表示される</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+          <tr><td>期限切れ・期限近い資格が色分け表示される</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+          <tr><td>資格を登録・編集できる</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+          <tr><td>自動通知メールが届いている（要確認）</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 工事経歴 -->
+    <div class="check-group">
+      <h2>工事経歴</h2>
+      <table class="check-table">
+        <thead><tr><th>確認項目</th><th>OK</th><th>NG</th></tr></thead>
+        <tbody>
+          <tr><td>工事経歴一覧が表示される</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+          <tr><td>新規記録を登録できる</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+          <tr><td>CSVでエクスポートできる</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 機器管理 -->
+    <div class="check-group">
+      <h2>機器・備品管理</h2>
+      <table class="check-table">
+        <thead><tr><th>確認項目</th><th>OK</th><th>NG</th></tr></thead>
+        <tbody>
+          <tr><td>機器一覧が表示される</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+          <tr><td>新規機器を登録できる</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+          <tr><td>CSVでエクスポートできる</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 権限 -->
+    <div class="check-group">
+      <h2>権限・ユーザー管理</h2>
+      <table class="check-table">
+        <thead><tr><th>確認項目</th><th>OK</th><th>NG</th></tr></thead>
+        <tbody>
+          <tr><td>管理者（admin）でログインすると全機能が使える</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+          <tr><td>人事（hr）でログインするとエクスポート・インポートが使える</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+          <tr><td>一般（technician）でログインすると閲覧のみになる</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+          <tr><td>ユーザー管理画面でロールを変更できる</td><td><span class="check-box"></span></td><td><span class="check-box"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- Tab 3: 環境・アクセス情報 -->
+  <div class="tab-content" id="tab-env">
+
+    <h2>本番環境</h2>
+    <div class="info-grid">
+      <div class="info-card">
+        <div class="card-label">URL</div>
+        <div class="card-value"><a href="https://shinetsu-hochi-system.vercel.app" target="_blank">https://shinetsu-hochi-system.vercel.app</a></div>
+      </div>
+      <div class="info-card">
+        <div class="card-label">ホスティング</div>
+        <div class="card-value">Vercel（自動デプロイ）</div>
+      </div>
+      <div class="info-card">
+        <div class="card-label">データベース</div>
+        <div class="card-value">Supabase（PostgreSQL）</div>
+      </div>
+      <div class="info-card">
+        <div class="card-label">ブラウザ推奨環境</div>
+        <div class="card-value">Chrome / Safari 最新版</div>
+      </div>
+    </div>
+
+    <h2>テスト用アカウント</h2>
+    <div class="note" style="margin-bottom:16px">
+      以下のアカウントは動作確認専用です。実運用前に必ずパスワードを変更してください。
+    </div>
+    <table class="acct-table">
+      <thead>
+        <tr>
+          <th>ロール</th>
+          <th>メールアドレス</th>
+          <th>パスワード</th>
+          <th>できること</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>管理者</td>
+          <td>admin@example.com</td>
+          <td>（別途連絡）</td>
+          <td>全機能・ユーザー管理</td>
+        </tr>
+        <tr>
+          <td>人事</td>
+          <td>hr@example.com</td>
+          <td>（別途連絡）</td>
+          <td>台帳・エクスポート・インポート</td>
+        </tr>
+        <tr>
+          <td>一般（技術者）</td>
+          <td>tech@example.com</td>
+          <td>（別途連絡）</td>
+          <td>閲覧・自分のデータ入力</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 style="margin-top:36px">ロール（権限）の説明</h2>
+    <table>
+      <thead>
+        <tr><th>ロール</th><th>主な権限</th><th>想定ユーザー</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>管理者</strong></td>
+          <td>全機能の閲覧・編集・削除、ユーザー管理、CSVエクスポート・インポート</td>
+          <td>システム管理者・経営層</td>
+        </tr>
+        <tr>
+          <td><strong>人事</strong></td>
+          <td>社員情報・各種記録の閲覧・編集、CSVエクスポート・インポート（ユーザー管理は不可）</td>
+          <td>人事・総務担当者</td>
+        </tr>
+        <tr>
+          <td><strong>一般（技術者）</strong></td>
+          <td>閲覧のみ、自分のアルコールチェック・工事経歴の入力</td>
+          <td>現場社員</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 style="margin-top:36px">お問い合わせ</h2>
+    <div class="info-grid">
+      <div class="info-card">
+        <div class="card-label">開発担当</div>
+        <div class="card-value">株式会社 Amber<br>担当：代表 内山歩夢</div>
+      </div>
+      <div class="info-card">
+        <div class="card-label">メール</div>
+        <div class="card-value"><a href="mailto:bbdream11ayumu@gmail.com">bbdream11ayumu@gmail.com</a></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>

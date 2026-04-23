@@ -43,7 +43,7 @@ export function AppSidebar() {
 
     return (
         <Sidebar collapsible="icon" className="border-r border-border bg-sidebar print:hidden">
-            <SidebarHeader className="border-b border-border/50 px-4 py-4">
+            <SidebarHeader className="px-4 py-4">
                 <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
                     <BrandLogo
                         priority
@@ -84,7 +84,7 @@ export function AppSidebar() {
                     </div>
                 ))}
             </SidebarContent>
-            <SidebarFooter className="border-t border-border/50 p-4">
+            <SidebarFooter className="p-4">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton tooltip="ログアウト" onClick={signOut}>
