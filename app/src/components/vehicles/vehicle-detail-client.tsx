@@ -33,7 +33,7 @@ function getExpiryBadge(date: string | null) {
     if (!date) return null;
     const days = differenceInDays(new Date(date), new Date());
     if (days < 0) return <Badge variant="destructive">{Math.abs(days)}日超過</Badge>;
-    if (days <= 30) return <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200">残{days}日</Badge>;
+    if (days <= 30) return <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">残{days}日</Badge>;
     return <Badge variant="outline" className="text-green-700 border-green-200">有効</Badge>;
 }
 

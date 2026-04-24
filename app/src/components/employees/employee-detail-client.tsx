@@ -331,7 +331,7 @@ export function EmployeeDetailClient({
             </div>
 
             {isAdminOrHr && housingAlertActive && (
-                <div className="mx-6 mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                <div className="mx-6 mt-3 flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                     <span>
                         {housingDaysLeft! <= 0
@@ -629,7 +629,7 @@ export function EmployeeDetailClient({
                                         <div className="flex justify-between"><span className="text-muted-foreground">取得日</span><span className="tabular-nums">{formatDisplayDate(qualification.acquired_date)}</span></div>
                                         <div className="flex justify-between font-bold">
                                             <span className="text-muted-foreground">有効期限</span>
-                                            <span className={`tabular-nums ${qualification.expiry_date && new Date(qualification.expiry_date) < new Date() ? "text-destructive" : ""}`}>
+                                            <span className={`tabular-nums ${qualification.expiry_date && new Date(qualification.expiry_date) < new Date() ? "text-blue-700" : ""}`}>
                                                 {formatDisplayDate(qualification.expiry_date, "期限なし")}
                                             </span>
                                         </div>
@@ -767,7 +767,7 @@ export function EmployeeDetailClient({
                                         </div>
                                         <div className="flex flex-col items-end gap-2">
                                             {family.is_emergency_contact && (
-                                                <Badge className={`${alertStyles.danger.badge} border-red-200/70`}>
+                                                <Badge className={`${alertStyles.danger.badge} border-blue-700/50`}>
                                                     緊急連絡先
                                                 </Badge>
                                             )}
@@ -849,7 +849,7 @@ export function EmployeeDetailClient({
                                                 {record.notes && <p className="text-xs text-muted-foreground mt-0.5">{record.notes}</p>}
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <Badge variant={record.result === "合格" ? "outline" : "secondary"} className={record.result === "合格" ? "text-green-700 border-green-200 bg-green-50" : "text-destructive bg-destructive/10"}>
+                                                <Badge variant={record.result === "合格" ? "outline" : "secondary"} className={record.result === "合格" ? "text-green-700 border-green-200 bg-green-50" : "text-blue-700 bg-blue-700/10"}>
                                                     {record.result}
                                                 </Badge>
                                                 {isAdminOrHr && (

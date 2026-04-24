@@ -39,7 +39,7 @@ function renderStatusBadge(status: "running" | "completed" | "failed") {
     if (status === "failed") {
         return <Badge variant="destructive">失敗</Badge>;
     }
-    return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">実行中</Badge>;
+    return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">実行中</Badge>;
 }
 
 export default async function OperationsLogPage() {
@@ -162,10 +162,10 @@ export default async function OperationsLogPage() {
             </div>
 
             {!hasServiceRole && (
-                <Card className="border-amber-200 bg-amber-50/80">
+                <Card className="border-blue-200 bg-blue-50/80">
                     <CardHeader>
                         <CardTitle className="text-base">自動通知の履歴記録が設定されていません</CardTitle>
-                        <CardDescription className="text-amber-900/80">
+                        <CardDescription className="text-blue-900/80">
                             サーバーの認証キーが未設定のため、自動実行分の履歴が保存されません。
                             この画面からの手動実行ログは保存されます。
                         </CardDescription>
