@@ -228,7 +228,7 @@ export function AddAlcoholCheckModal({
                             )} />
 
                             {isAbnormal && (
-                                <div className="p-3 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 rounded-xl text-sm font-semibold border border-red-200 dark:border-red-900 flex items-start gap-2">
+                                <div className="p-3 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 rounded-xl text-sm font-semibold border border-blue-200 dark:border-blue-900 flex items-start gap-2">
                                     <AlertTriangle className="h-5 w-5 shrink-0" />
                                     <p>不適正として記録されます。作業員は絶対に運転を開業しないでください。</p>
                                 </div>

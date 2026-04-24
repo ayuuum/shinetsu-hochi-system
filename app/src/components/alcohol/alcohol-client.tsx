@@ -265,9 +265,9 @@ export function AlcoholClient({
             />
 
             {abnormalCount > 0 && (
-                <div className="flex items-start gap-3 p-4 rounded-[16px] bg-destructive/10 border border-destructive/20">
-                    <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
-                    <p className="text-sm font-bold text-destructive">
+                <div className="flex items-start gap-3 p-4 rounded-[16px] bg-blue-600/10 border border-blue-600/20">
+                    <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
+                    <p className="text-sm font-bold text-blue-700">
                         不適正記録が {abnormalCount} 件あります。安全運転管理者の対応が必要です。
                     </p>
                 </div>
@@ -473,7 +473,7 @@ export function AlcoholClient({
                         <Card
                             key={check.id}
                             size="sm"
-                            className={check.is_abnormal ? "border-destructive/20 bg-destructive/5" : "border-border/60"}
+                            className={check.is_abnormal ? "border-blue-600/20 bg-blue-600/5" : "border-border/60"}
                         >
                             <CardContent className="space-y-3">
                                 <div className="flex items-start justify-between gap-3">
@@ -568,8 +568,8 @@ export function AlcoholClient({
                             </TableRow>
                         ) : (
                             initialChecks.map((check) => (
-                                <TableRow key={check.id} className={check.is_abnormal ? "group bg-destructive/5 hover:bg-destructive/10" : "group hover:bg-muted/30 transition-colors"}>
-                                    <TableCell className={`sticky left-0 z-10 font-medium shadow-[inset_-1px_0_0_hsl(var(--border))] ${check.is_abnormal ? "bg-background group-hover:bg-destructive/10" : "bg-card group-hover:bg-muted/30"}`}>
+                                <TableRow key={check.id} className={check.is_abnormal ? "group bg-blue-600/5 hover:bg-blue-600/10" : "group hover:bg-muted/30 transition-colors"}>
+                                    <TableCell className={`sticky left-0 z-10 font-medium shadow-[inset_-1px_0_0_hsl(var(--border))] ${check.is_abnormal ? "bg-background group-hover:bg-blue-600/10" : "bg-card group-hover:bg-muted/30"}`}>
                                         {check.employee?.id ? (
                                             <TableCellLink href={`/employees/${check.employee.id}`} className="font-medium hover:underline">
                                                 {check.employee.name}

@@ -161,7 +161,7 @@ function getRunBadge(status: ImportRunRow["status"]) {
     if (status === "failed") {
         return <Badge variant="destructive">失敗</Badge>;
     }
-    return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">実行中</Badge>;
+    return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">実行中</Badge>;
 }
 
 export default function ImportPage() {
