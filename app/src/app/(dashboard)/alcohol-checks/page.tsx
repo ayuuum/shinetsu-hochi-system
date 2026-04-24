@@ -2,6 +2,7 @@ import { createSupabaseServer } from "@/lib/supabase-server";
 import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { AlcoholClient, type AlcoholCheckRow } from "@/components/alcohol/alcohol-client";
 import { getTodayInTokyo, getTokyoCalendarMonthBounds } from "@/lib/date";
+import { getCachedEmployeeList } from "@/lib/cached-queries";
 
 const PAGE_SIZE = 50;
 
@@ -61,15 +62,9 @@ export default async function AlcoholChecksPage({
             checksQuery = checksQuery.eq("employee_id", currentEmployee);
         }
 
-        let employeesQuery = supabase
-            .from("employees")
-            .select("id, name")
-            .is("deleted_at", null)
-            .order("name");
-
-        if (auth.role === "technician" && auth.linkedEmployeeId) {
-            employeesQuery = employeesQuery.eq("id", auth.linkedEmployeeId);
-        }
+        const empPromise = auth.role === "technician" && auth.linkedEmployeeId
+            ? supabase.from("employees").select("id, name").is("deleted_at", null).eq("id", auth.linkedEmployeeId).then((r) => r.data || [])
+            : getCachedEmployeeList();
 
         const monthlyQuery = supabase
             .from("alcohol_checks")
@@ -80,12 +75,12 @@ export default async function AlcoholChecksPage({
 
         const [checksResult, empResult, monthlyResult] = await Promise.all([
             checksQuery,
-            employeesQuery,
+            empPromise,
             monthlyQuery,
         ]);
         const checks = (checksResult.data as AlcoholCheckRow[]) || [];
         checksData = checks.slice(0, PAGE_SIZE);
-        empData = empResult.data || [];
+        empData = empResult as { id: string; name: string }[];
         hasNextPage = checks.length > PAGE_SIZE;
 
         const monthlyChecks = monthlyResult.data || [];
