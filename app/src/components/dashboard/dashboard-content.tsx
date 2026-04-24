@@ -108,7 +108,7 @@ type PrioritySnapshot = {
 };
 
 const countFormatter = new Intl.NumberFormat("ja-JP");
-const neutralSurfaceClassName = "border border-border/60 bg-white/72";
+const neutralSurfaceClassName = "border border-border/50 bg-white/72";
 const neutralIconClassName = "bg-muted/80 text-muted-foreground";
 
 const monthScheduleCategoryPriority: Record<string, number> = {
@@ -544,7 +544,7 @@ export async function DashboardFocusCardsSection() {
 
     return (
         <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-            <Card className="border-border/60">
+            <Card className="border-border/50">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <ShieldAlert className="h-5 w-5 text-muted-foreground" />
@@ -609,13 +609,13 @@ export async function DashboardFocusCardsSection() {
                                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                                         {card.eyebrow}
                                     </p>
-                                    <p className={`mt-2.5 text-[1.9rem] font-semibold tabular-nums ${card.valueClassName}`}>
+                                    <p className={`mt-2.5 text-3xl font-semibold tabular-nums ${card.valueClassName}`}>
                                         {countFormatter.format(card.value)}
                                     </p>
                                     <p className="mt-1.5 text-sm font-medium">{card.title}</p>
                                 </div>
                                 <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${card.iconClassName}`}>
-                                    <Icon className="h-[18px] w-[18px]" />
+                                    <Icon className="h-5 w-5" />
                                 </div>
                             </div>
                             <p className="mt-3 text-sm leading-6 text-muted-foreground">
@@ -626,8 +626,8 @@ export async function DashboardFocusCardsSection() {
                 })}
             </div>
 
-            <div className="grid gap-4 md:col-span-2 md:grid-cols-3">
-                <Card className="border-border/60">
+            <div className="grid gap-4 xl:col-span-2 xl:grid-cols-3">
+                <Card className="border-border/50">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Users className="h-4 w-4 text-muted-foreground" />
@@ -639,7 +639,7 @@ export async function DashboardFocusCardsSection() {
                         <p className="mt-2 text-sm text-muted-foreground">現在の登録従業員数です。</p>
                     </CardContent>
                 </Card>
-                <Card className="border-border/60">
+                <Card className="border-border/50">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -651,7 +651,7 @@ export async function DashboardFocusCardsSection() {
                         <p className="mt-2 text-sm text-muted-foreground">当月に入社日を迎えた社員数です。</p>
                     </CardContent>
                 </Card>
-                <Card className="border-border/60">
+                <Card className="border-border/50">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <ShieldCheck className="h-4 w-4 text-muted-foreground" />
@@ -729,7 +729,7 @@ export async function DashboardTaskListSection() {
 
     return (
         <section className="grid gap-4 xl:grid-cols-[1.35fr_0.95fr]">
-            <Card className="border-border/60">
+            <Card className="border-border/50">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <ShieldAlert className={`h-5 w-5 ${alertStyles.danger.strong}`} />
@@ -771,7 +771,7 @@ export async function DashboardTaskListSection() {
                                             </div>
                                         </div>
                                         <div className="flex w-full items-center justify-between sm:ml-4 sm:w-auto sm:justify-start sm:gap-2">
-                                            <Badge variant="secondary" className={`${task.badgeClassName} text-sm`}>
+                                            <Badge variant="secondary" className={`${task.badgeClassName} text-xs`}>
                                                 {task.badgeLabel}
                                             </Badge>
                                             <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5" />
@@ -784,7 +784,7 @@ export async function DashboardTaskListSection() {
                 </CardContent>
             </Card>
 
-            <Card className="border-border/60">
+            <Card className="border-border/50">
                 <CardHeader>
                     <CardTitle>本日の安全・運用サマリー</CardTitle>
                     <CardDescription>
@@ -864,7 +864,7 @@ export function DashboardQuickLinksSection() {
 
     return (
         <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-            <Card className="border-border/60">
+            <Card className="border-border/50">
                 <CardHeader>
                     <CardTitle>主要画面へのショートカット</CardTitle>
                     <CardDescription>
