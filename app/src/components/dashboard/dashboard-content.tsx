@@ -727,6 +727,33 @@ export async function DashboardMonthScheduleSection() {
 export async function DashboardTaskListSection() {
     const snapshot = await getDashboardPrioritySnapshot(getTodayInTokyo());
 
+    const summaryItems = [
+        {
+            label: "資格アラート",
+            sublabel: "期限切れ / 14日以内 / 30日以内",
+            value: snapshot.urgentAlertCount,
+            detail: `緊急 ${countFormatter.format(snapshot.expiredCount)}件`,
+            tone: snapshot.qualificationSummaryTone,
+            href: "/qualifications?level=urgent",
+        },
+        {
+            label: "車検期限",
+            sublabel: "30日以内の対象件数",
+            value: snapshot.vehicleTasks.length,
+            detail: snapshot.vehicleTasks[0]?.inspection_expiry ? `最短 ${snapshot.vehicleTasks[0].inspection_expiry}` : "直近予定なし",
+            tone: snapshot.vehicleTone,
+            href: "/vehicles",
+        },
+        {
+            label: "アルコールチェック",
+            sublabel: "不適正と未記録の件数",
+            value: snapshot.pendingAlcoholCount,
+            detail: `不適正 ${countFormatter.format(snapshot.abnormalAlcohol)}件 / 未記録 ${countFormatter.format(snapshot.missingAlcoholCount)}名`,
+            tone: snapshot.alcoholTone,
+            href: buildAlcoholChecksHref({ date: snapshot.today }),
+        },
+    ];
+
     return (
         <section className="grid gap-4 xl:grid-cols-[1.35fr_0.95fr]">
             <Card className="border-border/50">
@@ -751,34 +778,26 @@ export async function DashboardTaskListSection() {
                             </p>
                         </div>
                     ) : (
-                        <div className="space-y-3">
-                            {snapshot.dashboardTasks.map((task) => {
-                                const Icon = task.icon;
-                                return (
-                                    <Link
-                                        key={task.id}
-                                        href={task.href}
-                                        className={`group flex flex-col items-start gap-3 rounded-xl p-4 transition-[border-color,background-color] duration-200 sm:flex-row sm:items-center sm:justify-between ${task.surfaceClassName}`}
-                                    >
-                                        <div className="flex min-w-0 items-center gap-3">
-                                            <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${task.iconClassName}`}>
-                                                <Icon className="h-4 w-4" />
-                                            </div>
-                                            <div className="min-w-0 space-y-1">
-                                                <p className="truncate text-sm font-semibold">{task.title}</p>
-                                                <p className="truncate text-sm text-muted-foreground">{task.subtitle}</p>
-                                                <p className="text-sm text-muted-foreground">{task.meta}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex w-full items-center justify-between sm:ml-4 sm:w-auto sm:justify-start sm:gap-2">
+                        <div className="-mx-6">
+                            {snapshot.dashboardTasks.map((task) => (
+                                <Link
+                                    key={task.id}
+                                    href={task.href}
+                                    className="group flex items-center gap-3 border-b border-border/40 px-6 py-3 last:border-0 transition-colors duration-150 hover:bg-muted/40"
+                                >
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <p className="text-sm font-semibold">{task.title}</p>
                                             <Badge variant="secondary" className={`${task.badgeClassName} text-xs`}>
                                                 {task.badgeLabel}
                                             </Badge>
-                                            <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5" />
                                         </div>
-                                    </Link>
-                                );
-                            })}
+                                        <p className="truncate text-xs text-muted-foreground mt-0.5">{task.subtitle}</p>
+                                        <p className="text-xs text-muted-foreground">{task.meta}</p>
+                                    </div>
+                                    <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                                </Link>
+                            ))}
                         </div>
                     )}
                 </CardContent>
@@ -791,61 +810,26 @@ export async function DashboardTaskListSection() {
                         日次確認で見落としやすい項目をまとめています。
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                    <div className={`flex flex-col gap-3 rounded-xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${snapshot.qualificationSummaryTone?.subtle || neutralSurfaceClassName}`}>
-                        <div className="flex items-center gap-3">
-                            <div className={`flex size-9 items-center justify-center rounded-xl ${snapshot.qualificationSummaryTone?.icon || neutralIconClassName}`}>
-                                <AlertCircle className="h-4 w-4" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium">資格アラート</p>
-                                <p className="text-sm text-muted-foreground">期限切れ / 14日以内 / 30日以内</p>
-                            </div>
-                        </div>
-                        <div className="text-right tabular-nums">
-                            <p className={`text-lg font-semibold ${snapshot.qualificationSummaryTone?.strong || "text-foreground"}`}>
-                                {countFormatter.format(snapshot.urgentAlertCount)}
-                            </p>
-                            <p className="text-sm text-muted-foreground">緊急 {countFormatter.format(snapshot.expiredCount)}件</p>
-                        </div>
-                    </div>
-                    <div className={`flex flex-col gap-3 rounded-xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${snapshot.vehicleTone?.subtle || neutralSurfaceClassName}`}>
-                        <div className="flex items-center gap-3">
-                            <div className={`flex size-9 items-center justify-center rounded-xl ${snapshot.vehicleTone?.icon || neutralIconClassName}`}>
-                                <Truck className="h-4 w-4" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium">車検期限</p>
-                                <p className="text-sm text-muted-foreground">30日以内の対象件数</p>
-                            </div>
-                        </div>
-                        <div className="text-right tabular-nums">
-                            <p className={`text-lg font-semibold ${snapshot.vehicleTone?.strong || "text-foreground"}`}>
-                                {countFormatter.format(snapshot.vehicleTasks.length)}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                                {snapshot.vehicleTasks[0]?.inspection_expiry ? `最短 ${snapshot.vehicleTasks[0].inspection_expiry}` : "直近予定なし"}
-                            </p>
-                        </div>
-                    </div>
-                    <div className={`flex flex-col gap-3 rounded-xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${snapshot.alcoholTone?.subtle || neutralSurfaceClassName}`}>
-                        <div className="flex items-center gap-3">
-                            <div className={`flex size-9 items-center justify-center rounded-xl ${snapshot.alcoholTone?.icon || neutralIconClassName}`}>
-                                <Wine className="h-4 w-4" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium">アルコールチェック</p>
-                                <p className="text-sm text-muted-foreground">不適正と未記録の件数</p>
-                            </div>
-                        </div>
-                        <div className="text-right tabular-nums">
-                            <p className={`text-lg font-semibold ${snapshot.alcoholTone?.strong || "text-foreground"}`}>
-                                {countFormatter.format(snapshot.pendingAlcoholCount)}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                                不適正 {countFormatter.format(snapshot.abnormalAlcohol)}件 / 未記録 {countFormatter.format(snapshot.missingAlcoholCount)}名
-                            </p>
-                        </div>
+                <CardContent>
+                    <div className="-mx-6">
+                        {summaryItems.map((item) => (
+                            <Link
+                                key={item.label}
+                                href={item.href}
+                                className="group flex items-center justify-between border-b border-border/40 px-6 py-4 last:border-0 transition-colors duration-150 hover:bg-muted/40"
+                            >
+                                <div>
+                                    <p className="text-sm font-medium">{item.label}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{item.sublabel}</p>
+                                </div>
+                                <div className="text-right tabular-nums">
+                                    <p className={`text-3xl font-bold ${item.tone?.strong || "text-foreground"}`}>
+                                        {countFormatter.format(item.value)}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">{item.detail}</p>
+                                </div>
+                            </Link>
+                        ))}
                     </div>
                 </CardContent>
             </Card>
