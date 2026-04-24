@@ -2,6 +2,17 @@ import { notFound, redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { EmployeeDetailClient, type EmployeeDetail, type EmployeeDetailTab } from "@/components/employees/employee-detail-client";
+import {
+    getEmployeeDetailSelect,
+    shouldLoadConstructionRecords,
+    shouldLoadDeletedQualifications,
+    shouldLoadEmployeeItAccounts,
+    shouldLoadEmployeePhoto,
+    shouldLoadExamHistory,
+    shouldLoadHealthChecks,
+    shouldLoadQualificationCertificateUrls,
+    shouldLoadSeminarRecords,
+} from "@/lib/employee-detail";
 import { Tables } from "@/types/supabase";
 
 type EmployeeQualification = Tables<"employee_qualifications"> & {
@@ -46,17 +57,11 @@ export default async function EmployeeDetailPage({
     const [employeeResult, constructionResult, healthResult, itResult, examHistoryResult, seminarResult, deletedQualsResult] = await Promise.all([
         supabase
             .from("employees")
-            .select(`
-                *,
-                employee_qualifications(*, qualification_master(*)),
-                employee_family(*),
-                employee_life_insurances(*),
-                employee_damage_insurances(*)
-            `)
+            .select(getEmployeeDetailSelect(currentTab))
             .eq("id", id)
             .is("deleted_at", null)
             .maybeSingle(),
-        currentTab === "construction"
+        shouldLoadConstructionRecords(currentTab)
             ? supabase
                 .from("construction_records")
                 .select("*")
@@ -64,7 +69,7 @@ export default async function EmployeeDetailPage({
                 .is("deleted_at", null)
                 .order("construction_date", { ascending: false })
             : Promise.resolve({ data: [] as Tables<"construction_records">[], error: null }),
-        currentTab === "health"
+        shouldLoadHealthChecks(currentTab)
             ? supabase
                 .from("health_checks")
                 .select("*")
@@ -72,7 +77,7 @@ export default async function EmployeeDetailPage({
                 .is("deleted_at", null)
                 .order("check_date", { ascending: false })
             : Promise.resolve({ data: [] as Tables<"health_checks">[], error: null }),
-        currentTab === "it" && isAdminOrHr
+        shouldLoadEmployeeItAccounts(currentTab, isAdminOrHr)
             ? supabase
                 .from("employee_it_accounts")
                 .select("*")
@@ -80,21 +85,21 @@ export default async function EmployeeDetailPage({
                 .order("sort_order", { ascending: true })
                 .order("created_at", { ascending: true })
             : Promise.resolve({ data: [] as Tables<"employee_it_accounts">[], error: null }),
-        currentTab === "seminars"
+        shouldLoadExamHistory(currentTab)
             ? supabase
                 .from("qualification_exam_history")
                 .select("*")
                 .eq("employee_id", id)
                 .order("exam_date", { ascending: false })
             : Promise.resolve({ data: [] as Tables<"qualification_exam_history">[], error: null }),
-        currentTab === "seminars"
+        shouldLoadSeminarRecords(currentTab)
             ? supabase
                 .from("seminar_records")
                 .select("*")
                 .eq("employee_id", id)
                 .order("held_date", { ascending: false })
             : Promise.resolve({ data: [] as Tables<"seminar_records">[], error: null }),
-        currentTab === "qualifications"
+        shouldLoadDeletedQualifications(currentTab)
             ? supabase
                 .from("employee_qualifications")
                 .select("*, qualification_master(*)")
@@ -147,7 +152,7 @@ export default async function EmployeeDetailPage({
     let certUrls: Record<string, string> = {};
     let photoUrl: string | null = null;
 
-    if (currentTab === "qualifications") {
+    if (shouldLoadQualificationCertificateUrls(currentTab)) {
         const certPaths = [...employee.employee_qualifications, ...employee.deleted_qualifications]
             .filter((qualification) => qualification.certificate_url)
             .map((qualification) => ({ id: qualification.id, path: qualification.certificate_url! }));
@@ -169,7 +174,7 @@ export default async function EmployeeDetailPage({
         }
     }
 
-    if (currentTab === "basic" && employee.photo_url) {
+    if (shouldLoadEmployeePhoto(currentTab) && employee.photo_url) {
         const { data: signedPhoto } = await supabase.storage
             .from("certificates")
             .createSignedUrl(employee.photo_url, 3600);

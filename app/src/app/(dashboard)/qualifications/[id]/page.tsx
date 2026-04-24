@@ -65,19 +65,19 @@ export default async function QualificationDetailPage({ params }: PageProps) {
         .eq("qualification_id", id)
         .order("sort_order", { ascending: true });
 
-    const certificateImages: { id: string; url: string; caption: string | null }[] = [];
-    for (const row of certificateImageRows ?? []) {
+    const certificateImages = (await Promise.all((certificateImageRows ?? []).map(async (row) => {
         const { data: signed } = await supabase.storage
             .from("certificates")
             .createSignedUrl(row.storage_path, 3600);
-        if (signed?.signedUrl) {
-            certificateImages.push({
-                id: row.id,
-                url: signed.signedUrl,
-                caption: row.caption,
-            });
+        if (!signed?.signedUrl) {
+            return null;
         }
-    }
+        return {
+            id: row.id,
+            url: signed.signedUrl,
+            caption: row.caption,
+        };
+    }))).filter((row): row is { id: string; url: string; caption: string | null } => row !== null);
 
     // Fallback: legacy single certificate_url, only show if no certificate_images rows exist
     if (certificateImages.length === 0 && qualification.certificate_url) {

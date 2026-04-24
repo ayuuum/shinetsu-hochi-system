@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Tables } from "@/types/supabase";
@@ -118,6 +118,18 @@ function maskedEmploymentValue(isTechnicianSelf: boolean, value: string | null |
     return "—";
 }
 
+const HEAVY_TABS = new Set<EmployeeDetailTab>(["construction", "health", "it", "qualifications", "seminars"]);
+const TAB_LOADING_LABELS: Record<EmployeeDetailTab, string> = {
+    basic: "基本情報",
+    insurance: "保険情報",
+    it: "IT・ライセンス",
+    qualifications: "保有資格",
+    construction: "施工実績",
+    family: "家族",
+    health: "健康診断",
+    seminars: "受験・セミナー",
+};
+
 export function EmployeeDetailClient({
     employee,
     certUrls,
@@ -132,6 +144,7 @@ export function EmployeeDetailClient({
     const router = useRouter();
     const pathname = usePathname();
     const [isTabPending, startTransition] = useTransition();
+    const [pendingTab, setPendingTab] = useState<EmployeeDetailTab | null>(null);
     const [editOpen, setEditOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleting, setDeleting] = useState(false);
@@ -158,6 +171,10 @@ export function EmployeeDetailClient({
         return differenceInDays(today, new Date(f.birth_date)) / 365.25 <= 18;
     });
 
+    useEffect(() => {
+        setPendingTab(null);
+    }, [initialTab]);
+
     const handleBack = () => {
         if (isTechnicianSelf) {
             router.push("/me");
@@ -175,6 +192,7 @@ export function EmployeeDetailClient({
     const handleTabChange = (tab: EmployeeDetailTab) => {
         if (tab === initialTab) return;
         const href = tab === "basic" ? pathname : `${pathname}?tab=${tab}`;
+        setPendingTab(tab);
         startTransition(() => {
             router.replace(href, { scroll: false });
         });
@@ -393,6 +411,26 @@ export function EmployeeDetailClient({
                         <TabsTrigger value="seminars" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><BookOpen className="h-3.5 w-3.5 hidden md:inline" />受験・セミナー</TabsTrigger>
                     </TabsList>
                 </div>
+
+                {isTabPending && pendingTab && HEAVY_TABS.has(pendingTab) ? (
+                    <Card className="mt-4 border-dashed border-border/60 bg-muted/20">
+                        <CardContent className="space-y-3 py-5">
+                            <div className="flex items-center justify-between gap-4">
+                                <div>
+                                    <p className="text-sm font-medium">{TAB_LOADING_LABELS[pendingTab]}を読み込み中</p>
+                                    <p className="text-sm text-muted-foreground">必要なデータだけ取得しています。</p>
+                                </div>
+                                <div className="h-2 w-24 overflow-hidden rounded-full bg-muted">
+                                    <div className="h-full w-1/2 animate-pulse rounded-full bg-primary/60" />
+                                </div>
+                            </div>
+                            <div className="grid gap-3 md:grid-cols-2">
+                                <div className="h-24 animate-pulse rounded-xl bg-muted/70" />
+                                <div className="h-24 animate-pulse rounded-xl bg-muted/70" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                ) : null}
 
                 <TabsContent value="basic" className="mt-6 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
