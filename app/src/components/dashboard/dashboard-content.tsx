@@ -542,14 +542,17 @@ export function DashboardHeroSection() {
 export async function DashboardFocusCardsSection() {
     const snapshot = await getDashboardPrioritySnapshot(getTodayInTokyo());
 
+    const statRows = [
+        { label: "登録従業員数", value: snapshot.totalEmployees, detail: "現在の登録数" },
+        { label: "今月の新規入社", value: snapshot.newEmployeesCount, detail: "当月入社" },
+        { label: "登録データ総数", value: snapshot.qualificationCount + snapshot.vehicleCount, detail: `資格 ${countFormatter.format(snapshot.qualificationCount)}件 / 車両 ${countFormatter.format(snapshot.vehicleCount)}件` },
+    ];
+
     return (
         <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
             <Card className="border-border/50">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <ShieldAlert className="h-5 w-5 text-muted-foreground" />
-                        最優先タスク
-                    </CardTitle>
+                    <CardTitle>最優先タスク</CardTitle>
                     <CardDescription>
                         いま最初に確認すべき対象を 1 件だけ先頭に出しています。
                     </CardDescription>
@@ -558,116 +561,67 @@ export async function DashboardFocusCardsSection() {
                     {snapshot.topTask ? (
                         <Link
                             href={snapshot.topTask.href}
-                            className={`group block rounded-xl p-4 transition-[border-color,background-color] duration-200 ${snapshot.topTask.surfaceClassName}`}
+                            className="group flex items-center gap-3 transition-colors duration-150 hover:bg-muted/40 -mx-6 px-6 py-2 rounded-none"
                         >
-                            <div className="flex flex-wrap items-start justify-between gap-3">
-                                <div className="space-y-1">
-                                    <p className={`text-xs font-semibold uppercase tracking-[0.16em] ${snapshot.topTask.strongClassName}`}>
-                                        最優先タスク
-                                    </p>
-                                    <p className="text-base font-semibold">{snapshot.topTask.title}</p>
-                                    <p className="text-sm text-muted-foreground">{snapshot.topTask.subtitle}</p>
-                                    <p className="text-sm text-muted-foreground">{snapshot.topTask.meta}</p>
-                                </div>
-                                <div className="flex items-center gap-2">
+                            <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <p className="text-sm font-semibold">{snapshot.topTask.title}</p>
                                     <Badge variant="secondary" className={`${snapshot.topTask.badgeClassName} text-xs`}>
                                         {snapshot.topTask.badgeLabel}
                                     </Badge>
-                                    <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5" />
                                 </div>
+                                <p className="truncate text-xs text-muted-foreground mt-0.5">{snapshot.topTask.subtitle}</p>
+                                <p className="text-xs text-muted-foreground">{snapshot.topTask.meta}</p>
                             </div>
+                            <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                         </Link>
                     ) : (
-                        <div className={`rounded-xl p-4 ${alertStyles.ok.subtle}`}>
-                            <div className="flex items-start gap-3">
-                                <div className={`flex size-10 items-center justify-center rounded-xl ${alertStyles.ok.icon}`}>
-                                    <ShieldCheck className="h-5 w-5" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-semibold">未対応タスクはありません</p>
-                                    <p className="mt-1 text-sm text-muted-foreground">
-                                        本日時点で優先対応が必要な項目は見つかっていません。
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
+                        <p className="text-sm text-muted-foreground py-2">本日時点で優先対応が必要な項目は見つかっていません。</p>
                     )}
                 </CardContent>
             </Card>
 
-            <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
-                {snapshot.focusCards.map((card) => {
-                    const Icon = card.icon;
-                    return (
-                        <Link
-                            key={card.title}
-                            href={card.href}
-                            className="group rounded-xl border border-border/50 bg-card p-4 transition-[border-color,background-color] duration-200 hover:border-primary/20 hover:bg-muted/60"
-                        >
-                            <div className="flex items-start justify-between gap-3">
+            <Card className="border-border/50">
+                <CardHeader>
+                    <CardTitle>アラート状況</CardTitle>
+                    <CardDescription>資格・アルコール・車検の要確認件数</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="-mx-6">
+                        {snapshot.focusCards.map((card) => (
+                            <Link
+                                key={card.title}
+                                href={card.href}
+                                className="group flex items-center justify-between border-b border-border/40 px-6 py-3 last:border-0 transition-colors duration-150 hover:bg-muted/40"
+                            >
                                 <div className="min-w-0">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                                        {card.eyebrow}
-                                    </p>
-                                    <p className={`mt-2.5 text-3xl font-semibold tabular-nums ${card.valueClassName}`}>
-                                        {countFormatter.format(card.value)}
-                                    </p>
-                                    <p className="mt-1.5 text-sm font-medium">{card.title}</p>
+                                    <p className="text-sm font-medium">{card.title}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{card.description}</p>
                                 </div>
-                                <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${card.iconClassName}`}>
-                                    <Icon className="h-5 w-5" />
-                                </div>
-                            </div>
-                            <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                                {card.description}
-                            </p>
-                        </Link>
-                    );
-                })}
-            </div>
+                                <p className={`text-2xl font-bold tabular-nums shrink-0 ml-4 ${card.valueClassName}`}>
+                                    {countFormatter.format(card.value)}
+                                </p>
+                            </Link>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
 
-            <div className="grid gap-4 xl:col-span-2 xl:grid-cols-3">
-                <Card className="border-border/50">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            登録従業員数
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-3xl font-semibold tabular-nums">{countFormatter.format(snapshot.totalEmployees)}</p>
-                        <p className="mt-2 text-sm text-muted-foreground">現在の登録従業員数です。</p>
-                    </CardContent>
-                </Card>
-                <Card className="border-border/50">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            今月の新規入社
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-3xl font-semibold tabular-nums">{countFormatter.format(snapshot.newEmployeesCount)}</p>
-                        <p className="mt-2 text-sm text-muted-foreground">当月に入社日を迎えた社員数です。</p>
-                    </CardContent>
-                </Card>
-                <Card className="border-border/50">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-                            登録データ総数
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-3xl font-semibold tabular-nums">
-                            {countFormatter.format(snapshot.qualificationCount + snapshot.vehicleCount)}
-                        </p>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                            資格 {countFormatter.format(snapshot.qualificationCount)}件 / 車両 {countFormatter.format(snapshot.vehicleCount)}件
-                        </p>
-                    </CardContent>
-                </Card>
-            </div>
+            <Card className="border-border/50 xl:col-span-2">
+                <CardContent className="pt-6">
+                    <div className="-mx-6 grid xl:grid-cols-3">
+                        {statRows.map((stat, i) => (
+                            <div key={stat.label} className={`flex items-center justify-between px-6 py-4 ${i < statRows.length - 1 ? "border-b border-border/40 xl:border-b-0 xl:border-r" : ""}`}>
+                                <div>
+                                    <p className="text-sm font-medium">{stat.label}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{stat.detail}</p>
+                                </div>
+                                <p className="text-3xl font-bold tabular-nums ml-4">{countFormatter.format(stat.value)}</p>
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
         </section>
     );
 }
@@ -692,31 +646,26 @@ export async function DashboardMonthScheduleSection() {
                         今月中に該当する予定・期限はありません。
                     </div>
                 ) : (
-                    <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                        {items.map((item) => {
-                            const Icon = item.icon;
-                            return (
-                                <li key={item.id}>
-                                    <Link
-                                        href={item.href}
-                                        className="group flex gap-3 rounded-xl border border-border/50 bg-background/60 p-3.5 transition-[border-color,background-color] duration-200 hover:border-primary/20 hover:bg-muted/60"
-                                    >
-                                        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/80 text-muted-foreground">
-                                            <Icon className="h-4 w-4" />
+                    <ul className="grid sm:grid-cols-2 lg:grid-cols-3">
+                        {items.map((item, i) => (
+                            <li key={item.id}>
+                                <Link
+                                    href={item.href}
+                                    className="group flex items-center gap-3 border-b border-border/40 py-3 transition-colors duration-150 hover:bg-muted/40 last:border-0"
+                                >
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-1.5">
+                                            <span className="text-xs tabular-nums text-muted-foreground">{item.date}</span>
+                                            <span className="text-xs text-muted-foreground/60">·</span>
+                                            <span className="text-xs text-muted-foreground">{item.category}</span>
                                         </div>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <span className="text-xs font-medium tabular-nums text-muted-foreground">{item.date}</span>
-                                                <Badge variant="outline" className="text-[10px] font-normal">{item.category}</Badge>
-                                            </div>
-                                            <p className="mt-1 truncate text-sm font-semibold">{item.title}</p>
-                                            <p className="truncate text-xs text-muted-foreground">{item.subtitle}</p>
-                                        </div>
-                                        <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100" />
-                                    </Link>
-                                </li>
-                            );
-                        })}
+                                        <p className="mt-0.5 truncate text-sm font-semibold">{item.title}</p>
+                                        <p className="truncate text-xs text-muted-foreground">{item.subtitle}</p>
+                                    </div>
+                                    <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                                </Link>
+                            </li>
+                        ))}
                     </ul>
                 )}
             </div>
@@ -855,22 +804,22 @@ export function DashboardQuickLinksSection() {
                         朝の確認でよく使う画面にすぐ移動できます。
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-3 sm:grid-cols-2">
-                    {quickLinks.map((link) => (
-                        <Link
-                            key={link.title}
-                            href={link.href}
-                            className="group rounded-xl border border-border/50 bg-background/70 p-4 transition-[border-color,background-color] duration-200 hover:border-primary/20 hover:bg-muted/60"
-                        >
-                            <div className="flex items-start justify-between gap-3">
-                                <div>
+                <CardContent>
+                    <div className="-mx-6">
+                        {quickLinks.map((link) => (
+                            <Link
+                                key={link.title}
+                                href={link.href}
+                                className="group flex items-center gap-3 border-b border-border/40 px-6 py-3 last:border-0 transition-colors duration-150 hover:bg-muted/40"
+                            >
+                                <div className="min-w-0 flex-1">
                                     <p className="text-sm font-medium">{link.title}</p>
-                                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{link.description}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{link.description}</p>
                                 </div>
-                                <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5" />
-                            </div>
-                        </Link>
-                    ))}
+                                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                            </Link>
+                        ))}
+                    </div>
                 </CardContent>
             </Card>
 
