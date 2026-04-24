@@ -106,7 +106,7 @@ function getExpiryBadge(expiryDate: string | null) {
 
 function DetailItem({ label, value }: { label: string; value: string | null | number }) {
     return (
-        <div className="grid grid-cols-3 border-b border-border/50 py-3 last:border-0">
+        <div className="grid grid-cols-3 border-b border-border/40 py-2.5 last:border-0 even:bg-muted/30 -mx-6 px-6">
             <span className="text-muted-foreground text-sm">{label}</span>
             <span className="col-span-2 font-medium text-sm">{value || "-"}</span>
         </div>
@@ -286,7 +286,7 @@ export function EmployeeDetailClient({
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     {isTechnicianSelf ? "マイページへ戻る" : "一覧へ戻る"}
                 </Button>
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                     <div className="flex items-center gap-4">
                         <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-inner">
                             {photoUrl ? (
@@ -304,7 +304,7 @@ export function EmployeeDetailClient({
                         <div>
                             <div className="flex items-center gap-3">
                                 <h1 className="text-3xl font-bold tracking-tight">{employee.name}</h1>
-                                <Badge variant="outline" className="bg-primary/5">{employee.branch || "-"}</Badge>
+                                <Badge variant="secondary">{employee.branch || "支店未設定"}</Badge>
                                 {employee.termination_date && <Badge variant="destructive">退職済</Badge>}
                                 {isAdminOrHr && hasFamilyAllowance && <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">家族手当あり</Badge>}
                             </div>
@@ -316,7 +316,7 @@ export function EmployeeDetailClient({
                         </div>
                     </div>
                     {isAdminOrHr && (
-                        <div className="flex gap-2">
+                        <div className="flex shrink-0 gap-2">
                             <Button variant="outline" onClick={() => setEditOpen(true)}>
                                 <Pencil className="mr-2 h-4 w-4" />
                                 編集する
@@ -372,21 +372,21 @@ export function EmployeeDetailClient({
             <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as EmployeeDetailTab)} className="w-full">
                 <div className="overflow-x-auto -mx-1 px-1">
                     <TabsList variant="line" className="inline-flex min-w-full h-auto border-b border-border/50 gap-0 pb-0 rounded-none">
-                        <TabsTrigger value="basic" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><User className="h-3.5 w-3.5 hidden md:inline" />基本情報</TabsTrigger>
+                        <TabsTrigger value="basic" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><User className="h-3.5 w-3.5" />基本情報</TabsTrigger>
                         {isAdmin && (
-                            <TabsTrigger value="insurance" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><Shield className="h-3.5 w-3.5 hidden md:inline" />保険情報</TabsTrigger>
+                            <TabsTrigger value="insurance" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><Shield className="h-3.5 w-3.5" />保険情報</TabsTrigger>
                         )}
                         {isAdminOrHr && (
                             <TabsTrigger value="it" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5">
-                                <Laptop className="h-3.5 w-3.5 hidden md:inline" />
+                                <Laptop className="h-3.5 w-3.5" />
                                 IT・ライセンス
                             </TabsTrigger>
                         )}
-                        <TabsTrigger value="qualifications" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><Award className="h-3.5 w-3.5 hidden md:inline" />保有資格</TabsTrigger>
-                        <TabsTrigger value="construction" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><HardHat className="h-3.5 w-3.5 hidden md:inline" />施工実績</TabsTrigger>
-                        <TabsTrigger value="family" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><Users className="h-3.5 w-3.5 hidden md:inline" />家族</TabsTrigger>
-                        <TabsTrigger value="health" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><Heart className="h-3.5 w-3.5 hidden md:inline" />健康診断</TabsTrigger>
-                        <TabsTrigger value="seminars" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><BookOpen className="h-3.5 w-3.5 hidden md:inline" />受験・セミナー</TabsTrigger>
+                        <TabsTrigger value="qualifications" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><Award className="h-3.5 w-3.5" />保有資格</TabsTrigger>
+                        <TabsTrigger value="construction" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><HardHat className="h-3.5 w-3.5" />施工実績</TabsTrigger>
+                        <TabsTrigger value="family" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><Users className="h-3.5 w-3.5" />家族</TabsTrigger>
+                        <TabsTrigger value="health" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><Heart className="h-3.5 w-3.5" />健康診断</TabsTrigger>
+                        <TabsTrigger value="seminars" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><BookOpen className="h-3.5 w-3.5" />受験・セミナー</TabsTrigger>
                     </TabsList>
                 </div>
 
