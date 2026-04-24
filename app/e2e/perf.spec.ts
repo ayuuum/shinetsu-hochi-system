@@ -68,17 +68,17 @@ type DetailMeasurement = {
 const detailMeasurements: DetailMeasurement[] = [
   {
     tab: "basic",
-    keyContent: (page) => page.getByText("個人・連絡先", { exact: true }),
+    keyContent: (page) => page.getByText("個人・連絡先", { exact: true }).first(),
     budgetMs: 3000,
   },
   {
     tab: "construction",
-    keyContent: (page) => page.getByText("施工実績履歴", { exact: true }),
+    keyContent: (page) => page.getByText("施工実績履歴", { exact: true }).first(),
     budgetMs: 3000,
   },
   {
     tab: "qualifications",
-    keyContent: (page) => page.getByText("保有資格一覧", { exact: true }),
+    keyContent: (page) => page.getByText("保有資格一覧", { exact: true }).first(),
     budgetMs: 3000,
   },
 ];
