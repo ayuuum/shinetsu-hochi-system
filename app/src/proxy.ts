@@ -12,17 +12,22 @@ function isPublicPath(pathname: string) {
 export async function proxy(request: NextRequest) {
     const { supabase, response } = createSupabaseMiddleware(request);
 
-    const { data: { session } } = await supabase.auth.getSession();
-
     const pathname = request.nextUrl.pathname;
     const isLoginPage = pathname === "/login";
     const isApiRoute = pathname.startsWith("/api/");
+    const publicPath = isPublicPath(pathname);
 
     if (isApiRoute) {
         return response;
     }
 
-    if (!session && !isPublicPath(pathname) && !isLoginPage) {
+    if (publicPath && !isLoginPage) {
+        return response;
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session && !publicPath && !isLoginPage) {
         const redirectUrl = new URL("/login", request.url);
         redirectUrl.searchParams.set("redirectTo", pathname);
         return NextResponse.redirect(redirectUrl);
