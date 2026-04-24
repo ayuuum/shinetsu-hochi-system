@@ -108,7 +108,7 @@ async function createDemo(email, password, role) {
     console.log("  user id:", uid);
 }
 
-/** ローカル用 test@gmail.com / test（admin）。既存ならパスワード更新 + user_roles upsert */
+/** ローカル用 test@gmail.com / test1234（admin）。既存ならパスワード更新 + user_roles upsert */
 async function ensureTestUser(overrideEnv = null) {
     const env = overrideEnv ?? getRuntimeEnv();
     const { url, serviceRoleKey } = env;
@@ -117,7 +117,7 @@ async function ensureTestUser(overrideEnv = null) {
         process.exit(1);
     }
     const testEmail = "test@gmail.com";
-    const testPassword = "test";
+    const testPassword = "test1234";
     const role = "admin";
     const admin = createClient(url, serviceRoleKey, {
         auth: { autoRefreshToken: false, persistSession: false },
@@ -159,7 +159,7 @@ async function ensureTestUser(overrideEnv = null) {
         console.error(e.message || e);
         process.exit(1);
     }
-    console.log("OK: test user ready (test@gmail.com / test, role admin)");
+    console.log("OK: test user ready (test@gmail.com / test1234, role admin)");
     console.log("  user id:", userId);
 }
 
@@ -211,7 +211,7 @@ function printUsage() {
             default role: technician
 
   ensure-test: node scripts/auth-cli.mjs ensure-test
-            test@gmail.com / test（admin）を作成または更新（本番・共有環境でも実行可）
+            test@gmail.com / test1234（admin）を作成または更新（本番・共有環境でも実行可）
 
   setup-test: node scripts/auth-cli.mjs setup-test
             .env.local が無ければ対話入力で自動作成し、そのまま test ユーザーを用意`);
