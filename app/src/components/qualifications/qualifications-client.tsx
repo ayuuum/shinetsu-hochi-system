@@ -35,6 +35,7 @@ import { formatDisplayDate } from "@/lib/date";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { AddQualificationFromListModal } from "./add-qualification-from-list-modal";
+import { BulkUpdateQualificationModal } from "./bulk-update-qualification-modal";
 
 export type QualificationRow = Tables<"employee_qualifications"> & {
     employees: { id: string; name: string; branch: string | null } | null;
@@ -55,6 +56,7 @@ interface QualificationsClientProps {
     currentPage: number;
     hasNextPage: boolean;
     employees?: Employee[];
+    qualificationMasters?: { id: string; name: string; category: string | null }[];
 }
 
 function buildQualificationsHref(pathname: string, {
@@ -97,6 +99,7 @@ export function QualificationsClient({
     currentPage,
     hasNextPage,
     employees = [],
+    qualificationMasters = [],
 }: QualificationsClientProps) {
     const [search, setSearch] = useState(currentSearch);
     const [editingItem, setEditingItem] = useState<QualificationRow | null>(null);
@@ -228,6 +231,7 @@ export function QualificationsClient({
                 {isAdminOrHr && (
                     <div className="flex items-center gap-2 shrink-0 flex-wrap">
                         <AddQualificationFromListModal employees={employees} onSuccess={() => router.refresh()} />
+                        <BulkUpdateQualificationModal qualificationMasters={qualificationMasters} employees={employees} />
                         <Button
                             variant="outline"
                             size="sm"

@@ -2543,3 +2543,78 @@ export async function deleteAnnualScheduleAction(id: string): Promise<DeleteActi
         return { success: false, error: "年間スケジュールの削除に失敗しました。" };
     }
 }
+
+export async function bulkUpdateQualificationsAction(params: {
+    qualificationId: string;
+    employeeIds: string[];
+    acquiredDate: string | null;
+    expiryDate: string | null;
+}): Promise<{ success: true; updatedCount: number } | { success: false; error: string }> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) return { success: false, error: auth.error };
+
+    if (!params.qualificationId || params.employeeIds.length === 0) {
+        return { success: false, error: "資格と対象社員を選択してください。" };
+    }
+
+    try {
+        const supabase = await createSupabaseServer();
+
+        const existing = await supabase
+            .from("employee_qualifications")
+            .select("id, employee_id")
+            .eq("qualification_id", params.qualificationId)
+            .in("employee_id", params.employeeIds)
+            .is("deleted_at", null);
+
+        const existingByEmployee = new Map((existing.data || []).map((r) => [r.employee_id, r.id]));
+
+        const toUpdate = params.employeeIds.filter((id) => existingByEmployee.has(id));
+        const toInsert = params.employeeIds.filter((id) => !existingByEmployee.has(id));
+
+        const now = new Date().toISOString();
+
+        if (toUpdate.length > 0) {
+            const ids = toUpdate.map((empId) => existingByEmployee.get(empId)!);
+            const { error } = await supabase
+                .from("employee_qualifications")
+                .update({
+                    acquired_date: params.acquiredDate,
+                    expiry_date: params.expiryDate,
+                    updated_at: now,
+                })
+                .in("id", ids)
+                .is("deleted_at", null);
+
+            if (error) {
+                console.error("Bulk update failed:", error);
+                return { success: false, error: "一括更新に失敗しました。" };
+            }
+        }
+
+        if (toInsert.length > 0) {
+            const rows = toInsert.map((employeeId) => ({
+                employee_id: employeeId,
+                qualification_id: params.qualificationId,
+                acquired_date: params.acquiredDate,
+                expiry_date: params.expiryDate,
+            }));
+            const { error } = await supabase.from("employee_qualifications").insert(rows);
+
+            if (error) {
+                console.error("Bulk insert failed:", error);
+                return { success: false, error: "一括登録に失敗しました。" };
+            }
+        }
+
+        for (const empId of params.employeeIds) {
+            revalidateEmployeePaths(empId);
+        }
+        revalidatePath("/qualifications");
+
+        return { success: true, updatedCount: params.employeeIds.length };
+    } catch (error) {
+        console.error("Unexpected error in bulkUpdateQualificationsAction:", error);
+        return { success: false, error: "一括更新に失敗しました。" };
+    }
+}

@@ -5,7 +5,7 @@ import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { QualificationsClient, type QualificationRow } from "@/components/qualifications/qualifications-client";
 import { formatDateInTokyo, getTodayInTokyo } from "@/lib/date";
 import { getAlertLevel, type AlertLevel } from "@/lib/alert-utils";
-import { getCachedQualificationCategories, getCachedEmployeeList, getCachedQualificationCounts } from "@/lib/cached-queries";
+import { getCachedQualificationCategories, getCachedEmployeeList, getCachedQualificationCounts, getCachedQualificationMasters } from "@/lib/cached-queries";
 
 const PAGE_SIZE = 50;
 
@@ -55,8 +55,8 @@ export default async function QualificationsPage({
         ok: 0,
     };
     let hasNextPage = false;
-    // Fix: fetch employees list to enable direct qualification addition from this page
     let employees: { id: string; name: string; branch: string | null }[] = [];
+    let qualificationMasters: { id: string; name: string; category: string | null }[] = [];
 
     try {
         const supabase = await createSupabaseServer();
@@ -88,14 +88,16 @@ export default async function QualificationsPage({
             if (currentLevel === "ok") pq = pq.or("expiry_date.is.null,expiry_date.gt." + infoLimit);
 
             // All 4 are independent — run in one parallel group
-            const [categories_cached, employees_cached, pqResult, cachedCounts] = await Promise.all([
+            const [categories_cached, employees_cached, masters_cached, pqResult, cachedCounts] = await Promise.all([
                 getCachedQualificationCategories(),
                 getCachedEmployeeList(),
+                getCachedQualificationMasters(),
                 pq,
                 getCachedQualificationCounts(),
             ]);
             categories = categories_cached;
             employees = employees_cached;
+            qualificationMasters = masters_cached.map((m) => ({ id: m.id, name: m.name, category: m.category ?? null }));
             pageResult = pqResult as typeof pageResult;
             counts = cachedCounts;
         } else {
@@ -103,12 +105,14 @@ export default async function QualificationsPage({
             const [
                 categories_cached,
                 employees_cached,
+                masters_cached,
                 employeeSearchResult,
                 qualificationSearchResult,
                 categoryQualificationResult,
             ] = await Promise.all([
                 getCachedQualificationCategories(),
                 getCachedEmployeeList(),
+                getCachedQualificationMasters(),
                 currentSearch
                     ? supabase.from("employees").select("id").is("deleted_at", null).ilike("name", searchPattern!).limit(100)
                     : Promise.resolve({ data: [] as { id: string }[], error: null }),
@@ -121,6 +125,7 @@ export default async function QualificationsPage({
             ]);
             categories = categories_cached;
             employees = employees_cached;
+            qualificationMasters = masters_cached.map((m) => ({ id: m.id, name: m.name, category: m.category ?? null }));
 
             const employeeIds = (employeeSearchResult.data || []).map((item) => item.id);
             const qualificationIds = (qualificationSearchResult.data || []).map((item) => item.id);
@@ -196,6 +201,7 @@ export default async function QualificationsPage({
             currentPage={currentPage}
             hasNextPage={hasNextPage}
             employees={employees}
+        qualificationMasters={qualificationMasters}
         />
     );
 }
