@@ -21,6 +21,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2, Beer, ShieldCheck, AlertTriangle } from "lucide-react";
@@ -63,6 +71,8 @@ export function AddAlcoholCheckModal({
 }) {
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [pendingValues, setPendingValues] = useState<AlcoholCheckValues | null>(null);
     const router = useRouter();
     const { role } = useAuth();
     const { triggerHaptic } = useHaptics();
@@ -91,12 +101,7 @@ export function AddAlcoholCheckModal({
         }
     };
 
-    async function onSubmit(values: AlcoholCheckValues) {
-        if (values.is_abnormal === "不適正") {
-            const confirmed = window.confirm("不適正（陽性）として記録します。よろしいですか？");
-            if (!confirmed) return;
-        }
-
+    async function submitRecord(values: AlcoholCheckValues) {
         setIsSubmitting(true);
         const result = await createAlcoholCheckAction(values);
         setIsSubmitting(false);
@@ -120,10 +125,27 @@ export function AddAlcoholCheckModal({
             triggerHaptic("success");
             toast.success("アルコールチェックを記録しました");
         }
-        
+
         setOpen(false);
         router.refresh();
     }
+
+    async function onSubmit(values: AlcoholCheckValues) {
+        if (values.is_abnormal === "不適正") {
+            setPendingValues(values);
+            setConfirmOpen(true);
+            return;
+        }
+        await submitRecord(values);
+    }
+
+    const handleAbnormalConfirm = async () => {
+        setConfirmOpen(false);
+        if (pendingValues) {
+            await submitRecord(pendingValues);
+            setPendingValues(null);
+        }
+    };
 
     return (
         <>
@@ -167,7 +189,7 @@ export function AddAlcoholCheckModal({
                                     <FormMessage />
                                 </FormItem>
                             )} />
-                            
+
                             <FormField control={form.control} name="check_type" render={({ field }) => (
                                 <FormItem className="space-y-3">
                                     <FormLabel className="text-muted-foreground font-semibold">⏱️ 検査タイミング</FormLabel>
@@ -230,7 +252,7 @@ export function AddAlcoholCheckModal({
                             {isAbnormal && (
                                 <div className="p-3 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 rounded-xl text-sm font-semibold border border-blue-200 dark:border-blue-900 flex items-start gap-2">
                                     <AlertTriangle className="h-5 w-5 shrink-0" />
-                                    <p>不適正として記録されます。作業員は絶対に運転を開業しないでください。</p>
+                                    <p>不適正として記録されます。作業員は絶対に運転を開始しないでください。</p>
                                 </div>
                             )}
 
@@ -254,7 +276,7 @@ export function AddAlcoholCheckModal({
                                     <FormMessage />
                                 </FormItem>
                             )} />
-                            
+
                             <FormField control={form.control} name="measured_value" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel className="text-muted-foreground font-semibold">メーター値（任意）</FormLabel>
@@ -267,9 +289,9 @@ export function AddAlcoholCheckModal({
                         </div>
 
                         <div className="pt-2 pb-4 mt-6">
-                            <Button 
-                                type="submit" 
-                                disabled={isSubmitting} 
+                            <Button
+                                type="submit"
+                                disabled={isSubmitting}
                                 className={`w-full h-16 text-lg md:text-xl font-bold rounded-2xl shadow-md ${isAbnormal ? 'bg-destructive hover:bg-destructive/90 text-white' : ''}`}
                             >
                                 {isSubmitting ? (
@@ -283,6 +305,30 @@ export function AddAlcoholCheckModal({
                     </form>
                 </Form>
             </ResponsiveModal>
+
+            <Dialog open={confirmOpen} onOpenChange={(o) => !isSubmitting && setConfirmOpen(o)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-destructive">
+                            <AlertTriangle className="h-5 w-5" />
+                            不適正として記録しますか？
+                        </DialogTitle>
+                        <DialogDescription className="pt-2 text-sm leading-relaxed">
+                            アルコール検知が確認されました。<br />
+                            記録後は直ちに安全運転管理者へ報告し、当該社員の運転を禁止してください。
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2">
+                        <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={isSubmitting}>
+                            キャンセル
+                        </Button>
+                        <Button variant="destructive" onClick={handleAbnormalConfirm} disabled={isSubmitting}>
+                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            不適正として記録する
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
