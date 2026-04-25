@@ -71,6 +71,7 @@ type DashboardTask = {
     strongClassName: string;
     icon: LucideIcon;
     priority: number;
+    employeeId?: string;
 };
 
 type FocusCard = {
@@ -98,6 +99,7 @@ type PrioritySnapshot = {
     abnormalAlcohol: number;
     pendingAlcoholCount: number;
     missingAlcoholCount: number;
+    totalTaskCount: number;
     vehicleTasks: Array<DashboardVehicle & { daysRemaining: number }>;
     dashboardTasks: DashboardTask[];
     focusCards: FocusCard[];
@@ -392,7 +394,7 @@ const getDashboardPrioritySnapshot = cache(async (today: string): Promise<Priori
         },
     ];
 
-    const dashboardTasks: DashboardTask[] = [
+    const dashboardTasksAll: DashboardTask[] = [
         ...alerts.map((alert) => {
             const style = alertStyles[alert.level];
             const categoryBase = alert.level === "danger" ? 0 : alert.level === "urgent" ? 3 : alert.level === "warning" ? 6 : 8;
@@ -409,6 +411,7 @@ const getDashboardPrioritySnapshot = cache(async (today: string): Promise<Priori
                 strongClassName: style.strong,
                 icon: ShieldAlert,
                 priority: getTaskPriority(categoryBase, Math.max(alert.daysRemaining, -365)),
+                employeeId: alert.employeeId,
             };
         }),
         ...vehicleTasks.map((vehicle) => {
@@ -463,8 +466,10 @@ const getDashboardPrioritySnapshot = cache(async (today: string): Promise<Priori
             priority: getTaskPriority(4, index),
         })),
     ]
-        .sort((a, b) => a.priority - b.priority)
-        .slice(0, 10);
+        .sort((a, b) => a.priority - b.priority);
+
+    const totalTaskCount = dashboardTasksAll.length;
+    const dashboardTasks = dashboardTasksAll.slice(0, 10);
 
     return {
         today,
@@ -480,6 +485,7 @@ const getDashboardPrioritySnapshot = cache(async (today: string): Promise<Priori
         abnormalAlcohol,
         pendingAlcoholCount,
         missingAlcoholCount: missingAlcoholEmployees.length,
+        totalTaskCount,
         vehicleTasks,
         dashboardTasks,
         focusCards,
@@ -729,12 +735,11 @@ export async function DashboardTaskListSection() {
                     ) : (
                         <div className="-mx-6">
                             {snapshot.dashboardTasks.map((task) => (
-                                <Link
+                                <div
                                     key={task.id}
-                                    href={task.href}
                                     className="group flex items-center gap-3 border-b border-border/40 px-6 py-3 last:border-0 transition-colors duration-150 hover:bg-muted/40"
                                 >
-                                    <div className="min-w-0 flex-1">
+                                    <Link href={task.href} className="min-w-0 flex-1">
                                         <div className="flex flex-wrap items-center gap-2">
                                             <p className="text-sm font-semibold">{task.title}</p>
                                             <Badge variant="secondary" className={`${task.badgeClassName} text-xs`}>
@@ -743,10 +748,28 @@ export async function DashboardTaskListSection() {
                                         </div>
                                         <p className="truncate text-xs text-muted-foreground mt-0.5">{task.subtitle}</p>
                                         <p className="text-xs text-muted-foreground">{task.meta}</p>
-                                    </div>
-                                    <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                                </Link>
+                                    </Link>
+                                    {task.employeeId ? (
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="shrink-0 text-xs h-7 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            render={<Link href={`/employees/${task.employeeId}?tab=qualifications`} />}
+                                        >
+                                            資格タブ <ArrowRight className="ml-1 h-3 w-3" />
+                                        </Button>
+                                    ) : (
+                                        <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                                    )}
+                                </div>
                             ))}
+                            {snapshot.totalTaskCount > 10 && (
+                                <div className="border-t border-border/40 px-6 py-3">
+                                    <Link href="/qualifications?level=urgent" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                                        他 {snapshot.totalTaskCount - 10} 件のアラートをすべて確認する →
+                                    </Link>
+                                </div>
+                            )}
                         </div>
                     )}
                 </CardContent>
