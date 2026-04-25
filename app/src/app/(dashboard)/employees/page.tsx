@@ -15,7 +15,7 @@ function parsePageParam(value?: string) {
 export default async function EmployeesPage({
     searchParams,
 }: {
-    searchParams: Promise<{ page?: string; q?: string; branch?: string; qualification?: string }>;
+    searchParams: Promise<{ page?: string; q?: string; branch?: string; qualification?: string; sort?: string }>;
 }) {
     const authPromise = getFastAuthSnapshot();
     const paramsPromise = searchParams;
@@ -30,6 +30,7 @@ export default async function EmployeesPage({
     const currentSearch = (params.q || "").trim();
     const currentBranch = (params.branch || "").trim();
     const currentQualification = (params.qualification || "").trim();
+    const currentSort = (params.sort || "").trim();
 
     let employees: EmployeeWithQualCount[] = [];
     let mastersData: Tables<"qualification_master">[] = [];
@@ -57,11 +58,17 @@ export default async function EmployeesPage({
             .filter((employeeId): employeeId is string => !!employeeId);
 
         if (!currentQualification || qualificationEmployeeIds.length > 0) {
+            const sortColumn =
+                currentSort === "hire_date_desc" || currentSort === "hire_date_asc" ? "hire_date" :
+                currentSort === "name_asc" ? "name" :
+                "employee_number";
+            const sortAscending = currentSort !== "hire_date_desc";
+
             let employeeQuery = supabase
                 .from("employees")
                 .select("*")
                 .is("deleted_at", null)
-                .order("employee_number", { ascending: true })
+                .order(sortColumn, { ascending: sortAscending, nullsFirst: false })
                 .range(from, toPlusOne);
 
             if (currentSearch) {
@@ -104,6 +111,7 @@ export default async function EmployeesPage({
             currentSearch={currentSearch}
             currentBranch={currentBranch}
             currentQualification={currentQualification}
+            currentSort={currentSort}
             currentPage={page}
             hasNextPage={hasNextPage}
         />

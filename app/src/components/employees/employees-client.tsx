@@ -22,7 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, MapPin, Award, Download } from "lucide-react";
+import { Search, MapPin, Award, Download, X, ArrowUpDown } from "lucide-react";
 import { AddEmployeeModal } from "@/components/employees/add-employee-modal";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ interface EmployeesClientProps {
     currentSearch: string;
     currentBranch: string;
     currentQualification: string;
+    currentSort?: string;
     currentPage?: number;
     hasNextPage?: boolean;
 }
@@ -51,11 +52,13 @@ function buildEmployeesHref(pathname: string, {
     search,
     branch,
     qualification,
+    sort,
     page,
 }: {
     search: string;
     branch: string;
     qualification: string;
+    sort: string;
     page: number;
 }) {
     const params = new URLSearchParams();
@@ -68,6 +71,9 @@ function buildEmployeesHref(pathname: string, {
     }
     if (qualification) {
         params.set("qualification", qualification);
+    }
+    if (sort) {
+        params.set("sort", sort);
     }
     if (page > 1) {
         params.set("page", String(page));
@@ -83,6 +89,7 @@ export function EmployeesClient({
     currentSearch,
     currentBranch,
     currentQualification,
+    currentSort = "",
     currentPage = 1,
     hasNextPage = false,
 }: EmployeesClientProps) {
@@ -111,6 +118,7 @@ export function EmployeesClient({
                             search: "",
                             branch: currentBranch,
                             qualification: currentQualification,
+                            sort: currentSort,
                             page: 1,
                         }), { scroll: false });
                     });
@@ -152,6 +160,7 @@ export function EmployeesClient({
                     search,
                     branch: currentBranch,
                     qualification: currentQualification,
+                    sort: currentSort,
                     page: 1,
                 }), { scroll: false });
             });
@@ -160,12 +169,13 @@ export function EmployeesClient({
         return () => window.clearTimeout(timer);
     }, [currentBranch, currentQualification, currentSearch, pathname, router, search]);
 
-    const updateFilters = (updates: Partial<{ branch: string; qualification: string; page: number }>) => {
+    const updateFilters = (updates: Partial<{ branch: string; qualification: string; sort: string; page: number }>) => {
         startTransition(() => {
             router.replace(buildEmployeesHref(pathname, {
                 search,
                 branch: updates.branch ?? currentBranch,
                 qualification: updates.qualification ?? currentQualification,
+                sort: updates.sort ?? currentSort,
                 page: updates.page ?? 1,
             }), { scroll: false });
         });
@@ -178,6 +188,7 @@ export function EmployeesClient({
                 search: "",
                 branch: "",
                 qualification: "",
+                sort: currentSort,
                 page: 1,
             }), { scroll: false });
         });
@@ -198,6 +209,7 @@ export function EmployeesClient({
                 search,
                 branch: mobileBranch,
                 qualification: mobileQualification,
+                sort: currentSort,
                 page: 1,
             }), { scroll: false });
         });
@@ -233,8 +245,17 @@ export function EmployeesClient({
                         placeholder="社員名・番号・フリガナで検索…"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="pl-9"
+                        className="pl-9 pr-8"
                     />
+                    {search && (
+                        <button
+                            onClick={() => setSearch("")}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            aria-label="検索をクリア"
+                        >
+                            <X className="h-3.5 w-3.5" />
+                        </button>
+                    )}
                 </div>
                 <MobileFiltersSheet
                     title="社員を絞り込む"
@@ -303,8 +324,17 @@ export function EmployeesClient({
                         placeholder="社員名・番号・フリガナで検索…"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="pl-9"
+                        className="pl-9 pr-8"
                     />
+                    {search && (
+                        <button
+                            onClick={() => setSearch("")}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            aria-label="検索をクリア"
+                        >
+                            <X className="h-3.5 w-3.5" />
+                        </button>
+                    )}
                 </div>
                 <Select
                     value={currentBranch || undefined}
@@ -337,6 +367,21 @@ export function EmployeesClient({
                                 {m.name}
                             </SelectItem>
                         ))}
+                    </SelectContent>
+                </Select>
+                <Select
+                    value={currentSort || undefined}
+                    onValueChange={(value) => updateFilters({ sort: value && value !== "default" ? value : "", page: 1 })}
+                >
+                    <SelectTrigger className="w-full md:w-[180px]">
+                        <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <SelectValue placeholder="並び順" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="default">社員番号順</SelectItem>
+                        <SelectItem value="hire_date_desc">入社日（新しい順）</SelectItem>
+                        <SelectItem value="hire_date_asc">入社日（古い順）</SelectItem>
+                        <SelectItem value="name_asc">氏名（五十音順）</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -475,6 +520,7 @@ export function EmployeesClient({
                             search: currentSearch,
                             branch: currentBranch,
                             qualification: currentQualification,
+                            sort: currentSort,
                             page: currentPage - 1,
                         })} />}
                     >
@@ -491,6 +537,7 @@ export function EmployeesClient({
                             search: currentSearch,
                             branch: currentBranch,
                             qualification: currentQualification,
+                            sort: currentSort,
                             page: currentPage + 1,
                         })} />}
                     >
