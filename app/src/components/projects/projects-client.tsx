@@ -164,7 +164,7 @@ export function ProjectsClient({
     };
 
     const handleExport = () => {
-        window.open("/api/export/career-history?format=excel", "_blank");
+        toast.info("工事記録のエクスポートは近日対応予定です");
     };
 
     const clearFilters = () => {
