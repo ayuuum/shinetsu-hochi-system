@@ -23,16 +23,16 @@ export function DashboardHeader() {
     const sidebarActionLabel = isMobile ? "メニュー" : state === "expanded" ? "サイドバーを閉じる" : "サイドバーを開く";
 
     return (
-        <header className="sticky top-0 z-20 border-b border-border/40 bg-background print:hidden">
-            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-3 md:px-6">
-                <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-4">
+        <header className="sticky top-0 z-20 border-b border-border/30 bg-background/95 backdrop-blur-sm print:hidden">
+            <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 md:px-6">
+                <div className="flex min-w-0 flex-1 items-center gap-3 md:gap-4">
                     <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         aria-label={sidebarActionLabel}
                         onClick={toggleSidebar}
-                        className="hidden shrink-0 -ml-1 items-center gap-1.5 px-2 text-muted-foreground hover:bg-muted hover:text-foreground md:flex"
+                        className="hidden shrink-0 -ml-1.5 items-center gap-1.5 px-2.5 h-8 text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors md:flex"
                     >
                         <PanelLeftIcon className="h-4 w-4" />
                         <span className="hidden text-xs font-medium lg:inline">
@@ -41,15 +41,15 @@ export function DashboardHeader() {
                     </Button>
                     
                     <div className="hidden min-w-0 items-center gap-2 text-sm md:flex">
-                        <span className="min-w-0 truncate text-muted-foreground text-xs tracking-wide">
+                        <span className="min-w-0 truncate text-muted-foreground/70 text-xs font-medium tracking-wide">
                             {section.title}
                         </span>
-                        <span aria-hidden="true" className="text-border shrink-0">/</span>
-                        <span className="min-w-0 truncate font-medium text-foreground">
+                        <span aria-hidden="true" className="text-border/60 shrink-0">/</span>
+                        <span className="min-w-0 truncate font-semibold text-foreground">
                             {activeItem.title}
                         </span>
-                        <span aria-hidden="true" className="text-border/60 shrink-0 hidden lg:inline">•</span>
-                        <span className="hidden whitespace-nowrap text-muted-foreground text-xs lg:inline">
+                        <span aria-hidden="true" className="text-border/40 shrink-0 hidden lg:inline">|</span>
+                        <span className="hidden whitespace-nowrap text-muted-foreground/60 text-xs lg:inline">
                             {headerDateFormatter.format(new Date())}
                         </span>
                     </div>
