@@ -1,6 +1,7 @@
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { AlcoholClient, type AlcoholCheckRow } from "@/components/alcohol/alcohol-client";
+import { TechnicianAlcoholClient } from "@/components/alcohol/technician-alcohol-client";
 import { getTodayInTokyo, getTokyoCalendarMonthBounds } from "@/lib/date";
 import { getCachedEmployeeList } from "@/lib/cached-queries";
 
@@ -33,6 +34,33 @@ export default async function AlcoholChecksPage({
 
     try {
         const auth = await getFastAuthSnapshot();
+
+        // Technician sees own-only simplified view
+        if (auth.role === "technician" && auth.linkedEmployeeId) {
+            const supabase = await createSupabaseServer();
+            const dateStart = `${currentDate}T00:00:00`;
+            const dateEnd = `${currentDate}T23:59:59`;
+            const [checksResult, empResult] = await Promise.all([
+                supabase
+                    .from("alcohol_checks")
+                    .select("*, employee:employees!alcohol_checks_employee_id_fkey(id, name), checker:employees!alcohol_checks_checker_id_fkey(id, name)")
+                    .is("deleted_at", null)
+                    .eq("employee_id", auth.linkedEmployeeId)
+                    .gte("check_datetime", dateStart)
+                    .lte("check_datetime", dateEnd)
+                    .order("check_datetime", { ascending: false }),
+                supabase.from("employees").select("id, name").eq("id", auth.linkedEmployeeId).single(),
+            ]);
+            const employee = empResult.data ? { id: empResult.data.id, name: empResult.data.name } : { id: auth.linkedEmployeeId, name: "自分" };
+            return (
+                <TechnicianAlcoholClient
+                    initialChecks={(checksResult.data as AlcoholCheckRow[]) || []}
+                    employee={employee}
+                    currentDate={currentDate}
+                />
+            );
+        }
+
         const supabase = await createSupabaseServer();
         const dateStart = `${currentDate}T00:00:00`;
         const dateEnd = `${currentDate}T23:59:59`;
