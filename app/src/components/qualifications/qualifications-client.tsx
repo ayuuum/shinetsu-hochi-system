@@ -23,7 +23,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, FileImage, Tags, Plus } from "lucide-react";
+import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, FileImage, Tags, Plus, Download } from "lucide-react";
 import { differenceInDays } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { alertStyles, getAlertLevel, type AlertLevel } from "@/lib/alert-utils";
@@ -226,8 +226,23 @@ export function QualificationsClient({
                 </div>
                 {/* Fix: add qualification button for direct addition from list page */}
                 {isAdminOrHr && (
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0 flex-wrap">
                         <AddQualificationFromListModal employees={employees} onSuccess={() => router.refresh()} />
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                const params = new URLSearchParams();
+                                if (search.trim()) params.set("q", search.trim());
+                                if (currentCategory) params.set("category", currentCategory);
+                                if (currentLevel) params.set("level", currentLevel);
+                                const qs = params.toString();
+                                window.open(qs ? `/api/export/qualifications?${qs}` : "/api/export/qualifications", "_blank");
+                            }}
+                        >
+                            <Download className="mr-2 h-4 w-4" />
+                            CSV出力
+                        </Button>
                         <Button
                             variant="outline"
                             size="sm"

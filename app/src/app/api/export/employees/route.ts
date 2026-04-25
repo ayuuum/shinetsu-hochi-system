@@ -5,7 +5,7 @@ import { getTodayInTokyo } from "@/lib/date";
 import { getSupabaseEnv } from "@/lib/supabase-env";
 import { getFastAuthSnapshot } from "@/lib/auth-server";
 
-export async function GET() {
+export async function GET(request: Request) {
     const cookieStore = await cookies();
     const { url, anonKey } = getSupabaseEnv();
     const supabase = createServerClient(
@@ -35,11 +35,19 @@ export async function GET() {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { data: employees, error } = await supabase
+    const { searchParams } = new URL(request.url);
+    const q = searchParams.get("q") || "";
+    const branch = searchParams.get("branch") || "";
+
+    let query = supabase
         .from("employees")
         .select("*")
-        .is("deleted_at", null)
-        .order("employee_number", { ascending: true });
+        .is("deleted_at", null);
+    if (branch) query = query.eq("branch", branch);
+    if (q) query = query.or(`name.ilike.%${q}%,name_kana.ilike.%${q}%,employee_number.ilike.%${q}%`);
+    query = query.order("employee_number", { ascending: true });
+
+    const { data: employees, error } = await query;
 
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
