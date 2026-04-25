@@ -2,11 +2,12 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Users, BriefcaseBusiness, Menu } from "lucide-react";
+import { LayoutDashboard, Users, BriefcaseBusiness, Beer, Menu } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
+import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [
+const ADMIN_NAV_ITEMS = [
     {
         title: "ホーム",
         url: "/",
@@ -24,14 +25,30 @@ const NAV_ITEMS = [
     },
 ];
 
+const TECHNICIAN_NAV_ITEMS = [
+    {
+        title: "ホーム",
+        url: "/",
+        icon: LayoutDashboard,
+    },
+    {
+        title: "アルコール",
+        url: "/alcohol-checks",
+        icon: Beer,
+    },
+];
+
 export function BottomNav() {
     const pathname = usePathname();
     const { toggleSidebar } = useSidebar();
+    const { role } = useAuth();
+
+    const navItems = role === "technician" ? TECHNICIAN_NAV_ITEMS : ADMIN_NAV_ITEMS;
 
     return (
         <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border/40 pb-[env(safe-area-inset-bottom)]">
             <div className="flex items-center justify-around h-16 px-2">
-                {NAV_ITEMS.map((item) => {
+                {navItems.map((item) => {
                     const isActive = pathname === item.url || (item.url !== "/" && pathname.startsWith(item.url));
                     const Icon = item.icon;
 
