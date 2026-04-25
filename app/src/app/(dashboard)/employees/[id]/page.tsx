@@ -16,7 +16,7 @@ type EmployeePageRow = Tables<"employees"> & {
     employee_damage_insurances: Tables<"employee_damage_insurances">[] | null;
 };
 
-const VALID_TABS: EmployeeDetailTab[] = ["basic", "insurance", "it", "qualifications", "construction", "family", "health", "seminars"];
+const VALID_TABS: EmployeeDetailTab[] = ["qualifications", "basic", "construction", "seminars", "health", "family", "it", "insurance"];
 
 export default async function EmployeeDetailPage({
     params,
@@ -35,7 +35,7 @@ export default async function EmployeeDetailPage({
     }
 
     const supabase = await createSupabaseServer();
-    let currentTab: EmployeeDetailTab = VALID_TABS.includes(tab as EmployeeDetailTab) ? (tab as EmployeeDetailTab) : "basic";
+    let currentTab: EmployeeDetailTab = VALID_TABS.includes(tab as EmployeeDetailTab) ? (tab as EmployeeDetailTab) : "qualifications";
     if (auth.role === "technician" && currentTab === "insurance") {
         currentTab = "basic";
     }
