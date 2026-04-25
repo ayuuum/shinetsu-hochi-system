@@ -1,9 +1,29 @@
 import { Suspense } from "react";
 import { DashboardFocusCardsSection, DashboardHeroSection, DashboardMonthScheduleSection, DashboardQuickLinksSection, DashboardTaskListSection } from "@/components/dashboard/dashboard-content";
+import { TechnicianDashboard } from "@/components/dashboard/technician-dashboard";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
+import { createSupabaseServer } from "@/lib/supabase-server";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function Home() {
+export default async function Home() {
+    const auth = await getFastAuthSnapshot();
+
+    if (auth.role === "technician" && auth.linkedEmployeeId) {
+        const supabase = await createSupabaseServer();
+        const { data: emp } = await supabase
+            .from("employees")
+            .select("name")
+            .eq("id", auth.linkedEmployeeId)
+            .single();
+        return (
+            <TechnicianDashboard
+                employeeId={auth.linkedEmployeeId}
+                employeeName={emp?.name ?? undefined}
+            />
+        );
+    }
+
     return (
         <div className="space-y-5">
             <DashboardHeroSection />
