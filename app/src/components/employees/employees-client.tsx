@@ -210,7 +210,13 @@ export function EmployeesClient({
                 description="全従業員の基本情報、所属、資格情報を一元管理します。"
                 actions={(
                     <>
-                        <Button variant="outline" onClick={() => window.open("/api/export/employees", "_blank")}>
+                        <Button variant="outline" onClick={() => {
+                            const params = new URLSearchParams();
+                            if (search.trim()) params.set("q", search.trim());
+                            if (currentBranch) params.set("branch", currentBranch);
+                            const qs = params.toString();
+                            window.open(qs ? `/api/export/employees?${qs}` : "/api/export/employees", "_blank");
+                        }}>
                             <Download className="mr-2 h-4 w-4" />
                             CSV出力
                         </Button>
