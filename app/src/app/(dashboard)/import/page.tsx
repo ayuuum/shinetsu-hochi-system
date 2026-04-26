@@ -74,6 +74,44 @@ const COLUMN_MAP: Record<string, string> = {
     "pension_no": "pension_no",
 };
 
+const TEMPLATE_HEADERS = [
+    "社員番号",
+    "氏名",
+    "フリガナ",
+    "生年月日",
+    "性別",
+    "電話番号",
+    "メール",
+    "住所",
+    "入社日",
+    "拠点",
+    "雇用形態",
+    "職種",
+    "役職",
+    "雇用保険番号",
+    "保険証番号",
+    "厚生年金番号",
+];
+
+const TEMPLATE_SAMPLE_ROW = [
+    "SH-001",
+    "山田 太郎",
+    "ヤマダ タロウ",
+    "1985-04-01",
+    "男性",
+    "090-1234-5678",
+    "yamada@example.com",
+    "長野県松本市...",
+    "2020-04-01",
+    "本社",
+    "正社員",
+    "技術職",
+    "主任",
+    "",
+    "",
+    "",
+];
+
 function cleanCSVValue(value: string) {
     return value.trim().replace(/\ufeff/g, "");
 }
@@ -162,6 +200,10 @@ function getRunBadge(status: ImportRunRow["status"]) {
         return <Badge variant="destructive">失敗</Badge>;
     }
     return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">実行中</Badge>;
+}
+
+function escapeCsvValue(value: string) {
+    return `"${value.replace(/"/g, "\"\"")}"`;
 }
 
 export default function ImportPage() {
@@ -300,6 +342,20 @@ export default function ImportPage() {
         router.refresh();
     };
 
+    const downloadTemplateCsv = useCallback(() => {
+        const csv = [
+            TEMPLATE_HEADERS.map(escapeCsvValue).join(","),
+            TEMPLATE_SAMPLE_ROW.map(escapeCsvValue).join(","),
+        ].join("\n");
+        const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = "employee-import-template.csv";
+        anchor.click();
+        URL.revokeObjectURL(url);
+    }, []);
+
     const downloadErrorCsv = useCallback(() => {
         const invalidRows = previewRows.filter((row) => !row.valid);
         if (invalidRows.length === 0) {
@@ -376,10 +432,23 @@ export default function ImportPage() {
                         ファイルアップロード
                     </CardTitle>
                     <CardDescription>
-                        UTF-8 のCSVを選択すると、サーバー側で「必須項目」「日付形式」「社員番号の重複」を自動チェックします。
+                        ExcelからCSV形式で保存したファイルを取り込みます。UTF-8 のCSVを選択すると、サーバー側で「必須項目」「日付形式」「社員番号の重複」を自動チェックします。
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                    <div className="flex flex-col gap-3 rounded-2xl border border-blue-200 bg-blue-50/80 p-4 text-sm text-blue-950 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <p className="font-semibold">社員CSVテンプレートを使って移行してください</p>
+                            <p className="mt-1 text-blue-900/80">
+                                Excelファイルを直接取り込むのではなく、必要な列をそろえてCSVとして保存してからアップロードします。
+                            </p>
+                        </div>
+                        <Button type="button" variant="outline" onClick={downloadTemplateCsv} className="shrink-0 bg-white">
+                            <Download className="mr-2 h-4 w-4" />
+                            テンプレートCSV
+                        </Button>
+                    </div>
+
                     <div
                         onDrop={handleDrop}
                         onDragOver={(event) => event.preventDefault()}
@@ -411,6 +480,7 @@ export default function ImportPage() {
                         <Badge variant="outline">必須: 社員番号 / 氏名 / フリガナ / 生年月日 / 入社日 / 拠点</Badge>
                         <Badge variant="outline">重複チェック: 社員番号（既存・CSV内）</Badge>
                         <Badge variant="outline">日付形式: YYYY-MM-DD または YYYY/M/D</Badge>
+                        <Badge variant="outline">最大: 1,500行 / 回</Badge>
                     </div>
                 </CardContent>
             </Card>

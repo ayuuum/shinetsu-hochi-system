@@ -12,7 +12,7 @@
 - **DB:** Supabase (`@supabase/ssr`)
 - **テスト:** Vitest 4
 - **フォント:** Noto Sans JP (next/font/google)
-- **通知:** sonner (toast), Resend API (メール)
+- **通知:** sonner (toast)。メール通知は運用対象外
 - **検索:** cmdk (Cmd+K コマンドパレット)
 
 ## コマンド
@@ -51,7 +51,7 @@ src/
 │   │   ├── alcohol-checks/     # アルコールチェック
 │   │   └── import/             # データインポート
 │   └── api/
-│       ├── cron/daily-alert/   # 日次アラートメール (Vercel Cron)
+│       ├── cron/daily-alert/   # 旧メール通知API（無効化済み）
 │       └── export/             # CSV エクスポート API
 │           ├── employees/route.ts
 │           └── alcohol-checks/route.ts
@@ -202,6 +202,3 @@ npm run auth:create-demo -- demo@client.example.jp 'InitialPassword123!' hr
 |------|------|------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase URL | Yes |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Anon Key | Yes |
-| `RESEND_API_KEY` | Resend メール送信 | メール機能時 |
-| `ALERT_EMAIL_TO` | アラート通知先 (カンマ区切り) | メール機能時 |
-| `CRON_SECRET` | Vercel Cron 認証トークン | Cron 使用時 |

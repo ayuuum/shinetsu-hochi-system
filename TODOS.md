@@ -355,13 +355,13 @@
 
 ## P1 — 本番運用前
 
-### [TODO-006] ~~メール通知の日次バッチ~~ ✅ DONE
-- Vercel Cron (毎朝7:00 JST) → API Route → Resend API でメール送信
-- 4段階アラート（CRITICAL/URGENT/WARNING/INFO）、WARNING以上でメール
-- 環境変数: RESEND_API_KEY, ALERT_EMAIL_TO, CRON_SECRET
+### [TODO-006] ~~メール通知の日次バッチ~~ ✅ SUPERSEDED
+- 方針変更によりメール通知は運用対象外
+- 期限確認はダッシュボード・一覧の画面内アラートで行う
+- Cron/手動実行/API経由のメール送信は無効化済み
 
 ### [TODO-007] ~~CLAUDE.md 作成~~ ✅ DONE
 - app/CLAUDE.md 作成。テストコマンド、devサーバー(--webpack)、shadcn v4 Base UI render prop規約、Supabase接続、ディレクトリ構成、コーディング規約を記載
 
 ### [TODO-008] ~~PRD Section 6 (API設計) 更新~~ ✅ DONE
-- Section 6を「データ取得・API設計」に変更。SC直接クエリパターンに合わせて簡素化。API RouteはCron+エクスポートのみ。Section 8の通知技術もResend APIに更新
+- Section 6を「データ取得・API設計」に変更。SC直接クエリパターンに合わせて簡素化。メール通知は運用対象外に更新

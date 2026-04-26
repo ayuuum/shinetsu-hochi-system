@@ -132,6 +132,37 @@
   }
 }
 
+@layer components {
+  .manual-section {
+    @apply mt-10 break-inside-avoid;
+  }
+
+  .manual-section h2 {
+    @apply mb-4 text-2xl font-black tracking-tight;
+  }
+
+  .manual-section h3 {
+    @apply tracking-tight;
+  }
+
+  .manual-section p {
+    @apply leading-8;
+  }
+
+  .manual-section ol,
+  .manual-section ul {
+    @apply space-y-2 pl-6 leading-8;
+  }
+
+  .manual-section ol {
+    @apply list-decimal;
+  }
+
+  .manual-section ul {
+    @apply list-disc;
+  }
+}
+
 @media print {
   @page {
     size: A4;

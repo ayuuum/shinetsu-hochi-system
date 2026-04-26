@@ -50,7 +50,7 @@ export default async function OperationsLogPage() {
             <div className="space-y-6">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">運用履歴</h1>
-                    <p className="mt-2 text-muted-foreground">インポートや自動通知の実行履歴を確認します。</p>
+                    <p className="mt-2 text-muted-foreground">インポート履歴を確認します。メール通知は運用対象外です。</p>
                 </div>
                 <Card>
                     <CardContent className="space-y-4 pt-6">
@@ -92,7 +92,7 @@ export default async function OperationsLogPage() {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">運用履歴</h1>
                     <p className="mt-2 text-muted-foreground">
-                        インポート結果と自動通知の実行状況をまとめて確認します。
+                        インポート結果と、過去に実行された通知ジョブの履歴を確認します。現在、メール通知は無効です。
                     </p>
                 </div>
                 <ManualDailyAlertButton />
@@ -134,9 +134,9 @@ export default async function OperationsLogPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <ShieldAlert className="h-4 w-4 text-muted-foreground" />
-                            最新の自動通知
+                            メール通知
                         </CardTitle>
-                        <CardDescription>資格期限アラートの実行結果</CardDescription>
+                        <CardDescription>メール通知は運用対象外のため無効化されています</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {latestJob ? (
@@ -147,15 +147,15 @@ export default async function OperationsLogPage() {
                                 </div>
                                 <p className="text-sm text-muted-foreground">
                                     {latestJob.status === "failed"
-                                        ? latestJob.error_message || "自動通知の実行に失敗しました"
-                                        : `対象 ${latestJob.total_items}名 / 通知送信 ${latestJob.processed_items}名`}
+                                        ? latestJob.error_message || "通知ジョブの実行に失敗しました"
+                                        : `過去履歴: 対象 ${latestJob.total_items}件 / 送信 ${latestJob.processed_items}件`}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
                                     {formatDateTime(latestJob.started_at)}
                                 </p>
                             </div>
                         ) : (
-                            <p className="text-sm text-muted-foreground">まだ自動通知の履歴はありません。</p>
+                            <p className="text-sm text-muted-foreground">メール通知は無効です。期限はダッシュボードで確認してください。</p>
                         )}
                     </CardContent>
                 </Card>
@@ -166,8 +166,8 @@ export default async function OperationsLogPage() {
                     <CardHeader>
                         <CardTitle className="text-base">自動通知の履歴記録が設定されていません</CardTitle>
                         <CardDescription className="text-blue-900/80">
-                            サーバーの認証キーが未設定のため、自動実行分の履歴が保存されません。
-                            この画面からの手動実行ログは保存されます。
+                            サーバーの認証キーが未設定のため、過去のジョブ履歴が保存されません。
+                            なお、メール通知は現在の運用対象外です。
                         </CardDescription>
                     </CardHeader>
                 </Card>
@@ -213,9 +213,9 @@ export default async function OperationsLogPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Activity className="h-4 w-4 text-muted-foreground" />
-                        自動通知の実行履歴
+                        通知ジョブの過去履歴
                     </CardTitle>
-                    <CardDescription>直近 20 件の自動通知実行結果</CardDescription>
+                    <CardDescription>メール通知無効化前の履歴確認用です</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                     {jobRuns.length === 0 ? (
@@ -234,8 +234,8 @@ export default async function OperationsLogPage() {
                                     </div>
                                     <p className="text-sm text-muted-foreground">
                                         {run.status === "failed"
-                                            ? run.error_message || "自動通知の実行に失敗しました"
-                                            : `対象 ${run.total_items}名 / 通知送信 ${run.processed_items}名`}
+                                            ? run.error_message || "通知ジョブの実行に失敗しました"
+                                            : `対象 ${run.total_items}件 / 送信 ${run.processed_items}件`}
                                     </p>
                                     {run.triggered_email && (
                                         <p className="text-xs text-muted-foreground">{run.triggered_email}</p>

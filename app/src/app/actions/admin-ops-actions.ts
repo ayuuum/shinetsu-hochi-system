@@ -12,7 +12,6 @@ import {
     validateEmployeeImportValues,
 } from "@/lib/imports/employee-import";
 import { toEmployeeInsert } from "@/lib/validation/employee";
-import { executeDailyAlertJob } from "@/lib/jobs/daily-alert";
 
 type ErrorResult = { success: false; error: string };
 
@@ -384,74 +383,8 @@ export async function runDailyAlertJobAction(): Promise<DailyAlertRunResult> {
         return { success: false, error: auth.error };
     }
 
-    const supabase = await createSupabaseServer();
-
-    try {
-        const { data: jobRun, error: createJobRunError } = await supabase
-            .from("job_runs")
-            .insert([{
-                job_key: "daily-alert",
-                job_label: "資格期限アラート",
-                trigger_type: "manual",
-                triggered_by: auth.user.id,
-                triggered_email: auth.user.email,
-                status: "running",
-            }])
-            .select("id")
-            .single();
-
-        if (createJobRunError) {
-            console.error("Failed to create job run:", createJobRunError);
-            return { success: false, error: "ジョブ履歴の作成に失敗しました。" };
-        }
-
-        try {
-            const result = await executeDailyAlertJob(supabase);
-
-            const { error: updateJobRunError } = await supabase
-                .from("job_runs")
-                .update({
-                    status: "completed",
-                    total_items: result.totalAlerts,
-                    processed_items: result.emailTargetCount,
-                    metrics: result as Json,
-                    finished_at: new Date().toISOString(),
-                })
-                .eq("id", jobRun.id);
-
-            if (updateJobRunError) {
-                console.error("Failed to finalize job run:", updateJobRunError);
-            }
-
-            revalidatePath("/operations-log");
-
-            return {
-                success: true,
-                runId: jobRun.id,
-                totalAlerts: result.totalAlerts,
-                emailTargetCount: result.emailTargetCount,
-                emailSent: result.emailSent,
-            };
-        } catch (error) {
-            const message = error instanceof Error ? error.message : "日次通知ジョブの実行に失敗しました。";
-
-            const { error: updateJobRunError } = await supabase
-                .from("job_runs")
-                .update({
-                    status: "failed",
-                    error_message: message,
-                    finished_at: new Date().toISOString(),
-                })
-                .eq("id", jobRun.id);
-
-            if (updateJobRunError) {
-                console.error("Failed to mark job run as failed:", updateJobRunError);
-            }
-
-            return { success: false, error: message };
-        }
-    } catch (error) {
-        console.error("Failed to execute daily alert job:", error);
-        return { success: false, error: "日次通知ジョブの実行に失敗しました。" };
-    }
+    return {
+        success: false,
+        error: "メール通知機能は運用対象外のため無効化されています。期限はダッシュボードで確認してください。",
+    };
 }

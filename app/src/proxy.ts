@@ -5,6 +5,7 @@ function isPublicPath(pathname: string) {
     return (
         pathname === "/login"
         || pathname === "/setup"
+        || pathname === "/manual"
         || pathname.startsWith("/auth/callback")
     );
 }
