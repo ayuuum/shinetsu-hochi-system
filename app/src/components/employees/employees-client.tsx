@@ -390,8 +390,8 @@ export function EmployeesClient({
 
             <div className="space-y-3 md:hidden" aria-busy={isPending}>
                 {initialEmployees.length === 0 ? (
-                    <Card size="sm" className="border-border/60">
-                        <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                    <Card size="sm">
+                        <CardContent className="py-10 text-center text-sm text-muted-foreground">
                             該当する社員が見つかりません。
                         </CardContent>
                     </Card>
@@ -400,33 +400,33 @@ export function EmployeesClient({
                         <Link key={emp.id} href={`/employees/${emp.id}`} className="block">
                             <Card
                                 size="sm"
-                                className="border-border/60 transition-[transform,box-shadow,border-color] duration-200 active:scale-[0.99]"
+                                className="transition-all duration-200 active:scale-[0.99] hover:shadow-md"
                             >
-                                <CardContent className="space-y-3">
+                                <CardContent className="space-y-3.5">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0">
-                                            <p className="text-xs font-medium tracking-[0.08em] text-muted-foreground">
+                                            <p className="text-[11px] font-semibold tracking-[0.1em] text-muted-foreground/70 uppercase">
                                                 {emp.employee_number}
                                             </p>
-                                            <p className="mt-1 truncate text-base font-semibold">{emp.name}</p>
+                                            <p className="mt-1.5 truncate text-base font-semibold text-foreground">{emp.name}</p>
                                             <p className="truncate text-sm text-muted-foreground">{emp.name_kana}</p>
                                         </div>
-                                        {emp.branch ? <Badge variant="outline">{emp.branch}</Badge> : null}
+                                        {emp.branch ? <Badge variant="outline" className="text-[11px] font-medium">{emp.branch}</Badge> : null}
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3 text-sm">
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1">
-                                            <p className="text-sm text-muted-foreground">役職</p>
-                                            <p className="font-medium">{emp.job_title || "-"}</p>
+                                            <p className="text-xs text-muted-foreground/70">役職</p>
+                                            <p className="text-sm font-medium text-foreground">{emp.job_title || "-"}</p>
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="text-sm text-muted-foreground">入社日</p>
-                                            <p className="font-medium tabular-nums">{formatDisplayDate(emp.hire_date)}</p>
+                                            <p className="text-xs text-muted-foreground/70">入社日</p>
+                                            <p className="text-sm font-medium tabular-nums text-foreground">{formatDisplayDate(emp.hire_date)}</p>
                                         </div>
                                     </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        <Badge variant="secondary">{emp.qualification_count}件の資格</Badge>
+                                    <div className="flex flex-wrap gap-2 pt-1">
+                                        <Badge variant="secondary" className="text-[11px] font-medium">{emp.qualification_count}件の資格</Badge>
                                         {emp.expiring_count > 0 ? (
-                                            <Badge variant="destructive">
+                                            <Badge variant="destructive" className="text-[11px] font-medium">
                                                 期限間近 {emp.expiring_count}件
                                             </Badge>
                                         ) : null}
@@ -438,11 +438,11 @@ export function EmployeesClient({
                 )}
             </div>
 
-            <div className="hidden overflow-x-auto rounded-[24px] border border-border/60 bg-card shadow-[0_1px_2px_rgba(38,42,46,0.04),0_12px_28px_rgba(38,42,46,0.05)] md:block" aria-busy={isPending}>
+            <div className="hidden overflow-x-auto rounded-2xl border border-border/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.03),0_4px_16px_rgba(0,0,0,0.04)] md:block" aria-busy={isPending}>
                 <Table>
                     <TableHeader>
-                        <TableRow className="bg-muted/50">
-                            <TableHead className="sticky left-0 z-20 w-[120px] bg-muted/50 shadow-[inset_-1px_0_0_hsl(var(--border))]">社員番号</TableHead>
+                        <TableRow className="bg-muted/30 hover:bg-muted/30">
+                            <TableHead className="sticky left-0 z-20 w-[120px] bg-muted/30 shadow-[inset_-1px_0_0_hsl(var(--border)/0.3)]">社員番号</TableHead>
                             <TableHead>氏名</TableHead>
                             <TableHead>フリガナ</TableHead>
                             <TableHead>拠点</TableHead>
@@ -460,43 +460,43 @@ export function EmployeesClient({
                             </TableRow>
                         ) : (
                             initialEmployees.map((emp) => (
-                                <TableRow key={emp.id} className="group hover:bg-muted/30 transition-colors">
-                                    <TableCell className="sticky left-0 z-10 bg-card font-mono text-sm text-muted-foreground shadow-[inset_-1px_0_0_hsl(var(--border))] group-hover:bg-muted/30">
-                                        <TableCellLink href={`/employees/${emp.id}`} className="font-mono text-sm text-muted-foreground hover:text-foreground">
+                                <TableRow key={emp.id} className="group transition-all duration-200">
+                                    <TableCell className="sticky left-0 z-10 bg-card font-mono text-muted-foreground shadow-[inset_-1px_0_0_hsl(var(--border)/0.3)] group-hover:bg-muted/40 transition-colors">
+                                        <TableCellLink href={`/employees/${emp.id}`} className="font-mono text-muted-foreground hover:text-foreground transition-colors">
                                             {emp.employee_number}
                                         </TableCellLink>
                                     </TableCell>
-                                    <TableCell className="font-bold">
-                                        <TableCellLink href={`/employees/${emp.id}`} className="font-bold hover:underline">
+                                    <TableCell className="font-semibold text-foreground">
+                                        <TableCellLink href={`/employees/${emp.id}`} className="font-semibold hover:text-primary transition-colors">
                                             {emp.name}
                                         </TableCellLink>
                                     </TableCell>
-                                    <TableCell className="text-sm text-muted-foreground">
-                                        <TableCellLink href={`/employees/${emp.id}`} className="text-sm text-muted-foreground hover:text-foreground">
+                                    <TableCell className="text-muted-foreground">
+                                        <TableCellLink href={`/employees/${emp.id}`} className="text-muted-foreground hover:text-foreground transition-colors">
                                             {emp.name_kana}
                                         </TableCellLink>
                                     </TableCell>
-                                    <TableCell>
-                                        <TableCellLink href={`/employees/${emp.id}`} className="hover:text-foreground">
+                                    <TableCell className="text-foreground/80">
+                                        <TableCellLink href={`/employees/${emp.id}`} className="hover:text-foreground transition-colors">
                                             {emp.branch || "-"}
                                         </TableCellLink>
                                     </TableCell>
-                                    <TableCell>
-                                        <TableCellLink href={`/employees/${emp.id}`} className="hover:text-foreground">
+                                    <TableCell className="text-foreground/80">
+                                        <TableCellLink href={`/employees/${emp.id}`} className="hover:text-foreground transition-colors">
                                             {emp.job_title || "-"}
                                         </TableCellLink>
                                     </TableCell>
-                                    <TableCell className="text-sm">
-                                        <TableCellLink href={`/employees/${emp.id}`} className="text-sm tabular-nums hover:text-foreground">
+                                    <TableCell className="tabular-nums text-foreground/80">
+                                        <TableCellLink href={`/employees/${emp.id}`} className="tabular-nums hover:text-foreground transition-colors">
                                             {formatDisplayDate(emp.hire_date)}
                                         </TableCellLink>
                                     </TableCell>
                                     <TableCell className="text-center">
-                                        <TableCellLink href={`/employees/${emp.id}`} className="hover:text-foreground">
-                                            <div className="flex items-center justify-center gap-1">
-                                                <Badge variant="secondary">{emp.qualification_count}件</Badge>
+                                        <TableCellLink href={`/employees/${emp.id}`} className="hover:text-foreground transition-colors">
+                                            <div className="flex items-center justify-center gap-1.5">
+                                                <Badge variant="secondary" className="text-[11px] font-medium">{emp.qualification_count}件</Badge>
                                                 {emp.expiring_count > 0 && (
-                                                    <Badge variant="destructive" className="text-[10px]">
+                                                    <Badge variant="destructive" className="text-[10px] font-medium">
                                                         {emp.expiring_count}件期限間近
                                                     </Badge>
                                                 )}
@@ -511,11 +511,12 @@ export function EmployeesClient({
             </div>
 
             {(currentPage > 1 || hasNextPage) && (
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center justify-center gap-3 pt-2">
                     <Button
                         variant="outline"
                         size="sm"
                         disabled={currentPage <= 1}
+                        className="min-w-[80px]"
                         render={<Link href={buildEmployeesHref(pathname, {
                             search: currentSearch,
                             branch: currentBranch,
@@ -526,13 +527,14 @@ export function EmployeesClient({
                     >
                         前へ
                     </Button>
-                    <span className="text-sm text-muted-foreground">
-                        {currentPage}ページ
+                    <span className="text-sm font-medium text-muted-foreground tabular-nums">
+                        {currentPage} ページ
                     </span>
                     <Button
                         variant="outline"
                         size="sm"
                         disabled={!hasNextPage}
+                        className="min-w-[80px]"
                         render={<Link href={buildEmployeesHref(pathname, {
                             search: currentSearch,
                             branch: currentBranch,

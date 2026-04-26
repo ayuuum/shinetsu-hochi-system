@@ -110,8 +110,8 @@ type PrioritySnapshot = {
 };
 
 const countFormatter = new Intl.NumberFormat("ja-JP");
-const neutralSurfaceClassName = "border border-border/50 bg-white/72";
-const neutralIconClassName = "bg-muted/80 text-muted-foreground";
+const neutralSurfaceClassName = "border border-border/30 bg-white/80";
+const neutralIconClassName = "bg-muted/60 text-muted-foreground";
 
 const monthScheduleCategoryPriority: Record<string, number> = {
     健診: 0,
@@ -374,7 +374,7 @@ const getDashboardPrioritySnapshot = cache(async (today: string): Promise<Priori
                     ? `未記録 ${missingAlcoholEmployees.length}名を確認`
                     : todayAlcoholChecks.length > 0
                         ? `本日の記録 ${todayAlcoholChecks.length}件`
-                        : "本日の記録はまだありません",
+                        : "本日の記録は��だありません",
             icon: Wine,
             iconClassName: alcoholTone?.icon || neutralIconClassName,
             valueClassName: alcoholTone?.strong || "text-foreground",
@@ -516,28 +516,28 @@ export function DashboardHeroSection() {
     const today = getTodayInTokyo();
 
     return (
-        <section className="rounded-xl border border-border/50 bg-card p-5 md:p-6">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-                <div className="space-y-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        <section className="rounded-2xl bg-gradient-to-br from-primary/[0.03] to-transparent border border-border/30 p-6 md:p-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div className="space-y-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary/70">
                         Daily Overview
                     </p>
-                    <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-                        今日の業務状況を先に把握する
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+                        本日の業務状況
                     </h1>
-                    <p className="max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
-                        資格、車両、アルコールチェック、今月の予定を分けて表示しています。重い集計は後から順に埋まるので、まず必要な画面に移れます。
+                    <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
+                        資格・車両・アルコールチェックの状況をひと目で確認できます。
                     </p>
                 </div>
-                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                    <Button className="w-full sm:w-auto" render={<Link href="/qualifications?level=urgent" />}>
+                <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
+                    <Button className="w-full sm:w-auto shadow-sm" render={<Link href="/qualifications?level=urgent" />}>
                         資格タスクを見る
                     </Button>
                     <Button className="w-full sm:w-auto" variant="outline" render={<Link href="/vehicles" />}>
                         車両期限を確認
                     </Button>
                     <Button className="w-full sm:w-auto" variant="outline" render={<Link href={buildAlcoholChecksHref({ date: today })} />}>
-                        本日のアルコールチェック
+                        アルコールチェック
                     </Button>
                 </div>
             </div>
@@ -555,41 +555,41 @@ export async function DashboardFocusCardsSection() {
     ];
 
     return (
-        <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-            <Card className="border-border/50">
+        <section className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+            <Card>
                 <CardHeader>
-                    <CardTitle>最優先タスク</CardTitle>
+                    <CardTitle className="text-lg">最優先タスク</CardTitle>
                     <CardDescription>
-                        いま最初に確認すべき対象を 1 件だけ先頭に出しています。
+                        いま最初に確認すべき対象を表示しています
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     {snapshot.topTask ? (
                         <Link
                             href={snapshot.topTask.href}
-                            className="group flex items-center gap-3 transition-colors duration-150 hover:bg-muted/40 -mx-6 px-6 py-2 rounded-none"
+                            className="group flex items-center gap-4 transition-all duration-200 hover:bg-muted/50 -mx-6 px-6 py-3 rounded-xl"
                         >
                             <div className="min-w-0 flex-1">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <p className="text-sm font-semibold">{snapshot.topTask.title}</p>
-                                    <Badge variant="secondary" className={`${snapshot.topTask.badgeClassName} text-xs`}>
+                                <div className="flex flex-wrap items-center gap-2.5">
+                                    <p className="text-sm font-semibold text-foreground">{snapshot.topTask.title}</p>
+                                    <Badge variant="secondary" className={`${snapshot.topTask.badgeClassName} text-[11px] font-medium`}>
                                         {snapshot.topTask.badgeLabel}
                                     </Badge>
                                 </div>
-                                <p className="truncate text-xs text-muted-foreground mt-0.5">{snapshot.topTask.subtitle}</p>
-                                <p className="text-xs text-muted-foreground">{snapshot.topTask.meta}</p>
+                                <p className="truncate text-sm text-muted-foreground mt-1">{snapshot.topTask.subtitle}</p>
+                                <p className="text-xs text-muted-foreground/70 mt-0.5">{snapshot.topTask.meta}</p>
                             </div>
-                            <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                            <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/50 transition-all group-hover:text-foreground group-hover:translate-x-0.5" />
                         </Link>
                     ) : (
-                        <p className="text-sm text-muted-foreground py-2">本日時点で優先対応が必要な項目は見つかっていません。</p>
+                        <p className="text-sm text-muted-foreground py-3">本日時点で優先対応が必要な項目は見つかっていません。</p>
                     )}
                 </CardContent>
             </Card>
 
-            <Card className="border-border/50">
+            <Card>
                 <CardHeader>
-                    <CardTitle>アラート状況</CardTitle>
+                    <CardTitle className="text-lg">アラート状況</CardTitle>
                     <CardDescription>資格・アルコール・車検の要確認件数</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -598,11 +598,11 @@ export async function DashboardFocusCardsSection() {
                             <Link
                                 key={card.title}
                                 href={card.href}
-                                className="group flex items-center justify-between border-b border-border/40 px-6 py-3 last:border-0 transition-colors duration-150 hover:bg-muted/40"
+                                className="group flex items-center justify-between border-b border-border/30 px-6 py-3.5 last:border-0 transition-all duration-200 hover:bg-muted/50"
                             >
                                 <div className="min-w-0">
-                                    <p className="text-sm font-medium">{card.title}</p>
-                                    <p className="text-xs text-muted-foreground mt-0.5">{card.description}</p>
+                                    <p className="text-sm font-medium text-foreground">{card.title}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{card.description}</p>
                                 </div>
                                 <p className={`text-2xl font-bold tabular-nums shrink-0 ml-4 ${card.valueClassName}`}>
                                     {countFormatter.format(card.value)}
@@ -613,16 +613,16 @@ export async function DashboardFocusCardsSection() {
                 </CardContent>
             </Card>
 
-            <Card className="border-border/50 xl:col-span-2">
+            <Card className="xl:col-span-2">
                 <CardContent className="pt-6">
                     <div className="-mx-6 grid xl:grid-cols-3">
                         {statRows.map((stat, i) => (
-                            <div key={stat.label} className={`flex items-center justify-between px-6 py-4 ${i < statRows.length - 1 ? "border-b border-border/40 xl:border-b-0 xl:border-r" : ""}`}>
+                            <div key={stat.label} className={`flex items-center justify-between px-6 py-5 ${i < statRows.length - 1 ? "border-b border-border/30 xl:border-b-0 xl:border-r" : ""}`}>
                                 <div>
-                                    <p className="text-sm font-medium">{stat.label}</p>
-                                    <p className="text-xs text-muted-foreground mt-0.5">{stat.detail}</p>
+                                    <p className="text-sm font-medium text-foreground">{stat.label}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{stat.detail}</p>
                                 </div>
-                                <p className="text-3xl font-bold tabular-nums ml-4">{countFormatter.format(stat.value)}</p>
+                                <p className="text-3xl font-bold tabular-nums ml-4 text-foreground">{countFormatter.format(stat.value)}</p>
                             </div>
                         ))}
                     </div>
@@ -636,39 +636,40 @@ export async function DashboardMonthScheduleSection() {
     const items = await getDashboardMonthSchedule(getTodayInTokyo());
 
     return (
-        <section className="rounded-xl border border-border/50 bg-card p-5 md:p-6">
+        <section className="rounded-2xl border border-border/30 bg-card p-6 md:p-8">
             <div>
-                <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground sm:text-xl">
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
+                <h2 className="flex items-center gap-2.5 text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
+                        <Calendar className="h-4 w-4 text-primary" />
+                    </div>
                     今月の予定・期限
                 </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-2 text-sm text-muted-foreground">
                     健診の受診日、車両の期限、資格の有効期限が今月中のものです。
                 </p>
             </div>
-            <div className="mt-4">
+            <div className="mt-5">
                 {items.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-border/70 bg-muted/25 px-4 py-10 text-center text-sm text-muted-foreground">
+                    <div className="rounded-xl border border-dashed border-border/50 bg-muted/20 px-4 py-12 text-center text-sm text-muted-foreground">
                         今月中に該当する予定・期限はありません。
                     </div>
                 ) : (
-                    <ul className="grid sm:grid-cols-2 lg:grid-cols-3">
+                    <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-4">
                         {items.map((item, i) => (
                             <li key={item.id}>
                                 <Link
                                     href={item.href}
-                                    className="group flex items-center gap-3 border-b border-border/40 py-3 transition-colors duration-150 hover:bg-muted/40 last:border-0"
+                                    className="group flex items-center gap-3 border-b border-border/30 py-3.5 transition-all duration-200 hover:bg-muted/40 last:border-0"
                                 >
                                     <div className="min-w-0 flex-1">
-                                        <div className="flex flex-wrap items-center gap-1.5">
-                                            <span className="text-xs tabular-nums text-muted-foreground">{item.date}</span>
-                                            <span className="text-xs text-muted-foreground/60">·</span>
-                                            <span className="text-xs text-muted-foreground">{item.category}</span>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="text-xs tabular-nums font-medium text-muted-foreground">{item.date}</span>
+                                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{item.category}</span>
                                         </div>
-                                        <p className="mt-0.5 truncate text-sm font-semibold">{item.title}</p>
+                                        <p className="mt-1 truncate text-sm font-semibold text-foreground">{item.title}</p>
                                         <p className="truncate text-xs text-muted-foreground">{item.subtitle}</p>
                                     </div>
-                                    <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                                    <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/50 transition-all group-hover:text-foreground group-hover:translate-x-0.5" />
                                 </Link>
                             </li>
                         ))}
@@ -710,25 +711,27 @@ export async function DashboardTaskListSection() {
     ];
 
     return (
-        <section className="grid gap-4 xl:grid-cols-[1.35fr_0.95fr]">
-            <Card className="border-border/50">
+        <section className="grid gap-5 xl:grid-cols-[1.35fr_0.95fr]">
+            <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <ShieldAlert className={`h-5 w-5 ${alertStyles.danger.strong}`} />
+                    <CardTitle className="flex items-center gap-2.5 text-lg">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-destructive/10">
+                            <ShieldAlert className="h-4 w-4 text-destructive" />
+                        </div>
                         本日の未対応タスク
                     </CardTitle>
                     <CardDescription>
-                        資格、車両、アルコールチェックを横断して、直接処理できる順で並べています。
+                        資格、車両、アルコールチェックを横断して優先度順に表示
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     {snapshot.dashboardTasks.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center rounded-xl bg-muted/40 px-4 py-10 text-center">
-                            <div className={`mb-3 flex size-12 items-center justify-center rounded-full ${alertStyles.ok.icon}`}>
-                                <ShieldCheck className="h-6 w-6" />
+                        <div className="flex flex-col items-center justify-center rounded-xl bg-muted/30 px-4 py-12 text-center">
+                            <div className={`mb-4 flex size-14 items-center justify-center rounded-full ${alertStyles.ok.icon}`}>
+                                <ShieldCheck className="h-7 w-7" />
                             </div>
-                            <p className="text-sm font-medium">今日の未対応タスクはありません</p>
-                            <p className="mt-1 text-sm text-muted-foreground">
+                            <p className="text-sm font-semibold text-foreground">今日の未対応タスクはありません</p>
+                            <p className="mt-1.5 text-sm text-muted-foreground">
                                 重要度の高い更新や未記録は見つかっていません。
                             </p>
                         </div>
@@ -737,36 +740,36 @@ export async function DashboardTaskListSection() {
                             {snapshot.dashboardTasks.map((task) => (
                                 <div
                                     key={task.id}
-                                    className="group flex items-center gap-3 border-b border-border/40 px-6 py-3 last:border-0 transition-colors duration-150 hover:bg-muted/40"
+                                    className="group flex items-center gap-3 border-b border-border/30 px-6 py-3.5 last:border-0 transition-all duration-200 hover:bg-muted/40"
                                 >
                                     <Link href={task.href} className="min-w-0 flex-1">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <p className="text-sm font-semibold">{task.title}</p>
-                                            <Badge variant="secondary" className={`${task.badgeClassName} text-xs`}>
+                                        <div className="flex flex-wrap items-center gap-2.5">
+                                            <p className="text-sm font-semibold text-foreground">{task.title}</p>
+                                            <Badge variant="secondary" className={`${task.badgeClassName} text-[11px] font-medium`}>
                                                 {task.badgeLabel}
                                             </Badge>
                                         </div>
-                                        <p className="truncate text-xs text-muted-foreground mt-0.5">{task.subtitle}</p>
-                                        <p className="text-xs text-muted-foreground">{task.meta}</p>
+                                        <p className="truncate text-sm text-muted-foreground mt-1">{task.subtitle}</p>
+                                        <p className="text-xs text-muted-foreground/70 mt-0.5">{task.meta}</p>
                                     </Link>
                                     {task.employeeId ? (
                                         <Button
                                             size="sm"
                                             variant="ghost"
-                                            className="shrink-0 text-xs h-7 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            className="shrink-0 text-xs h-8 px-3 opacity-0 group-hover:opacity-100 transition-all"
                                             render={<Link href={`/employees/${task.employeeId}?tab=qualifications`} />}
                                         >
-                                            資格タブ <ArrowRight className="ml-1 h-3 w-3" />
+                                            資格タブ <ArrowRight className="ml-1.5 h-3 w-3" />
                                         </Button>
                                     ) : (
-                                        <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                                        <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/50 transition-all group-hover:text-foreground group-hover:translate-x-0.5" />
                                     )}
                                 </div>
                             ))}
                             {snapshot.totalTaskCount > 10 && (
-                                <div className="border-t border-border/40 px-6 py-3">
-                                    <Link href="/qualifications?level=urgent" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                                        他 {snapshot.totalTaskCount - 10} 件のアラートをすべて確認する →
+                                <div className="border-t border-border/30 px-6 py-4">
+                                    <Link href="/qualifications?level=urgent" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors">
+                                        他 {snapshot.totalTaskCount - 10} 件のアラートをすべて確認する
                                     </Link>
                                 </div>
                             )}
@@ -775,11 +778,11 @@ export async function DashboardTaskListSection() {
                 </CardContent>
             </Card>
 
-            <Card className="border-border/50">
+            <Card>
                 <CardHeader>
-                    <CardTitle>本日の安全・運用サマリー</CardTitle>
+                    <CardTitle className="text-lg">本日の安全・運用サマリー</CardTitle>
                     <CardDescription>
-                        日次確認で見落としやすい項目をまとめています。
+                        日次確認で見落としやすい項目をまとめています
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -788,17 +791,17 @@ export async function DashboardTaskListSection() {
                             <Link
                                 key={item.label}
                                 href={item.href}
-                                className="group flex items-center justify-between border-b border-border/40 px-6 py-4 last:border-0 transition-colors duration-150 hover:bg-muted/40"
+                                className="group flex items-center justify-between border-b border-border/30 px-6 py-5 last:border-0 transition-all duration-200 hover:bg-muted/40"
                             >
                                 <div>
-                                    <p className="text-sm font-medium">{item.label}</p>
-                                    <p className="text-xs text-muted-foreground mt-0.5">{item.sublabel}</p>
+                                    <p className="text-sm font-medium text-foreground">{item.label}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{item.sublabel}</p>
                                 </div>
                                 <div className="text-right tabular-nums">
                                     <p className={`text-3xl font-bold ${item.tone?.strong || "text-foreground"}`}>
                                         {countFormatter.format(item.value)}
                                     </p>
-                                    <p className="text-xs text-muted-foreground">{item.detail}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{item.detail}</p>
                                 </div>
                             </Link>
                         ))}
@@ -819,12 +822,12 @@ export function DashboardQuickLinksSection() {
     ];
 
     return (
-        <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-            <Card className="border-border/50">
+        <section className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+            <Card>
                 <CardHeader>
-                    <CardTitle>主要画面へのショートカット</CardTitle>
+                    <CardTitle className="text-lg">主要画面へのショートカット</CardTitle>
                     <CardDescription>
-                        朝の確認でよく使う画面にすぐ移動できます。
+                        朝の確認でよく使う画面にすぐ移動できます
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -833,24 +836,28 @@ export function DashboardQuickLinksSection() {
                             <Link
                                 key={link.title}
                                 href={link.href}
-                                className="group flex items-center gap-3 border-b border-border/40 px-6 py-3 last:border-0 transition-colors duration-150 hover:bg-muted/40"
+                                className="group flex items-center gap-3 border-b border-border/30 px-6 py-3.5 last:border-0 transition-all duration-200 hover:bg-muted/40"
                             >
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-sm font-medium">{link.title}</p>
-                                    <p className="text-xs text-muted-foreground mt-0.5">{link.description}</p>
+                                    <p className="text-sm font-medium text-foreground">{link.title}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{link.description}</p>
                                 </div>
-                                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/50 transition-all group-hover:text-foreground group-hover:translate-x-0.5" />
                             </Link>
                         ))}
                     </div>
                 </CardContent>
             </Card>
 
-            <div className="rounded-xl border border-border/50 bg-card px-4 py-3">
-                <div className="flex h-full flex-col justify-center gap-2 text-sm text-muted-foreground">
-                    <p className="text-sm font-medium text-foreground">表示方針</p>
-                    <p>このページはセクションごとに別々に読み込みます。重い一覧や日次データが遅くても、他のカードは先に使えます。</p>
-                    <p>資格、車両、アルコールチェック、今月の予定を個別に確認したいときは上のショートカットから直接開いてください。</p>
+            <div className="rounded-2xl border border-border/30 bg-gradient-to-br from-muted/30 to-transparent px-6 py-5">
+                <div className="flex h-full flex-col justify-center gap-3">
+                    <p className="text-sm font-semibold text-foreground">表示について</p>
+                    <p className="text-sm leading-relaxed text-muted-foreground">
+                        このページはセクションごとに別々に読み込みます。重い一覧や日次データが遅くても、他のカードは先に使えます。
+                    </p>
+                    <p className="text-sm leading-relaxed text-muted-foreground">
+                        各画面に直接移動したい場合は、上のショートカットをご利用ください。
+                    </p>
                 </div>
             </div>
         </section>
