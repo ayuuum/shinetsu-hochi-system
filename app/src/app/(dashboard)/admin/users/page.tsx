@@ -16,7 +16,7 @@ export default async function AdminUsersPage() {
     const { user, role } = await getFastAuthSnapshot();
 
     if (!user || role !== "admin") {
-        redirect("/");
+        redirect("/dashboard");
     }
 
     const adminClient = createAdminClient();

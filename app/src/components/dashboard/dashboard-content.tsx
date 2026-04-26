@@ -374,7 +374,7 @@ const getDashboardPrioritySnapshot = cache(async (today: string): Promise<Priori
                     ? `未記録 ${missingAlcoholEmployees.length}名を確認`
                     : todayAlcoholChecks.length > 0
                         ? `本日の記録 ${todayAlcoholChecks.length}件`
-                        : "本日の記録は��だありません",
+                        : "本日の記録はまだありません",
             icon: Wine,
             iconClassName: alcoholTone?.icon || neutralIconClassName,
             valueClassName: alcoholTone?.strong || "text-foreground",

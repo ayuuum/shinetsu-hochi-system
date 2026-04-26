@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 const ADMIN_NAV_ITEMS = [
     {
         title: "ホーム",
-        url: "/",
+        url: "/dashboard",
         icon: LayoutDashboard,
     },
     {
@@ -28,7 +28,7 @@ const ADMIN_NAV_ITEMS = [
 const TECHNICIAN_NAV_ITEMS = [
     {
         title: "ホーム",
-        url: "/",
+        url: "/today",
         icon: LayoutDashboard,
     },
     {

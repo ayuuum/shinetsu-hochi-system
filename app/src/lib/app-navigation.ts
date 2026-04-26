@@ -72,10 +72,19 @@ export const appNavItems: AppNavItem[] = [
     {
         title: "ダッシュボード",
         description: "今日の優先対応と全体状況を確認",
-        url: "/",
+        url: "/dashboard",
         icon: LayoutDashboard,
         section: "overview",
         keywords: ["top", "home", "summary", "alert"],
+    },
+    {
+        title: "今日の作業",
+        description: "今日の確認事項と自分の期限を確認",
+        url: "/today",
+        icon: UserCircle,
+        section: "overview",
+        keywords: ["today", "work", "自分", "作業"],
+        technicianOnly: true,
     },
     {
         title: "マイプロフィール",
@@ -255,6 +264,10 @@ export function findAppNavItem(
     pathname: string,
     opts?: { role: UserRole; linkedEmployeeId: string | null }
 ) {
+    if (opts?.role === "technician" && pathname === "/today") {
+        return appNavItems.find((item) => item.url === "/today") || appNavItems[0];
+    }
+
     if (opts?.role === "technician" && opts.linkedEmployeeId) {
         if (
             pathname === "/me"

@@ -68,7 +68,7 @@ function LoginForm() {
         if (
             process.env.NODE_ENV === "development"
             && trimmedEmail === "test@gmail.com"
-            && password === "test"
+            && password === "test1234"
         ) {
             try {
                 const res = await fetch("/api/auth/ensure-dev-test-user", { method: "POST" });

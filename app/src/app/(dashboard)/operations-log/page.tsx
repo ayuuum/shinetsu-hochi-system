@@ -57,7 +57,7 @@ export default async function OperationsLogPage() {
                         <p className="text-sm text-muted-foreground">
                             この画面は管理者または人事のみ利用できます。
                         </p>
-                        <Button variant="outline" render={<Link href="/" />}>
+                        <Button variant="outline" render={<Link href="/dashboard" />}>
                             ダッシュボードへ戻る
                         </Button>
                     </CardContent>

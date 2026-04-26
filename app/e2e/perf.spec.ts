@@ -10,8 +10,8 @@ type RouteMeasurement = {
 
 const routeMeasurements: RouteMeasurement[] = [
   {
-    route: "/",
-    heading: /今日の業務状況を先に把握する/,
+    route: "/dashboard",
+    heading: /本日の業務状況/,
     keyContent: (page) => page.getByRole("link", { name: /資格タスクを見る/ }),
     budgetMs: 2500,
   },
@@ -24,7 +24,7 @@ const routeMeasurements: RouteMeasurement[] = [
   {
     route: "/qualifications",
     heading: /資格・講習管理/,
-    keyContent: (page) => page.getByText("期限切れ", { exact: true }),
+    keyContent: (page) => page.getByText("期限切れ", { exact: true }).first(),
     budgetMs: 2500,
   },
   {
@@ -68,7 +68,7 @@ type DetailMeasurement = {
 const detailMeasurements: DetailMeasurement[] = [
   {
     tab: "basic",
-    keyContent: (page) => page.getByText("個人・連絡先", { exact: true }).first(),
+    keyContent: (page) => page.getByText("基本情報", { exact: true }).first(),
     budgetMs: 3000,
   },
   {
@@ -151,7 +151,7 @@ for (const measurement of routeMeasurements) {
 for (const detail of detailMeasurements) {
   test(`perf employee detail ${detail.tab}`, async ({ page }) => {
     const basePath = await getEmployeeDetailBasePath(page);
-    const route = detail.tab === "basic" ? basePath : `${basePath}?tab=${detail.tab}`;
+    const route = `${basePath}?tab=${detail.tab}`;
 
     const heading = page.locator("h1").first();
 

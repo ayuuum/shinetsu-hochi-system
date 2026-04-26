@@ -23,5 +23,5 @@ export default async function MePage() {
         );
     }
 
-    redirect("/");
+    redirect("/dashboard");
 }
