@@ -23,18 +23,22 @@ import {
 import { Loader2 } from "lucide-react";
 import { inviteUserAction } from "@/app/actions/admin-user-actions";
 import { getUserRoleLabel } from "@/lib/display-labels";
+import type { EmployeeOption } from "./users-client";
 
 interface InviteUserModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    employees: EmployeeOption[];
 }
 
 type InviteRole = "admin" | "hr" | "technician";
 
-export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
+export function InviteUserModal({ open, onOpenChange, employees }: InviteUserModalProps) {
     const [email, setEmail] = useState("");
     const [role, setRole] = useState<InviteRole>("technician");
+    const [employeeId, setEmployeeId] = useState<string>("__none__");
     const [isPending, startTransition] = useTransition();
+    const selectedEmployee = employees.find((employee) => employee.id === employeeId);
     const roleOptions = [
         { value: "admin", label: getUserRoleLabel("admin") },
         { value: "hr", label: getUserRoleLabel("hr") },
@@ -49,11 +53,16 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
         }
 
         startTransition(async () => {
-            const result = await inviteUserAction(email.trim(), role);
+            const result = await inviteUserAction(
+                email.trim(),
+                role,
+                role === "technician" && employeeId !== "__none__" ? employeeId : null,
+            );
             if (result.success) {
                 toast.success("招待メールを送信しました");
                 setEmail("");
                 setRole("technician");
+                setEmployeeId("__none__");
                 onOpenChange(false);
             } else {
                 toast.error(result.error);
@@ -103,6 +112,44 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                             </SelectContent>
                         </Select>
                     </div>
+                    {role === "technician" && (
+                        <div className="space-y-1.5">
+                            <Label>社員紐づけ</Label>
+                            <Select
+                                items={[
+                                    { value: "__none__", label: "あとで設定する" },
+                                    ...employees.map((employee) => ({
+                                        value: employee.id,
+                                        label: `${employee.name}${employee.branch ? `（${employee.branch}）` : ""}`,
+                                    })),
+                                ]}
+                                value={employeeId}
+                                onValueChange={(val: string | null) => {
+                                    if (val) setEmployeeId(val);
+                                }}
+                                disabled={isPending}
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue>
+                                        {selectedEmployee
+                                            ? `${selectedEmployee.name}${selectedEmployee.branch ? `（${selectedEmployee.branch}）` : ""}`
+                                            : "あとで設定する"}
+                                    </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="__none__">あとで設定する</SelectItem>
+                                    {employees.map((employee) => (
+                                        <SelectItem key={employee.id} value={employee.id}>
+                                            {employee.name}{employee.branch ? `（${employee.branch}）` : ""}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">
+                                作業者の「自分の情報」ページで表示する社員情報です。未設定の場合はログイン後に案内が表示されます。
+                            </p>
+                        </div>
+                    )}
                     <DialogFooter>
                         <Button
                             type="button"

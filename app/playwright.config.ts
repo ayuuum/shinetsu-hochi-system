@@ -23,7 +23,7 @@ export default defineConfig({
     },
     {
       name: "chromium",
-      testIgnore: /mobile\.spec\.ts/,
+      testIgnore: [/mobile\.spec\.ts/, /perf\.spec\.ts/],
       use: {
         ...devices["Desktop Chrome"],
         storageState: ".auth/admin.json",
@@ -35,6 +35,15 @@ export default defineConfig({
       testMatch: /mobile\.spec\.ts/,
       use: {
         ...devices["Pixel 7"],
+        storageState: ".auth/admin.json",
+      },
+      dependencies: ["setup"],
+    },
+    {
+      name: "perf",
+      testMatch: /perf\.spec\.ts/,
+      use: {
+        ...devices["Desktop Chrome"],
         storageState: ".auth/admin.json",
       },
       dependencies: ["setup"],

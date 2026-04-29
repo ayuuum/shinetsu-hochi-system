@@ -32,13 +32,20 @@ export default async function AdminUsersPage() {
         );
     }
 
-    const [listUsersResult, rolesResult] = await Promise.all([
+    const [listUsersResult, rolesResult, employeesResult] = await Promise.all([
         adminClient.auth.admin.listUsers({ perPage: 1000 }),
         adminClient.from("user_roles").select("id, role, employee_id"),
+        adminClient
+            .from("employees")
+            .select("id, name, branch")
+            .is("deleted_at", null)
+            .order("branch", { ascending: true })
+            .order("name", { ascending: true }),
     ]);
 
     const { data: usersData, error: usersError } = listUsersResult;
     const { data: rolesData, error: rolesError } = rolesResult;
+    const { data: employeesData, error: employeesError } = employeesResult;
 
     if (usersError) {
         console.error("Failed to list users:", usersError);
@@ -46,7 +53,16 @@ export default async function AdminUsersPage() {
     if (rolesError) {
         console.error("Failed to fetch user_roles:", rolesError);
     }
+    if (employeesError) {
+        console.error("Failed to fetch employees for user links:", employeesError);
+    }
 
+    const employees = (employeesData ?? []).map((employee) => ({
+        id: employee.id,
+        name: employee.name,
+        branch: employee.branch,
+    }));
+    const employeeMap = new Map(employees.map((employee) => [employee.id, employee]));
     const rolesMap = new Map<string, { role: string | null; employee_id: string | null }>();
     for (const row of rolesData ?? []) {
         rolesMap.set(row.id, { role: row.role, employee_id: row.employee_id });
@@ -58,9 +74,13 @@ export default async function AdminUsersPage() {
             id: u.id,
             email: u.email ?? null,
             role: (roleRow?.role ?? null) as UserRow["role"],
+            linkedEmployeeId: roleRow?.employee_id ?? null,
+            linkedEmployeeName: roleRow?.employee_id
+                ? employeeMap.get(roleRow.employee_id)?.name ?? null
+                : null,
             lastSignInAt: u.last_sign_in_at ?? null,
         };
     });
 
-    return <UsersClient users={rows} currentUserId={user.id} />;
+    return <UsersClient users={rows} currentUserId={user.id} employees={employees} />;
 }

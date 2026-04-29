@@ -129,7 +129,7 @@ export default async function EmployeeDetailPage({
         deleted_qualifications: (deletedQualsResult.data as EmployeeQualification[]) || [],
     };
 
-    let certUrls: Record<string, string> = {};
+    const certUrls: Record<string, string> = {};
     let photoUrl: string | null = null;
 
     {

@@ -52,7 +52,7 @@ export async function GET(request: Request) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    let rows = (qualifications || []).filter((q_row) => {
+    const rows = (qualifications || []).filter((q_row) => {
         const emp = q_row.employees as { employee_number: string; name: string; branch: string | null } | null;
         const master = q_row.qualification_master as { name: string; category: string | null } | null;
 

@@ -2,48 +2,48 @@
 
 消防設備会社向けの社員・資格・車両・施工実績・健康診断・アルコールチェック管理アプリです。
 
-最近の主な追加機能:
+### 主な機能
 
-- 社員顔写真の登録と詳細表示
-- 家族・緊急連絡先の CRUD
-- 施工実績の Excel 出力と印刷用ページ
-- アルコールチェックの月次記録率レポート
-- Google Apps Script 経由の通知送信オプション
-- Playwright / Vitest による自動テスト
+- 管理者・人事・作業者のロール別ホーム
+- 社員台帳、資格・講習、車両・備品、施工実績、健康診断、年間予定表の管理
+- 作業者向けの今日の作業ページとアルコールチェック記録
+- 社員CSVインポート、各台帳のCSVエクスポート
+- 画面内ダッシュボードアラート
+- 印刷/PDF保存向けの公開マニュアル `/manual`
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+業務アラートのメール通知は運用対象外です。招待・パスワード再設定など Supabase Auth の認証メールのみ使用します。
 
-## Getting Started
-
-First, run the development server:
+### 開発
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+開発サーバーは webpack 固定です。Next.js 16 の Turbopack build はこの環境では停止することがあるため、本番ビルドも webpack に固定しています。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build
+npm run start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### テスト
 
-## Learn More
+```bash
+npm run test
+npm run test:e2e
+npm run test:e2e:perf
+```
 
-To learn more about Next.js, take a look at the following resources:
+作業者ログインの E2E は任意です。実行する場合は次の環境変数を設定します。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+E2E_TECHNICIAN_EMAIL=...
+E2E_TECHNICIAN_PASSWORD=...
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 運用メモ
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Supabase Auth の招待メール・再設定メールは `docs/supabase-auth-email-templates.md` の日本語テンプレートを Dashboard に設定してください。
+- 作業者アカウントはユーザー管理画面で社員情報に紐づけてください。未紐づけの場合、作業者の `/me` は社員詳細へ遷移できません。
+- 既存Excelデータは `.xlsx` を直接取り込まず、CSVに保存して社員インポート画面から取り込みます。
