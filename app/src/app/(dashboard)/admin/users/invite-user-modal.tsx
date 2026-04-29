@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
     DialogFooter,
@@ -65,6 +66,9 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>ユーザーを招待</DialogTitle>
+                    <DialogDescription>
+                        入力したメールアドレスに招待メールが届きます。利用者はメール内のリンクからパスワードを設定してログインします。
+                    </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-1.5">

@@ -26,6 +26,12 @@ const adminSections = [
     ["ユーザー管理", "ログインユーザーの招待、権限変更、社員情報との紐づけを行います。"],
 ];
 
+const authMailNotes = [
+    "業務アラートのメール通知は使いません。",
+    "ユーザー招待メールとパスワード再設定メールは、ログインに必要な認証メールとして使用します。",
+    "メールが届かない場合は、メールアドレス、迷惑メールフォルダ、リンクの有効期限を確認してください。",
+];
+
 const csvColumns = [
     "社員番号",
     "氏名",
@@ -91,6 +97,14 @@ export default function ManualPage() {
                             作業者は「今日の作業」、管理者・人事は「ダッシュボード」へ移動します。
                             パスワードを忘れた場合は、ログイン画面の再設定機能を使用してください。
                         </p>
+                        <div className="mt-5 rounded-2xl bg-[#f4f1ea] p-4">
+                            <h3 className="font-black">パスワードを忘れた場合</h3>
+                            <ol>
+                                <li>ログイン画面の「パスワードを忘れた場合」を押します。</li>
+                                <li>登録済みメールアドレスを入力します。</li>
+                                <li>届いたメールのリンクから新しいパスワードを設定します。</li>
+                            </ol>
+                        </div>
                     </section>
 
                     <section className="manual-section">
@@ -149,7 +163,20 @@ export default function ManualPage() {
                     </section>
 
                     <section className="manual-section">
-                        <h2>6. 困ったとき</h2>
+                        <h2>6. ユーザー招待と認証メール</h2>
+                        <p>
+                            新規ユーザーは、管理者が「ユーザー管理」から招待します。
+                            招待された利用者にはメールが届き、メール内のリンクからパスワードを設定します。
+                        </p>
+                        <ul>
+                            {authMailNotes.map((note) => (
+                                <li key={note}>{note}</li>
+                            ))}
+                        </ul>
+                    </section>
+
+                    <section className="manual-section">
+                        <h2>7. 困ったとき</h2>
                         <ul>
                             <li>ログインできない場合は、メールアドレスとパスワードを確認し、必要に応じてパスワード再設定を行います。</li>
                             <li>メニューが表示されない場合は、権限が不足している可能性があります。</li>

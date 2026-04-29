@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BrandLogo } from "@/components/brand-logo";
 import { supabase } from "@/lib/supabase";
+import { getPasswordUpdateErrorMessage } from "@/lib/auth-error-messages";
 import { Loader2 } from "lucide-react";
 
 function UpdatePasswordForm() {
@@ -35,7 +36,7 @@ function UpdatePasswordForm() {
         setLoading(false);
 
         if (updateError) {
-            setError(updateError.message || "更新に失敗しました。");
+            setError(getPasswordUpdateErrorMessage(updateError.message));
             return;
         }
 
@@ -95,7 +96,8 @@ export default function UpdatePasswordPage() {
                     <CardHeader className="pb-2">
                         <CardTitle className="text-lg">新しいパスワードを設定</CardTitle>
                         <CardDescription>
-                            メールのリンクからアクセスした場合、または管理者からの案内に従って入力してください。
+                            認証メールのリンクからアクセスして、新しいパスワードを設定してください。
+                            リンクの有効期限が切れている場合は、ログイン画面から再設定メールを再送してください。
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
