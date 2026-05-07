@@ -23,7 +23,11 @@ import {
 import { Trash2, UserPlus } from "lucide-react";
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
 import { InviteUserModal } from "./invite-user-modal";
-import { updateUserRoleAction, deleteUserAction } from "@/app/actions/admin-user-actions";
+import {
+    updateUserRoleAction,
+    updateUserEmployeeLinkAction,
+    deleteUserAction,
+} from "@/app/actions/admin-user-actions";
 import { formatDisplayDate } from "@/lib/date";
 import { getUserRoleLabel } from "@/lib/display-labels";
 
@@ -33,12 +37,21 @@ export type UserRow = {
     id: string;
     email: string | null;
     role: UserRoleValue;
+    linkedEmployeeId: string | null;
+    linkedEmployeeName: string | null;
     lastSignInAt: string | null;
+};
+
+export type EmployeeOption = {
+    id: string;
+    name: string;
+    branch: string | null;
 };
 
 interface UsersClientProps {
     users: UserRow[];
     currentUserId: string;
+    employees: EmployeeOption[];
 }
 
 function RoleBadge({ role }: { role: UserRoleValue }) {
@@ -57,7 +70,7 @@ function RoleSelect({
     userId: string;
     currentRole: UserRoleValue;
     disabled: boolean;
-    onChanged: () => void;
+    onChanged: (role: Exclude<UserRoleValue, null>) => void;
 }) {
     const [isPending, startTransition] = useTransition();
 
@@ -67,7 +80,7 @@ function RoleSelect({
             const result = await updateUserRoleAction(userId, val as "admin" | "hr" | "technician");
             if (result.success) {
                 toast.success("ロールを更新しました");
-                onChanged();
+                onChanged(val as Exclude<UserRoleValue, null>);
             } else {
                 toast.error(result.error);
             }
@@ -101,16 +114,94 @@ function RoleSelect({
     );
 }
 
-export function UsersClient({ users: initialUsers, currentUserId }: UsersClientProps) {
+function EmployeeLinkSelect({
+    user,
+    employees,
+    onChanged,
+}: {
+    user: UserRow;
+    employees: EmployeeOption[];
+    onChanged: (userId: string, employeeId: string | null) => void;
+}) {
+    const [isPending, startTransition] = useTransition();
+    const employeeOptions = [
+        { value: "__none__", label: "未紐づけ" },
+        ...employees.map((employee) => ({
+            value: employee.id,
+            label: `${employee.name}${employee.branch ? `（${employee.branch}）` : ""}`,
+        })),
+    ];
+
+    if (user.role !== "technician") {
+        return <span className="text-sm text-muted-foreground">対象外</span>;
+    }
+
+    const handleChange = (val: string | null) => {
+        const nextEmployeeId = val === "__none__" ? null : val;
+        startTransition(async () => {
+            const result = await updateUserEmployeeLinkAction(user.id, nextEmployeeId);
+            if (result.success) {
+                toast.success("社員情報の紐づけを更新しました");
+                onChanged(user.id, nextEmployeeId);
+            } else {
+                toast.error(result.error);
+            }
+        });
+    };
+
+    return (
+        <Select
+            items={employeeOptions}
+            value={user.linkedEmployeeId ?? "__none__"}
+            onValueChange={(val: string | null) => handleChange(val)}
+            disabled={isPending}
+        >
+            <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="未紐づけ">
+                    {user.linkedEmployeeName ?? "未紐づけ"}
+                </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="__none__">未紐づけ</SelectItem>
+                {employees.map((employee) => (
+                    <SelectItem key={employee.id} value={employee.id}>
+                        {employee.name}{employee.branch ? `（${employee.branch}）` : ""}
+                    </SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+    );
+}
+
+export function UsersClient({ users: initialUsers, currentUserId, employees }: UsersClientProps) {
     const [users, setUsers] = useState<UserRow[]>(initialUsers);
     const [inviteOpen, setInviteOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
 
-    // Refresh local state from server is handled by revalidatePath, but we optimistically
-    // update role display via key trick — simpler approach: just reload from parent.
-    // Since revalidatePath triggers SC re-render, we keep local state in sync after delete.
     const handleDeleted = (userId: string) => {
         setUsers((prev) => prev.filter((u) => u.id !== userId));
+    };
+    const handleRoleChanged = (userId: string, role: Exclude<UserRoleValue, null>) => {
+        setUsers((prev) => prev.map((user) => {
+            if (user.id !== userId) return user;
+            return {
+                ...user,
+                role,
+                linkedEmployeeId: role === "technician" ? user.linkedEmployeeId : null,
+                linkedEmployeeName: role === "technician" ? user.linkedEmployeeName : null,
+            };
+        }));
+    };
+    const handleEmployeeLinkChanged = (userId: string, employeeId: string | null) => {
+        const employee = employeeId ? employees.find((item) => item.id === employeeId) : null;
+        setUsers((prev) => prev.map((user) => {
+            if (user.id !== userId) return user;
+            return {
+                ...user,
+                linkedEmployeeId: employeeId,
+                linkedEmployeeName: employee?.name ?? null,
+            };
+        }));
     };
 
     return (
@@ -135,6 +226,7 @@ export function UsersClient({ users: initialUsers, currentUserId }: UsersClientP
                             <TableRow>
                                 <TableHead>メールアドレス</TableHead>
                                 <TableHead>ロール</TableHead>
+                                <TableHead>社員紐づけ</TableHead>
                                 <TableHead>最終ログイン</TableHead>
                                 <TableHead className="w-[80px]" />
                             </TableRow>
@@ -142,7 +234,7 @@ export function UsersClient({ users: initialUsers, currentUserId }: UsersClientP
                         <TableBody>
                             {users.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="py-10 text-center text-muted-foreground">
+                                    <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
                                         ユーザーが見つかりません。
                                     </TableCell>
                                 </TableRow>
@@ -167,11 +259,16 @@ export function UsersClient({ users: initialUsers, currentUserId }: UsersClientP
                                                     userId={user.id}
                                                     currentRole={user.role}
                                                     disabled={isSelf}
-                                                    onChanged={() => {
-                                                        // revalidatePath will refresh SC; local badge stays
-                                                    }}
+                                                    onChanged={(nextRole) => handleRoleChanged(user.id, nextRole)}
                                                 />
                                             )}
+                                        </TableCell>
+                                        <TableCell>
+                                            <EmployeeLinkSelect
+                                                user={user}
+                                                employees={employees}
+                                                onChanged={handleEmployeeLinkChanged}
+                                            />
                                         </TableCell>
                                         <TableCell className="text-muted-foreground">
                                             {formatDisplayDate(user.lastSignInAt)}
@@ -196,7 +293,7 @@ export function UsersClient({ users: initialUsers, currentUserId }: UsersClientP
                 </CardContent>
             </Card>
 
-            <InviteUserModal open={inviteOpen} onOpenChange={setInviteOpen} />
+            <InviteUserModal open={inviteOpen} onOpenChange={setInviteOpen} employees={employees} />
 
             {deleteTarget && (
                 <DeleteConfirmDialog

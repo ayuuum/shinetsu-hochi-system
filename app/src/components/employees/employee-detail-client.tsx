@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Tables } from "@/types/supabase";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -35,6 +35,9 @@ import {
     Printer,
     Laptop,
     AlertTriangle,
+    BookOpen,
+    ChevronDown,
+    ChevronUp,
 } from "lucide-react";
 import { differenceInDays } from "date-fns";
 import { AddQualificationModal } from "@/components/employees/add-qualification-modal";
@@ -54,7 +57,11 @@ import {
     deleteDamageInsuranceAction,
     deleteItAccountAction,
     deleteQualificationAction,
+    deleteExamHistoryAction,
+    deleteSeminarRecordAction,
 } from "@/app/actions/admin-record-actions";
+import { AddExamHistoryModal } from "@/components/employees/add-exam-history-modal";
+import { AddSeminarModal } from "@/components/employees/add-seminar-modal";
 import { formatDisplayDate } from "@/lib/date";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -66,12 +73,15 @@ type EmployeeQualification = Tables<"employee_qualifications"> & {
 
 export type EmployeeDetail = Tables<"employees"> & {
     employee_qualifications: EmployeeQualification[];
+    deleted_qualifications: EmployeeQualification[];
     employee_family: Tables<"employee_family">[];
     construction_records: Tables<"construction_records">[];
     health_checks: Tables<"health_checks">[];
     employee_life_insurances: Tables<"employee_life_insurances">[];
     employee_damage_insurances: Tables<"employee_damage_insurances">[];
     employee_it_accounts: Tables<"employee_it_accounts">[];
+    exam_history: Tables<"qualification_exam_history">[];
+    seminar_records: Tables<"seminar_records">[];
 };
 
 export type EmployeeDetailTab =
@@ -81,7 +91,8 @@ export type EmployeeDetailTab =
     | "qualifications"
     | "construction"
     | "family"
-    | "health";
+    | "health"
+    | "seminars";
 
 function getExpiryBadge(expiryDate: string | null) {
     if (!expiryDate) return null;
@@ -95,7 +106,7 @@ function getExpiryBadge(expiryDate: string | null) {
 
 function DetailItem({ label, value }: { label: string; value: string | null | number }) {
     return (
-        <div className="grid grid-cols-3 border-b border-border/50 py-3 last:border-0">
+        <div className="grid grid-cols-3 border-b border-border/40 py-2.5 last:border-0 even:bg-muted/30 -mx-6 px-6">
             <span className="text-muted-foreground text-sm">{label}</span>
             <span className="col-span-2 font-medium text-sm">{value || "-"}</span>
         </div>
@@ -106,6 +117,7 @@ function maskedEmploymentValue(isTechnicianSelf: boolean, value: string | null |
     if (!isTechnicianSelf) return value;
     return "—";
 }
+
 
 export function EmployeeDetailClient({
     employee,
@@ -119,8 +131,7 @@ export function EmployeeDetailClient({
     photoUrl: string | null;
 }) {
     const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
+    const [activeTab, setActiveTab] = useState<EmployeeDetailTab>(initialTab);
     const [editOpen, setEditOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleting, setDeleting] = useState(false);
@@ -129,7 +140,10 @@ export function EmployeeDetailClient({
     const [deletingLifeInsuranceId, setDeletingLifeInsuranceId] = useState<string | null>(null);
     const [deletingDamageInsuranceId, setDeletingDamageInsuranceId] = useState<string | null>(null);
     const [deletingItAccountId, setDeletingItAccountId] = useState<string | null>(null);
-    const { isAdminOrHr, role, linkedEmployeeId } = useAuth();
+    const [deletingExamHistoryId, setDeletingExamHistoryId] = useState<string | null>(null);
+    const [deletingSeminarId, setDeletingSeminarId] = useState<string | null>(null);
+    const [showDeletedQuals, setShowDeletedQuals] = useState(false);
+    const { isAdmin, isAdminOrHr, role, linkedEmployeeId } = useAuth();
     const isTechnicianSelf = role === "technician" && linkedEmployeeId === employee.id;
 
     const today = new Date();
@@ -159,16 +173,7 @@ export function EmployeeDetailClient({
     };
 
     const handleTabChange = (tab: EmployeeDetailTab) => {
-        const params = new URLSearchParams(searchParams.toString());
-
-        if (tab === "basic") {
-            params.delete("tab");
-        } else {
-            params.set("tab", tab);
-        }
-
-        const query = params.toString();
-        router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+        setActiveTab(tab);
     };
 
     const handleDeleteLifeInsurance = async (insuranceId: string) => {
@@ -205,6 +210,30 @@ export function EmployeeDetailClient({
         } else {
             toast.error(result.error);
         }
+    };
+
+    const handleDeleteExamHistory = async (id: string) => {
+        if (!isAdminOrHr) return;
+        const result = await deleteExamHistoryAction(id);
+        if (!result.success) {
+            toast.error(result.error);
+        } else {
+            toast.success("受験履歴を削除しました");
+            router.refresh();
+        }
+        setDeletingExamHistoryId(null);
+    };
+
+    const handleDeleteSeminar = async (id: string) => {
+        if (!isAdminOrHr) return;
+        const result = await deleteSeminarRecordAction(id);
+        if (!result.success) {
+            toast.error(result.error);
+        } else {
+            toast.success("セミナー履歴を削除しました");
+            router.refresh();
+        }
+        setDeletingSeminarId(null);
     };
 
     const handleDeleteQualification = async (qualificationId: string) => {
@@ -257,7 +286,7 @@ export function EmployeeDetailClient({
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     {isTechnicianSelf ? "マイページへ戻る" : "一覧へ戻る"}
                 </Button>
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                     <div className="flex items-center gap-4">
                         <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-inner">
                             {photoUrl ? (
@@ -275,7 +304,7 @@ export function EmployeeDetailClient({
                         <div>
                             <div className="flex items-center gap-3">
                                 <h1 className="text-3xl font-bold tracking-tight">{employee.name}</h1>
-                                <Badge variant="outline" className="bg-primary/5">{employee.branch || "-"}</Badge>
+                                <Badge variant="secondary">{employee.branch || "支店未設定"}</Badge>
                                 {employee.termination_date && <Badge variant="destructive">退職済</Badge>}
                                 {isAdminOrHr && hasFamilyAllowance && <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">家族手当あり</Badge>}
                             </div>
@@ -287,7 +316,7 @@ export function EmployeeDetailClient({
                         </div>
                     </div>
                     {isAdminOrHr && (
-                        <div className="flex gap-2">
+                        <div className="flex shrink-0 gap-2">
                             <Button variant="outline" onClick={() => setEditOpen(true)}>
                                 <Pencil className="mr-2 h-4 w-4" />
                                 編集する
@@ -302,7 +331,7 @@ export function EmployeeDetailClient({
             </div>
 
             {isAdminOrHr && housingAlertActive && (
-                <div className="mx-6 mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                <div className="mx-6 mt-3 flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                     <span>
                         {housingDaysLeft! <= 0
@@ -340,23 +369,37 @@ export function EmployeeDetailClient({
                 </Dialog>
             )}
 
-            <Tabs value={initialTab} onValueChange={(value) => handleTabChange(value as EmployeeDetailTab)} className="w-full">
+            {(() => {
+                const urgentQualCount = employee.employee_qualifications.filter((q) => {
+                    if (!q.expiry_date) return false;
+                    return differenceInDays(new Date(q.expiry_date), new Date()) <= 30;
+                }).length;
+                return (
+            <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as EmployeeDetailTab)} className="w-full">
                 <div className="overflow-x-auto -mx-1 px-1">
-                    <TabsList className="inline-flex min-w-full h-auto bg-muted/30 p-1.5 rounded-xl">
-                        <TabsTrigger value="basic" className="flex-shrink-0 rounded-lg px-4 py-3.5 text-sm"><User className="mr-1 h-3.5 w-3.5 hidden md:inline" />基本情報</TabsTrigger>
-                        {!isTechnicianSelf && (
-                            <TabsTrigger value="insurance" className="flex-shrink-0 rounded-lg px-4 py-3.5 text-sm"><Shield className="mr-1 h-3.5 w-3.5 hidden md:inline" />保険情報</TabsTrigger>
-                        )}
+                    <TabsList variant="line" className="inline-flex min-w-full h-auto border-b border-border/50 gap-0 pb-0 rounded-none">
+                        <TabsTrigger value="qualifications" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5">
+                            <Award className="h-3.5 w-3.5" />保有資格
+                            {urgentQualCount > 0 && (
+                                <span className="ml-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-100 px-1 text-[10px] font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                    {urgentQualCount}
+                                </span>
+                            )}
+                        </TabsTrigger>
+                        <TabsTrigger value="basic" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><User className="h-3.5 w-3.5" />基本情報</TabsTrigger>
+                        <TabsTrigger value="construction" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><HardHat className="h-3.5 w-3.5" />施工実績</TabsTrigger>
+                        <TabsTrigger value="seminars" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><BookOpen className="h-3.5 w-3.5" />受験・セミナー</TabsTrigger>
+                        <TabsTrigger value="health" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><Heart className="h-3.5 w-3.5" />健康診断</TabsTrigger>
+                        <TabsTrigger value="family" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><Users className="h-3.5 w-3.5" />家族</TabsTrigger>
                         {isAdminOrHr && (
-                            <TabsTrigger value="it" className="flex-shrink-0 rounded-lg px-4 py-3.5 text-sm">
-                                <Laptop className="mr-1 h-3.5 w-3.5 hidden md:inline" />
+                            <TabsTrigger value="it" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5">
+                                <Laptop className="h-3.5 w-3.5" />
                                 IT・ライセンス
                             </TabsTrigger>
                         )}
-                        <TabsTrigger value="qualifications" className="flex-shrink-0 rounded-lg px-4 py-3.5 text-sm"><Award className="mr-1 h-3.5 w-3.5 hidden md:inline" />保有資格</TabsTrigger>
-                        <TabsTrigger value="construction" className="flex-shrink-0 rounded-lg px-4 py-3.5 text-sm"><HardHat className="mr-1 h-3.5 w-3.5 hidden md:inline" />施工実績</TabsTrigger>
-                        <TabsTrigger value="family" className="flex-shrink-0 rounded-lg px-4 py-3.5 text-sm"><Users className="mr-1 h-3.5 w-3.5 hidden md:inline" />家族</TabsTrigger>
-                        <TabsTrigger value="health" className="flex-shrink-0 rounded-lg px-4 py-3.5 text-sm"><Heart className="mr-1 h-3.5 w-3.5 hidden md:inline" />健康診断</TabsTrigger>
+                        {isAdmin && (
+                            <TabsTrigger value="insurance" className="flex-shrink-0 px-4 py-2.5 text-sm gap-1.5"><Shield className="h-3.5 w-3.5" />保険情報</TabsTrigger>
+                        )}
                     </TabsList>
                 </div>
 
@@ -393,7 +436,7 @@ export function EmployeeDetailClient({
                     </div>
                 </TabsContent>
 
-                {!isTechnicianSelf && (
+                {isAdmin && (
                 <TabsContent value="insurance" className="mt-6 space-y-4 animate-in fade-in duration-300">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-bold">法人契約保険・個人保険記録</h3>
@@ -599,7 +642,7 @@ export function EmployeeDetailClient({
                                         <div className="flex justify-between"><span className="text-muted-foreground">取得日</span><span className="tabular-nums">{formatDisplayDate(qualification.acquired_date)}</span></div>
                                         <div className="flex justify-between font-bold">
                                             <span className="text-muted-foreground">有効期限</span>
-                                            <span className={`tabular-nums ${qualification.expiry_date && new Date(qualification.expiry_date) < new Date() ? "text-destructive" : ""}`}>
+                                            <span className={`tabular-nums ${qualification.expiry_date && new Date(qualification.expiry_date) < new Date() ? "text-blue-700" : ""}`}>
                                                 {formatDisplayDate(qualification.expiry_date, "期限なし")}
                                             </span>
                                         </div>
@@ -613,6 +656,46 @@ export function EmployeeDetailClient({
                                     </CardContent>
                                 </Card>
                             ))}
+                        </div>
+                    )}
+
+                    {isAdminOrHr && employee.deleted_qualifications.length > 0 && (
+                        <div className="mt-6">
+                            <button
+                                onClick={() => setShowDeletedQuals(!showDeletedQuals)}
+                                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                                {showDeletedQuals ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                削除済み資格（{employee.deleted_qualifications.length}件）
+                            </button>
+                            {showDeletedQuals && (
+                                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 opacity-60">
+                                    {employee.deleted_qualifications.map((qualification) => (
+                                        <Card key={qualification.id} className="shadow-sm border-dashed">
+                                            <CardHeader className="pb-2">
+                                                <div className="flex items-center justify-between">
+                                                    <Badge variant="outline" className="w-fit">{qualification.qualification_master?.category || "一般"}</Badge>
+                                                    <Badge variant="secondary" className="text-xs">削除済</Badge>
+                                                </div>
+                                                <CardTitle className="text-base text-muted-foreground">
+                                                    {qualification.qualification_master?.name}
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="text-sm space-y-1">
+                                                <div className="flex justify-between"><span className="text-muted-foreground">免状番号</span><span>{qualification.certificate_number || "-"}</span></div>
+                                                <div className="flex justify-between"><span className="text-muted-foreground">取得日</span><span className="tabular-nums">{formatDisplayDate(qualification.acquired_date)}</span></div>
+                                                <div className="flex justify-between"><span className="text-muted-foreground">削除日</span><span className="tabular-nums">{formatDisplayDate(qualification.deleted_at?.split("T")[0] ?? null)}</span></div>
+                                                {certUrls[qualification.id] && (
+                                                    <a href={certUrls[qualification.id]} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center gap-1 text-xs text-primary hover:underline">
+                                                        <FileImage className="h-3.5 w-3.5" />
+                                                        証書画像を表示
+                                                    </a>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
                 </TabsContent>
@@ -697,7 +780,7 @@ export function EmployeeDetailClient({
                                         </div>
                                         <div className="flex flex-col items-end gap-2">
                                             {family.is_emergency_contact && (
-                                                <Badge className={`${alertStyles.danger.badge} border-red-200/70`}>
+                                                <Badge className={`${alertStyles.danger.badge} border-blue-700/50`}>
                                                     緊急連絡先
                                                 </Badge>
                                             )}
@@ -759,7 +842,87 @@ export function EmployeeDetailClient({
                         </CardContent>
                     </Card>
                 </TabsContent>
+                <TabsContent value="seminars" className="mt-6 space-y-6">
+                    {/* Exam history */}
+                    <Card className="shadow-sm border-border/50">
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle className="text-lg">受験履歴</CardTitle>
+                            {isAdminOrHr && <AddExamHistoryModal employeeId={employee.id} onSuccess={() => router.refresh()} />}
+                        </CardHeader>
+                        <CardContent>
+                            {employee.exam_history.length === 0 ? (
+                                <p className="text-center py-8 text-muted-foreground text-sm">受験記録がありません。</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {employee.exam_history.map((record) => (
+                                        <div key={record.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                                            <div>
+                                                <p className="font-medium text-sm">{record.qualification_name || "（資格名未記入）"}</p>
+                                                <p className="text-xs text-muted-foreground tabular-nums">{formatDisplayDate(record.exam_date)}</p>
+                                                {record.notes && <p className="text-xs text-muted-foreground mt-0.5">{record.notes}</p>}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant={record.result === "合格" ? "outline" : "secondary"} className={record.result === "合格" ? "text-green-700 border-green-200 bg-green-50" : "text-blue-700 bg-blue-700/10"}>
+                                                    {record.result}
+                                                </Badge>
+                                                {isAdminOrHr && (
+                                                    <Button variant="ghost" size="sm" onClick={() => setDeletingExamHistoryId(record.id)} className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Seminar records */}
+                    <Card className="shadow-sm border-border/50">
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle className="text-lg">セミナー受講履歴</CardTitle>
+                            {isAdminOrHr && <AddSeminarModal employeeId={employee.id} onSuccess={() => router.refresh()} />}
+                        </CardHeader>
+                        <CardContent>
+                            {employee.seminar_records.length === 0 ? (
+                                <p className="text-center py-8 text-muted-foreground text-sm">セミナー受講記録がありません。</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {employee.seminar_records.map((record) => (
+                                        <div key={record.id} className="flex items-start justify-between py-2 border-b last:border-0">
+                                            <div>
+                                                <p className="font-medium text-sm">{record.seminar_name}</p>
+                                                <p className="text-xs text-muted-foreground tabular-nums">
+                                                    {formatDisplayDate(record.held_date)}
+                                                    {record.hours ? ` | ${record.hours}時間` : ""}
+                                                    {record.organizer ? ` | ${record.organizer}` : ""}
+                                                </p>
+                                                {record.notes && <p className="text-xs text-muted-foreground mt-0.5">{record.notes}</p>}
+                                            </div>
+                                            <div className="flex items-center gap-2 ml-4">
+                                                {record.photo_url && (
+                                                    <a href={record.photo_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1">
+                                                        <FileImage className="h-3.5 w-3.5" />
+                                                        写真
+                                                    </a>
+                                                )}
+                                                {isAdminOrHr && (
+                                                    <Button variant="ghost" size="sm" onClick={() => setDeletingSeminarId(record.id)} className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
             </Tabs>
+                );
+            })()}
 
             {isAdminOrHr && (
                 <DeleteConfirmDialog
@@ -808,6 +971,26 @@ export function EmployeeDetailClient({
                     title="IT利用情報の削除"
                     description="このIT利用情報を完全に削除します。一覧から消え、復元はできません。監査履歴は保持されます。"
                     onConfirm={() => handleDeleteItAccount(deletingItAccountId!)}
+                />
+            )}
+
+            {isAdminOrHr && (
+                <DeleteConfirmDialog
+                    open={!!deletingExamHistoryId}
+                    onOpenChange={(open) => !open && setDeletingExamHistoryId(null)}
+                    title="受験履歴の削除"
+                    description="この受験履歴を完全に削除します。復元はできません。"
+                    onConfirm={() => handleDeleteExamHistory(deletingExamHistoryId!)}
+                />
+            )}
+
+            {isAdminOrHr && (
+                <DeleteConfirmDialog
+                    open={!!deletingSeminarId}
+                    onOpenChange={(open) => !open && setDeletingSeminarId(null)}
+                    title="セミナー履歴の削除"
+                    description="このセミナー受講履歴を完全に削除します。復元はできません。"
+                    onConfirm={() => handleDeleteSeminar(deletingSeminarId!)}
                 />
             )}
         </div>

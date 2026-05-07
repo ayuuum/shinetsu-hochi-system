@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
 
 export default async function ImportLayout({ children }: { children: React.ReactNode }) {
-    const auth = await getAuthSnapshot();
+    const auth = await getFastAuthSnapshot();
     if (auth.role !== "admin" && auth.role !== "hr") {
-        redirect("/");
+        redirect("/dashboard");
     }
     return children;
 }

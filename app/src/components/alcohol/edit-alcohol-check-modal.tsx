@@ -45,11 +45,9 @@ interface EditAlcoholCheckModalProps {
 
 export function EditAlcoholCheckModal({ check, employees, open, onOpenChange }: EditAlcoholCheckModalProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [pendingValues, setPendingValues] = useState<AlcoholCheckValues | null>(null);
     const router = useRouter();
-    const employeeOptions = employees.map((employee) => ({
-        value: employee.id,
-        label: employee.name,
-    }));
 
     const form = useForm<AlcoholCheckValues>({
         resolver: zodResolver(alcoholCheckSchema),
@@ -62,13 +60,7 @@ export function EditAlcoholCheckModal({ check, employees, open, onOpenChange }: 
         }
     }, [open, check, form]);
 
-    async function onSubmit(values: AlcoholCheckValues) {
-        // Fix: show confirmation dialog when marking as abnormal, matching add modal behavior
-        if (values.is_abnormal === "不適正") {
-            const confirmed = window.confirm("不適正（陽性）として記録を更新します。よろしいですか？");
-            if (!confirmed) return;
-        }
-
+    async function submitRecord(values: AlcoholCheckValues) {
         setIsSubmitting(true);
         const result = await updateAlcoholCheckAction(check.id, values);
         setIsSubmitting(false);
@@ -89,9 +81,27 @@ export function EditAlcoholCheckModal({ check, employees, open, onOpenChange }: 
         router.refresh();
     }
 
+    async function onSubmit(values: AlcoholCheckValues) {
+        if (values.is_abnormal === "不適正") {
+            setPendingValues(values);
+            setConfirmOpen(true);
+            return;
+        }
+
+        await submitRecord(values);
+    }
+
+    const handleAbnormalConfirm = async () => {
+        setConfirmOpen(false);
+        if (!pendingValues) return;
+        await submitRecord(pendingValues);
+        setPendingValues(null);
+    };
+
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
+        <>
+            <Dialog open={open} onOpenChange={onOpenChange}>
+                <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>アルコールチェック記録の編集</DialogTitle>
                     <DialogDescription>{check.employee?.name} - {formatDisplayDate(check.check_datetime)}</DialogDescription>
@@ -224,7 +234,28 @@ export function EditAlcoholCheckModal({ check, employees, open, onOpenChange }: 
                         </DialogFooter>
                     </form>
                 </Form>
-            </DialogContent>
-        </Dialog>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={confirmOpen} onOpenChange={(nextOpen) => !isSubmitting && setConfirmOpen(nextOpen)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="text-destructive">不適正として更新しますか？</DialogTitle>
+                        <DialogDescription>
+                            アルコール検知ありの記録として保存します。直ちに安全運転管理者へ報告し、当該社員の運転を禁止してください。
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={isSubmitting}>
+                            キャンセル
+                        </Button>
+                        <Button variant="destructive" onClick={handleAbnormalConfirm} disabled={isSubmitting}>
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            不適正として更新する
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }

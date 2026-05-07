@@ -1,7 +1,9 @@
 import { createSupabaseServer } from "@/lib/supabase-server";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { AlcoholClient, type AlcoholCheckRow } from "@/components/alcohol/alcohol-client";
+import { TechnicianAlcoholClient } from "@/components/alcohol/technician-alcohol-client";
 import { getTodayInTokyo, getTokyoCalendarMonthBounds } from "@/lib/date";
+import { getCachedEmployeeList } from "@/lib/cached-queries";
 
 const PAGE_SIZE = 50;
 
@@ -18,7 +20,7 @@ export default async function AlcoholChecksPage({
     const params = await searchParams;
     const page = parsePageParam(params.page);
     const from = (page - 1) * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
+    const toPlusOne = from + PAGE_SIZE;
     const currentDate = (params.date || "").trim() || getTodayInTokyo();
     const currentLocation = (params.location || "").trim();
     const currentStatus = (params.status || "").trim();
@@ -27,12 +29,39 @@ export default async function AlcoholChecksPage({
 
     let checksData: AlcoholCheckRow[] = [];
     let empData: { id: string; name: string }[] = [];
-    let totalPages = 1;
+    let hasNextPage = false;
     let monthlySummary: { employeeId: string; employeeName: string; branch: string; recordedDays: number; monthDays: number; completionRate: number }[] = [];
     let unrecordedEmployees: { id: string; name: string }[] = [];
 
     try {
-        const auth = await getAuthSnapshot();
+        const auth = await getFastAuthSnapshot();
+
+        // Technician sees own-only simplified view
+        if (auth.role === "technician" && auth.linkedEmployeeId) {
+            const supabase = await createSupabaseServer();
+            const dateStart = `${currentDate}T00:00:00`;
+            const dateEnd = `${currentDate}T23:59:59`;
+            const [checksResult, empResult] = await Promise.all([
+                supabase
+                    .from("alcohol_checks")
+                    .select("*, employee:employees!alcohol_checks_employee_id_fkey(id, name), checker:employees!alcohol_checks_checker_id_fkey(id, name)")
+                    .is("deleted_at", null)
+                    .eq("employee_id", auth.linkedEmployeeId)
+                    .gte("check_datetime", dateStart)
+                    .lte("check_datetime", dateEnd)
+                    .order("check_datetime", { ascending: false }),
+                supabase.from("employees").select("id, name").eq("id", auth.linkedEmployeeId).single(),
+            ]);
+            const employee = empResult.data ? { id: empResult.data.id, name: empResult.data.name } : { id: auth.linkedEmployeeId, name: "自分" };
+            return (
+                <TechnicianAlcoholClient
+                    initialChecks={(checksResult.data as AlcoholCheckRow[]) || []}
+                    employee={employee}
+                    currentDate={currentDate}
+                />
+            );
+        }
+
         const supabase = await createSupabaseServer();
         const dateStart = `${currentDate}T00:00:00`;
         const dateEnd = `${currentDate}T23:59:59`;
@@ -40,12 +69,12 @@ export default async function AlcoholChecksPage({
 
         let checksQuery = supabase
             .from("alcohol_checks")
-            .select("*, employee:employees!alcohol_checks_employee_id_fkey(id, name), checker:employees!alcohol_checks_checker_id_fkey(id, name)", { count: "exact" })
+            .select("*, employee:employees!alcohol_checks_employee_id_fkey(id, name), checker:employees!alcohol_checks_checker_id_fkey(id, name)")
             .is("deleted_at", null)
             .gte("check_datetime", dateStart)
             .lte("check_datetime", dateEnd)
             .order("check_datetime", { ascending: false })
-            .range(from, to);
+            .range(from, toPlusOne);
 
         if (currentLocation) {
             checksQuery = checksQuery.eq("location", currentLocation);
@@ -62,15 +91,9 @@ export default async function AlcoholChecksPage({
             checksQuery = checksQuery.eq("employee_id", currentEmployee);
         }
 
-        let employeesQuery = supabase
-            .from("employees")
-            .select("id, name")
-            .is("deleted_at", null)
-            .order("name");
-
-        if (auth.role === "technician" && auth.linkedEmployeeId) {
-            employeesQuery = employeesQuery.eq("id", auth.linkedEmployeeId);
-        }
+        const empPromise = auth.role === "technician" && auth.linkedEmployeeId
+            ? supabase.from("employees").select("id, name").is("deleted_at", null).eq("id", auth.linkedEmployeeId).then((r) => r.data || [])
+            : getCachedEmployeeList();
 
         const monthlyQuery = supabase
             .from("alcohol_checks")
@@ -81,12 +104,13 @@ export default async function AlcoholChecksPage({
 
         const [checksResult, empResult, monthlyResult] = await Promise.all([
             checksQuery,
-            employeesQuery,
+            empPromise,
             monthlyQuery,
         ]);
-        checksData = (checksResult.data as AlcoholCheckRow[]) || [];
-        empData = empResult.data || [];
-        totalPages = Math.max(1, Math.ceil((checksResult.count || 0) / PAGE_SIZE));
+        const checks = (checksResult.data as AlcoholCheckRow[]) || [];
+        checksData = checks.slice(0, PAGE_SIZE);
+        empData = empResult as { id: string; name: string }[];
+        hasNextPage = checks.length > PAGE_SIZE;
 
         // Compute unrecorded employees for the selected date
         const recordedEmployeeIds = new Set(checksData.map((c) => c.employee_id).filter(Boolean));
@@ -138,7 +162,7 @@ export default async function AlcoholChecksPage({
             currentMonth={currentMonth}
             monthlySummary={monthlySummary}
             currentPage={page}
-            totalPages={totalPages}
+            hasNextPage={hasNextPage}
             unrecordedEmployees={unrecordedEmployees}
         />
     );

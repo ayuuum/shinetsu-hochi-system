@@ -15,22 +15,8 @@ import {
 } from "@/components/ui/dialog";
 import { BrandLogo } from "@/components/brand-logo";
 import { supabase } from "@/lib/supabase";
+import { getLoginErrorMessage, getPasswordResetRequestErrorMessage } from "@/lib/auth-error-messages";
 import { Loader2 } from "lucide-react";
-
-function getLoginErrorMessage(message: string) {
-    const normalized = message.toLowerCase();
-
-    if (
-        normalized.includes("fetch")
-        || normalized.includes("network")
-        || normalized.includes("invalid url")
-        || normalized.includes("failed to construct")
-    ) {
-        return "認証サーバーに接続できません。時間をおいて再試行してください。";
-    }
-
-    return "メールアドレスまたはパスワードが正しくありません。";
-}
 
 function LoginForm() {
     const [email, setEmail] = useState("");
@@ -69,7 +55,7 @@ function LoginForm() {
         if (
             process.env.NODE_ENV === "development"
             && trimmedEmail === "test@gmail.com"
-            && password === "test"
+            && password === "test1234"
         ) {
             try {
                 const res = await fetch("/api/auth/ensure-dev-test-user", { method: "POST" });
@@ -127,11 +113,7 @@ function LoginForm() {
         setResetLoading(false);
 
         if (resetErr) {
-            setResetError(
-                resetErr.message.includes("rate")
-                    ? "しばらく時間をおいてから再度お試しください。"
-                    : "送信に失敗しました。メールアドレスをご確認ください。",
-            );
+            setResetError(getPasswordResetRequestErrorMessage(resetErr.message));
             return;
         }
 
@@ -204,6 +186,7 @@ function LoginForm() {
                     <DialogTitle>パスワードの再設定</DialogTitle>
                     <DialogDescription>
                         登録済みのメールアドレスに、再設定用のリンクを送信します。
+                        届いたメールのボタンから新しいパスワードを設定してください。
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handlePasswordReset} className="space-y-5">

@@ -1,5 +1,6 @@
 "use server";
 
+import { updateTag } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 
 type SetupResult =
@@ -62,6 +63,7 @@ export async function setupAction(email: string, password: string): Promise<Setu
             return { success: false, error: "ロールの設定に失敗しました。" };
         }
 
+        updateTag("user-roles");
         return { success: true };
     } catch (error) {
         console.error("Unexpected error in setupAction:", error);

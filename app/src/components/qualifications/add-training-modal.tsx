@@ -30,6 +30,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { DatePickerField } from "@/components/shared/date-picker-field";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -42,6 +43,7 @@ const formSchema = z.object({
     certificate_number: z.string().optional(),
     next_due_date: z.string().optional(),
     notes: z.string().optional(),
+    photo_url: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -64,6 +66,7 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
             certificate_number: "",
             next_due_date: "",
             notes: "",
+            photo_url: "",
         },
     });
 
@@ -75,6 +78,7 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
             certificate_number: "",
             next_due_date: "",
             notes: "",
+            photo_url: "",
         });
     };
 
@@ -98,6 +102,7 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
                 certificate_number: values.certificate_number || null,
                 next_due_date: values.next_due_date || null,
                 notes: values.notes || null,
+                photo_url: values.photo_url || null,
             }]);
 
         setIsSubmitting(false);
@@ -133,7 +138,7 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
                             <FormField control={form.control} name="training_date" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>受講日 *</FormLabel>
-                                    <FormControl><Input type="date" {...field} /></FormControl>
+                                    <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />
@@ -173,7 +178,7 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
                         <FormField control={form.control} name="next_due_date" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>次回期限</FormLabel>
-                                <FormControl><Input type="date" {...field} /></FormControl>
+                                <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )} />
@@ -182,6 +187,14 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
                             <FormItem>
                                 <FormLabel>備考</FormLabel>
                                 <FormControl><Input placeholder="特記事項" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+
+                        <FormField control={form.control} name="photo_url" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>写真URL</FormLabel>
+                                <FormControl><Input placeholder="https://..." {...field} /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )} />

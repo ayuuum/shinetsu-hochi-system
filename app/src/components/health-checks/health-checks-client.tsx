@@ -86,7 +86,7 @@ export function HealthChecksClient({
     currentType,
     currentResult,
     currentPage,
-    totalPages,
+    hasNextPage,
 }: {
     initialChecks: HealthCheckWithEmployee[];
     employees: Employee[];
@@ -94,7 +94,7 @@ export function HealthChecksClient({
     currentType: string;
     currentResult: string;
     currentPage: number;
-    totalPages: number;
+    hasNextPage: boolean;
 }) {
     const normalizedCurrentResult = normalizeHealthCheckListResultValue(currentResult);
     const [search, setSearch] = useState(currentSearch);
@@ -475,7 +475,7 @@ export function HealthChecksClient({
                 </Table>
             </div>
 
-            {totalPages > 1 && (
+            {(currentPage > 1 || hasNextPage) && (
                 <div className="flex items-center justify-center gap-2">
                     <Button
                         variant="outline"
@@ -491,12 +491,12 @@ export function HealthChecksClient({
                         前へ
                     </Button>
                     <span className="text-sm text-muted-foreground">
-                        {currentPage} / {totalPages}
+                        {currentPage}ページ
                     </span>
                     <Button
                         variant="outline"
                         size="sm"
-                        disabled={currentPage >= totalPages}
+                        disabled={!hasNextPage}
                         render={<Link href={buildHealthChecksHref(pathname, {
                             search: currentSearch,
                             type: currentType,

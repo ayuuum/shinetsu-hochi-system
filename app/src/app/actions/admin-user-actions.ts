@@ -1,8 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getStrictAuthSnapshot } from "@/lib/auth-server";
 
 type UserRole = "admin" | "hr" | "technician";
 
@@ -21,7 +21,7 @@ function createAdminClient() {
 async function requireAdmin(): Promise<
     { ok: true; userId: string } | { ok: false; error: string }
 > {
-    const { user, role } = await getAuthSnapshot();
+    const { user, role } = await getStrictAuthSnapshot();
     if (!user || role !== "admin") {
         return { ok: false, error: "権限がありません" };
     }
@@ -30,7 +30,8 @@ async function requireAdmin(): Promise<
 
 export async function inviteUserAction(
     email: string,
-    role: UserRole
+    role: UserRole,
+    employeeId?: string | null
 ): Promise<ActionResult> {
     const auth = await requireAdmin();
     if (!auth.ok) {
@@ -52,7 +53,14 @@ export async function inviteUserAction(
         const userId = data.user.id;
         const { error: upsertError } = await adminClient
             .from("user_roles")
-            .upsert({ id: userId, role }, { onConflict: "id" });
+            .upsert(
+                {
+                    id: userId,
+                    role,
+                    employee_id: role === "technician" ? employeeId || null : null,
+                },
+                { onConflict: "id" },
+            );
 
         if (upsertError) {
             console.error("Failed to upsert user_roles after invite:", upsertError);
@@ -60,6 +68,7 @@ export async function inviteUserAction(
         }
 
         revalidatePath("/admin/users");
+        updateTag("user-roles");
         return { success: true };
     } catch (error) {
         console.error("Unexpected error while inviting user:", error);
@@ -84,7 +93,14 @@ export async function updateUserRoleAction(
         const adminClient = createAdminClient();
         const { error } = await adminClient
             .from("user_roles")
-            .upsert({ id: userId, role }, { onConflict: "id" });
+            .upsert(
+                {
+                    id: userId,
+                    role,
+                    ...(role !== "technician" ? { employee_id: null } : {}),
+                },
+                { onConflict: "id" },
+            );
 
         if (error) {
             console.error("Failed to update user role:", error);
@@ -92,10 +108,42 @@ export async function updateUserRoleAction(
         }
 
         revalidatePath("/admin/users");
+        updateTag("user-roles");
         return { success: true };
     } catch (error) {
         console.error("Unexpected error while updating user role:", error);
         return { success: false, error: "ロールの更新に失敗しました。" };
+    }
+}
+
+export async function updateUserEmployeeLinkAction(
+    userId: string,
+    employeeId: string | null
+): Promise<ActionResult> {
+    const auth = await requireAdmin();
+    if (!auth.ok) {
+        return { success: false, error: auth.error };
+    }
+
+    try {
+        const adminClient = createAdminClient();
+        const { error } = await adminClient
+            .from("user_roles")
+            .update({ employee_id: employeeId })
+            .eq("id", userId)
+            .eq("role", "technician");
+
+        if (error) {
+            console.error("Failed to update user employee link:", error);
+            return { success: false, error: "社員情報の紐づけに失敗しました。" };
+        }
+
+        revalidatePath("/admin/users");
+        updateTag("user-roles");
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while updating user employee link:", error);
+        return { success: false, error: "社員情報の紐づけに失敗しました。" };
     }
 }
 
@@ -119,6 +167,7 @@ export async function deleteUserAction(userId: string): Promise<ActionResult> {
         }
 
         revalidatePath("/admin/users");
+        updateTag("user-roles");
         return { success: true };
     } catch (error) {
         console.error("Unexpected error while deleting user:", error);

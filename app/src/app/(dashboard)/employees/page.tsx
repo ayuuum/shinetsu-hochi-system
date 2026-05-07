@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { EmployeesClient, type EmployeeWithQualCount } from "@/components/employees/employees-client";
-import { getAuthSnapshot } from "@/lib/auth-server";
-import { getCachedQualCountsByEmployee } from "@/lib/cached-queries";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
+import { getCachedQualCountsByEmployee, getCachedQualificationMasters } from "@/lib/cached-queries";
 import { Tables } from "@/types/supabase";
 
 const PAGE_SIZE = 50;
@@ -15,31 +15,33 @@ function parsePageParam(value?: string) {
 export default async function EmployeesPage({
     searchParams,
 }: {
-    searchParams: Promise<{ page?: string; q?: string; branch?: string; qualification?: string }>;
+    searchParams: Promise<{ page?: string; q?: string; branch?: string; qualification?: string; sort?: string }>;
 }) {
-    const auth = await getAuthSnapshot();
+    const authPromise = getFastAuthSnapshot();
+    const paramsPromise = searchParams;
+    const [auth, params] = await Promise.all([authPromise, paramsPromise]);
     if (auth.role === "technician") {
         redirect(auth.linkedEmployeeId ? `/employees/${auth.linkedEmployeeId}` : "/me");
     }
 
-    const params = await searchParams;
     const page = parsePageParam(params.page);
     const from = (page - 1) * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
+    const toPlusOne = from + PAGE_SIZE;
     const currentSearch = (params.q || "").trim();
     const currentBranch = (params.branch || "").trim();
     const currentQualification = (params.qualification || "").trim();
+    const currentSort = (params.sort || "").trim();
 
     let employees: EmployeeWithQualCount[] = [];
     let mastersData: Tables<"qualification_master">[] = [];
-    let totalPages = 1;
+    let hasNextPage = false;
 
     try {
         const supabase = await createSupabaseServer();
         const searchPattern = currentSearch ? `%${currentSearch.replace(/,/g, " ").trim()}%` : null;
 
-        const [{ data: masters }, qualificationFilterResult, cachedQualCounts] = await Promise.all([
-            supabase.from("qualification_master").select("*").order("category"),
+        const [masters, qualificationFilterResult, cachedQualCounts] = await Promise.all([
+            getCachedQualificationMasters(),
             currentQualification
                 ? supabase
                     .from("employee_qualifications")
@@ -50,18 +52,24 @@ export default async function EmployeesPage({
             getCachedQualCountsByEmployee(),
         ]);
 
-        mastersData = masters || [];
+        mastersData = masters as typeof mastersData;
         const qualificationEmployeeIds = (qualificationFilterResult.data || [])
             .map((item) => item.employee_id)
             .filter((employeeId): employeeId is string => !!employeeId);
 
         if (!currentQualification || qualificationEmployeeIds.length > 0) {
+            const sortColumn =
+                currentSort === "hire_date_desc" || currentSort === "hire_date_asc" ? "hire_date" :
+                currentSort === "name_asc" ? "name" :
+                "employee_number";
+            const sortAscending = currentSort !== "hire_date_desc";
+
             let employeeQuery = supabase
                 .from("employees")
-                .select("*", { count: "exact" })
+                .select("*")
                 .is("deleted_at", null)
-                .order("employee_number", { ascending: true })
-                .range(from, to);
+                .order(sortColumn, { ascending: sortAscending, nullsFirst: false })
+                .range(from, toPlusOne);
 
             if (currentSearch) {
                 employeeQuery = employeeQuery.or([
@@ -79,10 +87,11 @@ export default async function EmployeesPage({
                 employeeQuery = employeeQuery.in("id", qualificationEmployeeIds);
             }
 
-            const { data: empData, count: totalCount } = await employeeQuery;
-            totalPages = Math.max(1, Math.ceil((totalCount || 0) / PAGE_SIZE));
+            const { data: empData } = await employeeQuery;
+            const items = (empData || []).slice(0, PAGE_SIZE);
+            hasNextPage = (empData || []).length > PAGE_SIZE;
 
-            employees = (empData || []).map((emp) => {
+            employees = items.map((emp) => {
                 const counts = cachedQualCounts[emp.id];
                 return {
                     ...emp,
@@ -102,8 +111,9 @@ export default async function EmployeesPage({
             currentSearch={currentSearch}
             currentBranch={currentBranch}
             currentQualification={currentQualification}
+            currentSort={currentSort}
             currentPage={page}
-            totalPages={totalPages}
+            hasNextPage={hasNextPage}
         />
     );
 }

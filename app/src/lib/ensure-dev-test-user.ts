@@ -4,7 +4,7 @@ import { createSupabaseAdmin } from "@/lib/supabase-admin";
 
 /** ローカル検証用（開発時のみ API から使用） */
 export const DEV_TEST_LOGIN_EMAIL = "test@gmail.com";
-export const DEV_TEST_LOGIN_PASSWORD = "test";
+export const DEV_TEST_LOGIN_PASSWORD = "test1234";
 const DEV_TEST_ROLE = "admin" as const;
 
 async function findUserByEmail(admin: NonNullable<ReturnType<typeof createSupabaseAdmin>>, email: string): Promise<User | null> {

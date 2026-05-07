@@ -12,11 +12,11 @@ export function VehiclesEquipmentShell({
 }) {
     return (
         <Tabs defaultValue="vehicles" className="space-y-6">
-            <TabsList className="h-11 w-full max-w-md justify-start gap-1 rounded-[14px] bg-muted/40 p-1">
-                <TabsTrigger value="vehicles" className="rounded-[12px] px-4">
+            <TabsList variant="line" className="h-auto border-b border-border/50 gap-0 pb-0 rounded-none w-full justify-start">
+                <TabsTrigger value="vehicles" className="px-4 py-2.5 text-sm">
                     車両
                 </TabsTrigger>
-                <TabsTrigger value="equipment" className="rounded-[12px] px-4">
+                <TabsTrigger value="equipment" className="px-4 py-2.5 text-sm">
                     備品台帳
                 </TabsTrigger>
             </TabsList>

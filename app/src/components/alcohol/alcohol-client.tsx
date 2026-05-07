@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { TableCellLink } from "@/components/shared/table-cell-link";
 import { ActiveFilters } from "@/components/shared/active-filters";
 import { MobileFiltersSheet } from "@/components/shared/mobile-filters-sheet";
+import { DatePickerField } from "@/components/shared/date-picker-field";
 import { getTodayInTokyo } from "@/lib/date";
 import { deleteAlcoholCheckAction } from "@/app/actions/admin-record-actions";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
@@ -110,7 +111,7 @@ export function AlcoholClient({
     currentMonth,
     monthlySummary,
     currentPage,
-    totalPages,
+    hasNextPage,
     unrecordedEmployees = [],
 }: {
     initialChecks: AlcoholCheckRow[];
@@ -122,7 +123,7 @@ export function AlcoholClient({
     currentMonth: string;
     monthlySummary: MonthlyAlcoholSummary[];
     currentPage: number;
-    totalPages: number;
+    hasNextPage: boolean;
     unrecordedEmployees?: Employee[];
 }) {
     const [editingItem, setEditingItem] = useState<AlcoholCheckRow | null>(null);
@@ -350,11 +351,10 @@ export function AlcoholClient({
             </Card>
 
             <div className="space-y-3 md:hidden">
-                <Input
-                    aria-label="対象日"
-                    type="date"
+                <DatePickerField
+                    ariaLabel="対象日"
                     value={currentDate}
-                    onChange={(e) => updateFilters({ date: e.target.value, page: 1 })}
+                    onChange={(date) => updateFilters({ date, page: 1 })}
                     className="h-11 w-full"
                 />
                 <div className="flex items-center gap-3">
@@ -434,11 +434,10 @@ export function AlcoholClient({
             </div>
 
             <div className="hidden md:flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <Input
-                    aria-label="対象日"
-                    type="date"
+                <DatePickerField
+                    ariaLabel="対象日"
                     value={currentDate}
-                    onChange={(e) => updateFilters({ date: e.target.value, page: 1 })}
+                    onChange={(date) => updateFilters({ date, page: 1 })}
                     className="w-[180px]"
                 />
                 <Select
@@ -505,7 +504,7 @@ export function AlcoholClient({
                         <Card
                             key={check.id}
                             size="sm"
-                            className={check.is_abnormal ? "border-destructive/20 bg-destructive/5" : "border-border/60"}
+                            className={check.is_abnormal ? "border-blue-600/20 bg-blue-600/5" : "border-border/60"}
                         >
                             <CardContent className="space-y-3">
                                 <div className="flex items-start justify-between gap-3">
@@ -605,8 +604,8 @@ export function AlcoholClient({
                             </TableRow>
                         ) : (
                             initialChecks.map((check) => (
-                                <TableRow key={check.id} className={check.is_abnormal ? "group bg-destructive/5 hover:bg-destructive/10" : "group hover:bg-muted/30 transition-colors"}>
-                                    <TableCell className={`sticky left-0 z-10 font-medium shadow-[inset_-1px_0_0_hsl(var(--border))] ${check.is_abnormal ? "bg-background group-hover:bg-destructive/10" : "bg-card group-hover:bg-muted/30"}`}>
+                                <TableRow key={check.id} className={check.is_abnormal ? "group bg-blue-600/5 hover:bg-blue-600/10" : "group hover:bg-muted/30 transition-colors"}>
+                                    <TableCell className={`sticky left-0 z-10 font-medium shadow-[inset_-1px_0_0_hsl(var(--border))] ${check.is_abnormal ? "bg-background group-hover:bg-blue-600/10" : "bg-card group-hover:bg-muted/30"}`}>
                                         {check.employee?.id ? (
                                             <TableCellLink href={`/employees/${check.employee.id}`} className="font-medium hover:underline">
                                                 {check.employee.name}
@@ -662,7 +661,7 @@ export function AlcoholClient({
                 </Table>
             </div>
 
-            {totalPages > 1 && (
+            {(currentPage > 1 || hasNextPage) && (
                 <div className="flex items-center justify-center gap-2">
                     <Button
                         variant="outline"
@@ -679,12 +678,12 @@ export function AlcoholClient({
                         前へ
                     </Button>
                     <span className="text-sm text-muted-foreground">
-                        {currentPage} / {totalPages}
+                        {currentPage}ページ
                     </span>
                     <Button
                         variant="outline"
                         size="sm"
-                        disabled={currentPage >= totalPages}
+                        disabled={!hasNextPage}
                         render={<Link href={buildAlcoholChecksHref(pathname, {
                             date: currentDate,
                             location: currentLocation,

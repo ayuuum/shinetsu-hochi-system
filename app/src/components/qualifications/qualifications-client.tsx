@@ -23,7 +23,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, FileImage, Tags, Plus, ScrollText } from "lucide-react";
+import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, FileImage, Tags, Plus, ScrollText, Download } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { differenceInDays } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
@@ -36,6 +36,7 @@ import { formatDisplayDate } from "@/lib/date";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { AddQualificationFromListModal } from "./add-qualification-from-list-modal";
+import { BulkUpdateQualificationModal } from "./bulk-update-qualification-modal";
 
 export type QualificationRow = Tables<"employee_qualifications"> & {
     employees: { id: string; name: string; branch: string | null } | null;
@@ -54,8 +55,9 @@ interface QualificationsClientProps {
     currentCategory: string;
     currentLevel: string;
     currentPage: number;
-    totalPages: number;
+    hasNextPage: boolean;
     employees?: Employee[];
+    qualificationMasters?: { id: string; name: string; category: string | null }[];
 }
 
 function buildQualificationsHref(pathname: string, {
@@ -96,8 +98,9 @@ export function QualificationsClient({
     currentCategory,
     currentLevel,
     currentPage,
-    totalPages,
+    hasNextPage,
     employees = [],
+    qualificationMasters = [],
 }: QualificationsClientProps) {
     const [search, setSearch] = useState(currentSearch);
     const [editingItem, setEditingItem] = useState<QualificationRow | null>(null);
@@ -227,8 +230,24 @@ export function QualificationsClient({
                 </div>
                 {/* Fix: add qualification button for direct addition from list page */}
                 {isAdminOrHr && (
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0 flex-wrap">
                         <AddQualificationFromListModal employees={employees} onSuccess={() => router.refresh()} />
+                        <BulkUpdateQualificationModal qualificationMasters={qualificationMasters} employees={employees} />
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                const params = new URLSearchParams();
+                                if (search.trim()) params.set("q", search.trim());
+                                if (currentCategory) params.set("category", currentCategory);
+                                if (currentLevel) params.set("level", currentLevel);
+                                const qs = params.toString();
+                                window.open(qs ? `/api/export/qualifications?${qs}` : "/api/export/qualifications", "_blank");
+                            }}
+                        >
+                            <Download className="mr-2 h-4 w-4" />
+                            CSV出力
+                        </Button>
                         <Button
                             variant="outline"
                             size="sm"
@@ -600,7 +619,7 @@ export function QualificationsClient({
                 </Table>
             </div>
 
-            {totalPages > 1 && (
+            {(currentPage > 1 || hasNextPage) && (
                 <div className="flex items-center justify-center gap-2">
                     <Button
                         variant="outline"
@@ -616,12 +635,12 @@ export function QualificationsClient({
                         前へ
                     </Button>
                     <span className="text-sm text-muted-foreground">
-                        {currentPage} / {totalPages}
+                        {currentPage}ページ
                     </span>
                     <Button
                         variant="outline"
                         size="sm"
-                        disabled={currentPage >= totalPages}
+                        disabled={!hasNextPage}
                         render={<Link href={buildQualificationsHref(pathname, {
                             search: currentSearch,
                             category: currentCategory,

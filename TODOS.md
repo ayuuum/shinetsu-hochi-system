@@ -1,31 +1,42 @@
 # TODOS
 
-## P0 — 試作版デリバリー前に必須
+## P0 — リリース前に必ず確認
 
-### [TODO-001] 認証 + RLS 実装 — DEFERRED
-- 試作版では認証なし。本番運用時に実装予定（招待制 or 管理者作成）
+- 本番ビルドは `next build --webpack` で実行する。Next.js 16 の Turbopack build はこの環境では停止することがあるため、build script は webpack に固定する。
+- 業務アラートのメール通知は使わない。Vercel Cron と Next API は無効化済みで、Supabase Edge Function も呼ばれても送信しない安全装置にする。
+- Supabase Auth の認証メールだけは使う。招待メール・パスワード再設定メールは `docs/supabase-auth-email-templates.md` の日本語テンプレートを Dashboard に設定する。
+- 作業者アカウントは `user_roles.employee_id` で社員情報に紐づける。未紐づけの場合、作業者の `/me` は正しく社員詳細へ遷移できない。
 
-### [TODO-002] ~~Server Component 統一~~ ✅ DONE
-- employees/page.tsx, qualifications/page.tsx → SC化。フィルタUIはCC子コンポーネントに分離
+## P1 — 品質補強
 
-### [TODO-003] ~~Vitest + ドメインロジックテスト~~ ✅ DONE
-- Vitest導入、qualification-logic 14テスト + alert-utils 14テスト = 28テストパス
+- 作業者導線の E2E を追加・維持する: `/today`, `/me`, `/alcohol-checks`, 管理画面へのアクセス制御。
+- 認証導線の E2E を追加・維持する: ログイン失敗、パスワード再設定入口、更新画面のバリデーション、ユーザー招待モーダル。
+- `/manual` は未ログインでも開ける公開ページとして維持し、印刷/PDF保存の崩れを確認する。
+- ブラウザ標準の `alert` / `confirm` は使わず、既存の Dialog / toast に統一する。
 
-### [TODO-004] ~~グローバル検索 (Cmd+K)~~ ✅ DONE
-- cmdk導入、社員・資格・車両の横断検索、200msデバウンス、Cmd+Kショートカット
+## 性能ルール
 
-### [TODO-005] ~~アラートロジック共通化 + alert→toast 移行~~ ✅ DONE
-- lib/alert-utils.ts に統合。全5ファイルの alert() → sonner toast.error() に移行。Toaster をルートlayoutに配置
+- 新規一覧では `count: "exact"` を使わず、`PAGE_SIZE + 1` と `hasNextPage` を使う。
+- 表示していないタブやセクションのデータを初回に fetch しない。
+- 変化の少ないマスタ・一覧候補は `unstable_cache` を優先する。
+- `ilike` を使う一覧はアプリ実装だけで閉じず、index 方針までセットで検討する。
+- 重い dashboard / summary page は section 単位 `Suspense` を前提にする。
 
-## P1 — 本番運用前
+## 目標秒数
 
-### [TODO-006] ~~メール通知の日次バッチ~~ ✅ DONE
-- Vercel Cron (毎朝7:00 JST) → API Route → Resend API でメール送信
-- 4段階アラート（CRITICAL/URGENT/WARNING/INFO）、WARNING以上でメール
-- 環境変数: RESEND_API_KEY, ALERT_EMAIL_TO, CRON_SECRET
+| 画面 | 目標 |
+|---|---|
+| 全ページ共通遷移の体感開始 | 0.3秒以内 |
+| ダッシュボード骨組み表示 | 0.4秒以内 |
+| ダッシュボード主要カード表示 | 0.8秒以内 |
+| ダッシュボード全表示 | 1.5秒以内 |
+| 一覧ページ（社員 / 資格 / 車両 / アルコール / スケジュール） | 0.8秒以内 |
+| 重い一覧ページ（工事 / 健康診断） | 1.2秒以内 |
+| 詳細ページ | 1.0秒以内 |
+| 重い詳細ページ | 1.5秒以内 |
 
-### [TODO-007] ~~CLAUDE.md 作成~~ ✅ DONE
-- app/CLAUDE.md 作成。テストコマンド、devサーバー(--webpack)、shadcn v4 Base UI render prop規約、Supabase接続、ディレクトリ構成、コーディング規約を記載
+## 後続対応
 
-### [TODO-008] ~~PRD Section 6 (API設計) 更新~~ ✅ DONE
-- Section 6を「データ取得・API設計」に変更。SC直接クエリパターンに合わせて簡素化。API RouteはCron+エクスポートのみ。Section 8の通知技術もResend APIに更新
+- 施工実績書の正式テンプレート対応は、既存様式の入手後に実施する。
+- 資格・車両・工事などの一括移行は、実データの形式が確定してから別タスクにする。
+- PWA / オフライン対応は現場運用の要望が固まってから判断する。

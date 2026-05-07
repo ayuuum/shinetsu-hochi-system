@@ -1,11 +1,11 @@
 import { addDays } from "date-fns";
 import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { QualificationsClient, type QualificationRow } from "@/components/qualifications/qualifications-client";
 import { formatDateInTokyo, getTodayInTokyo } from "@/lib/date";
 import { getAlertLevel, type AlertLevel } from "@/lib/alert-utils";
-import { getCachedQualificationCategories, getCachedEmployeeList, getCachedQualificationCounts } from "@/lib/cached-queries";
+import { getCachedQualificationCategories, getCachedEmployeeList, getCachedQualificationCounts, getCachedQualificationMasters } from "@/lib/cached-queries";
 
 const PAGE_SIZE = 50;
 
@@ -31,15 +31,16 @@ export default async function QualificationsPage({
 }: {
     searchParams: Promise<{ page?: string; q?: string; category?: string; level?: AlertLevel | "all" }>;
 }) {
-    const auth = await getAuthSnapshot();
+    const authPromise = getFastAuthSnapshot();
+    const paramsPromise = searchParams;
+    const [auth, params] = await Promise.all([authPromise, paramsPromise]);
     if (auth.role === "technician") {
         redirect("/me");
     }
 
-    const params = await searchParams;
     const currentPage = parsePageParam(params.page);
     const from = (currentPage - 1) * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
+    const toPlusOne = from + PAGE_SIZE;
     const currentSearch = (params.q || "").trim();
     const currentCategory = (params.category || "").trim();
     const currentLevel = params.level && params.level !== "all" ? params.level : "";
@@ -53,9 +54,9 @@ export default async function QualificationsPage({
         info: 0,
         ok: 0,
     };
-    let totalPages = 1;
-    // Fix: fetch employees list to enable direct qualification addition from this page
+    let hasNextPage = false;
     let employees: { id: string; name: string; branch: string | null }[] = [];
+    let qualificationMasters: { id: string; name: string; category: string | null }[] = [];
 
     try {
         const supabase = await createSupabaseServer();
@@ -68,14 +69,14 @@ export default async function QualificationsPage({
         // Build main queries early so they can run in parallel with lookup queries when no filter is active
         const basePageQuery = () => supabase
             .from("employee_qualifications")
-            .select(`*, employees!inner(id, name, branch), qualification_master(name, category)`, { count: "exact" })
+            .select(`*, employees!inner(id, name, branch), qualification_master(name, category)`)
             .is("employees.deleted_at", null)
             .order("expiry_date", { ascending: true })
-            .range(from, to);
+            .range(from, toPlusOne);
 
         const noFilter = !currentSearch && !currentCategory;
 
-        let pageResult: { data: unknown[] | null; count: number | null; error: unknown };
+        let pageResult: { data: unknown[] | null; error: unknown };
         let summaryData: { expiry_date: string | null }[] = [];
 
         if (noFilter) {
@@ -87,14 +88,16 @@ export default async function QualificationsPage({
             if (currentLevel === "ok") pq = pq.or("expiry_date.is.null,expiry_date.gt." + infoLimit);
 
             // All 4 are independent — run in one parallel group
-            const [categories_cached, employees_cached, pqResult, cachedCounts] = await Promise.all([
+            const [categories_cached, employees_cached, masters_cached, pqResult, cachedCounts] = await Promise.all([
                 getCachedQualificationCategories(),
                 getCachedEmployeeList(),
+                getCachedQualificationMasters(),
                 pq,
                 getCachedQualificationCounts(),
             ]);
             categories = categories_cached;
             employees = employees_cached;
+            qualificationMasters = masters_cached.map((m) => ({ id: m.id, name: m.name, category: m.category ?? null }));
             pageResult = pqResult as typeof pageResult;
             counts = cachedCounts;
         } else {
@@ -102,12 +105,14 @@ export default async function QualificationsPage({
             const [
                 categories_cached,
                 employees_cached,
+                masters_cached,
                 employeeSearchResult,
                 qualificationSearchResult,
                 categoryQualificationResult,
             ] = await Promise.all([
                 getCachedQualificationCategories(),
                 getCachedEmployeeList(),
+                getCachedQualificationMasters(),
                 currentSearch
                     ? supabase.from("employees").select("id").is("deleted_at", null).ilike("name", searchPattern!).limit(100)
                     : Promise.resolve({ data: [] as { id: string }[], error: null }),
@@ -120,6 +125,7 @@ export default async function QualificationsPage({
             ]);
             categories = categories_cached;
             employees = employees_cached;
+            qualificationMasters = masters_cached.map((m) => ({ id: m.id, name: m.name, category: m.category ?? null }));
 
             const employeeIds = (employeeSearchResult.data || []).map((item) => item.id);
             const qualificationIds = (qualificationSearchResult.data || []).map((item) => item.id);
@@ -135,7 +141,7 @@ export default async function QualificationsPage({
             const hasCategoryMatches = !currentCategory || categoryQualificationIds.length > 0;
 
             if (!hasMatches || !hasCategoryMatches) {
-                pageResult = { data: [], count: 0, error: null };
+                pageResult = { data: [], error: null };
                 summaryData = [];
             } else {
                 let pq = basePageQuery();
@@ -168,8 +174,9 @@ export default async function QualificationsPage({
             }
         }
 
-        qualifications = (pageResult.data || []) as QualificationRow[];
-        totalPages = Math.max(1, Math.ceil(((pageResult.count as number | null) || 0) / PAGE_SIZE));
+        const items = (pageResult.data || []) as QualificationRow[];
+        qualifications = items.slice(0, PAGE_SIZE);
+        hasNextPage = items.length > PAGE_SIZE;
 
         // noFilter: counts already set from getCachedQualificationCounts(); else branch uses summaryData
         if (summaryData.length > 0) {
@@ -192,8 +199,9 @@ export default async function QualificationsPage({
             currentCategory={currentCategory}
             currentLevel={currentLevel}
             currentPage={currentPage}
-            totalPages={totalPages}
+            hasNextPage={hasNextPage}
             employees={employees}
+        qualificationMasters={qualificationMasters}
         />
     );
 }

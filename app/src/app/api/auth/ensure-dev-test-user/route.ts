@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ensureDevTestUser } from "@/lib/ensure-dev-test-user";
 
 /**
- * 開発時のみ: test@gmail.com / test 用ユーザーを Auth + user_roles に用意する。
+ * 開発時のみ: test@gmail.com / test1234 用ユーザーを Auth + user_roles に用意する。
  * 本番ビルドでは常に 404（ルート自体は存在しても呼び出し側が dev のみ）。
  */
 export async function POST() {

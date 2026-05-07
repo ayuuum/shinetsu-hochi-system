@@ -22,6 +22,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { DatePickerField } from "@/components/shared/date-picker-field";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -170,14 +171,14 @@ export function EditProjectModal({
                                 <FormField control={form.control} name="construction_date" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>着工日 <span className="text-red-500">*</span></FormLabel>
-                                        <FormControl><Input type="date" {...field} /></FormControl>
+                                        <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )} />
                                 <FormField control={form.control} name="end_date" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>完工日</FormLabel>
-                                        <FormControl><Input type="date" {...field} /></FormControl>
+                                        <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )} />

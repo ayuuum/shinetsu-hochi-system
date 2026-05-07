@@ -1,5 +1,5 @@
 import { createSupabaseServer } from "@/lib/supabase-server";
-import { getAuthSnapshot } from "@/lib/auth-server";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -34,7 +34,7 @@ function DetailField({ label, value, tone = "default" }: { label: string; value:
 
 export default async function QualificationDetailPage({ params }: PageProps) {
     const { id } = await params;
-    const auth = await getAuthSnapshot();
+    const auth = await getFastAuthSnapshot();
     const supabase = await createSupabaseServer();
 
     const { data: qualification, error } = await supabase
@@ -65,19 +65,19 @@ export default async function QualificationDetailPage({ params }: PageProps) {
         .eq("qualification_id", id)
         .order("sort_order", { ascending: true });
 
-    const certificateImages: { id: string; url: string; caption: string | null }[] = [];
-    for (const row of certificateImageRows ?? []) {
+    const certificateImages = (await Promise.all((certificateImageRows ?? []).map(async (row) => {
         const { data: signed } = await supabase.storage
             .from("certificates")
             .createSignedUrl(row.storage_path, 3600);
-        if (signed?.signedUrl) {
-            certificateImages.push({
-                id: row.id,
-                url: signed.signedUrl,
-                caption: row.caption,
-            });
+        if (!signed?.signedUrl) {
+            return null;
         }
-    }
+        return {
+            id: row.id,
+            url: signed.signedUrl,
+            caption: row.caption,
+        };
+    }))).filter((row): row is { id: string; url: string; caption: string | null } => row !== null);
 
     // Fallback: legacy single certificate_url, only show if no certificate_images rows exist
     if (certificateImages.length === 0 && qualification.certificate_url) {
@@ -93,18 +93,7 @@ export default async function QualificationDetailPage({ params }: PageProps) {
         }
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    let canManage = false;
-
-    if (user) {
-        const { data: roleData } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("id", user.id)
-            .single();
-
-        canManage = roleData?.role === "admin" || roleData?.role === "hr";
-    }
+    const canManage = auth.role === "admin" || auth.role === "hr";
 
     // Fetch training history - handle case where table may not exist
     let trainingHistory: {
