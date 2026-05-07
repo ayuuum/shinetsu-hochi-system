@@ -22,3 +22,24 @@ test("technician lands on today when credentials are provided", async ({ browser
   await expect(page.getByRole("heading", { name: /今日/ })).toBeVisible();
   await context.close();
 });
+
+test("technician cannot open admin-only sections when credentials are provided", async ({ browser, baseURL }) => {
+  test.skip(!technicianEmail || !technicianPassword, "Set E2E_TECHNICIAN_EMAIL and E2E_TECHNICIAN_PASSWORD to run technician permission smoke.");
+
+  const context = await browser.newContext({ baseURL: baseURL ?? "http://127.0.0.1:3006" });
+  const page = await context.newPage();
+
+  await page.goto("/login");
+  await page.getByLabel("メールアドレス").fill(technicianEmail!);
+  await page.getByLabel("パスワード").fill(technicianPassword!);
+  await page.getByRole("button", { name: "ログイン" }).click();
+  await page.waitForURL(/\/today$/, { timeout: 30_000 });
+
+  for (const path of ["/employees", "/qualifications", "/vehicles", "/admin/users"]) {
+    await page.goto(path);
+    await expect(page).not.toHaveURL(new RegExp(`${path.replace("/", "\\/")}$`));
+    await expect(page.getByRole("heading", { name: /今日/ })).toBeVisible();
+  }
+
+  await context.close();
+});

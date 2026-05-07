@@ -28,3 +28,61 @@ test("password update validates short and mismatched passwords", async ({ page }
   await page.getByRole("button", { name: "パスワードを更新" }).click();
   await expect(page.getByText("パスワードが一致しません。")).toBeVisible();
 });
+
+test("auth callback handles recovery links with URL hash tokens", async ({ page }) => {
+  const encodeBase64Url = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  const mockAccessToken = [
+    encodeBase64Url({ alg: "HS256", typ: "JWT" }),
+    encodeBase64Url({
+      aud: "authenticated",
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      sub: "00000000-0000-4000-8000-000000000001",
+      email: "reset@example.com",
+      role: "authenticated",
+    }),
+    Buffer.from("signature").toString("base64url"),
+  ].join(".");
+
+  await page.route("**/auth/v1/user", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: "00000000-0000-4000-8000-000000000001",
+        aud: "authenticated",
+        role: "authenticated",
+        email: "reset@example.com",
+        app_metadata: {},
+        user_metadata: {},
+        created_at: new Date().toISOString(),
+      }),
+    });
+  });
+
+  await page.route("**/auth/v1/token?grant_type=refresh_token", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        access_token: mockAccessToken,
+        refresh_token: "mock-refresh-token",
+        token_type: "bearer",
+        expires_in: 3600,
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        user: {
+          id: "00000000-0000-4000-8000-000000000001",
+          aud: "authenticated",
+          role: "authenticated",
+          email: "reset@example.com",
+          app_metadata: {},
+          user_metadata: {},
+          created_at: new Date().toISOString(),
+        },
+      }),
+    });
+  });
+
+  await page.goto(`/auth/callback?next=%2Fauth%2Fupdate-password#access_token=${mockAccessToken}&refresh_token=mock-refresh-token&type=recovery&expires_in=3600&token_type=bearer`);
+  await expect(page).toHaveURL(/\/auth\/update-password$/);
+  await expect(page.getByText("新しいパスワードを設定", { exact: true })).toBeVisible();
+});
