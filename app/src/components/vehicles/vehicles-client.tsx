@@ -17,6 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Truck, AlertTriangle, Pencil, Search, Trash2, ArrowUpDown } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
     Select,
     SelectContent,
@@ -257,8 +258,13 @@ export function VehiclesClient({
             <div className="space-y-3 md:hidden" aria-busy={isPending}>
                 {initialVehicles.length === 0 ? (
                     <Card size="sm" className="border-border/60">
-                        <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                            {search ? "該当する車両がありません。" : "車両データがありません。"}
+                        <CardContent className="p-0">
+                            <EmptyState
+                                icon={Truck}
+                                title={activeFilters.length > 0 ? "条件に一致する車両がありません" : "車両データがまだ登録されていません"}
+                                description={activeFilters.length > 0 ? "検索条件を変更してください" : isAdminOrHr ? "「車両を追加」から登録できます" : "登録・更新は管理者または人事権限が必要です"}
+                                action={activeFilters.length > 0 ? { label: "条件を解除", onClick: clearFilters, variant: "outline" } : undefined}
+                            />
                         </CardContent>
                     </Card>
                 ) : (
@@ -352,8 +358,13 @@ export function VehiclesClient({
                     <TableBody>
                         {initialVehicles.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={columnCount} className="h-24 text-center text-muted-foreground">
-                                    {search ? "該当する車両がありません。" : "車両データがありません。"}
+                                <TableCell colSpan={columnCount}>
+                                    <EmptyState
+                                        icon={Truck}
+                                        title={activeFilters.length > 0 ? "条件に一致する車両がありません" : "車両データがまだ登録されていません"}
+                                        description={activeFilters.length > 0 ? "検索条件を変更してください" : isAdminOrHr ? "「車両を追加」から登録できます" : "登録・更新は管理者または人事権限が必要です"}
+                                        action={activeFilters.length > 0 ? { label: "条件を解除", onClick: clearFilters, variant: "outline" } : undefined}
+                                    />
                                 </TableCell>
                             </TableRow>
                         ) : (

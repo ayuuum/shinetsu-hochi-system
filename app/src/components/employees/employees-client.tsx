@@ -22,7 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, MapPin, Award, Download } from "lucide-react";
+import { Search, MapPin, Award, Download, Users } from "lucide-react";
 import { AddEmployeeModal } from "@/components/employees/add-employee-modal";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ import { ActiveFilters } from "@/components/shared/active-filters";
 import { MobileFiltersSheet } from "@/components/shared/mobile-filters-sheet";
 import { formatDisplayDate } from "@/lib/date";
 import { PageHeader } from "@/components/shared/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export type EmployeeWithQualCount = Tables<"employees"> & {
     qualification_count: number;
@@ -340,8 +341,13 @@ export function EmployeesClient({
             <div className="space-y-3 md:hidden" aria-busy={isPending}>
                 {initialEmployees.length === 0 ? (
                     <Card size="sm" className="border-border/60">
-                        <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                            該当する社員が見つかりません。
+                        <CardContent className="p-0">
+                            <EmptyState
+                                icon={Users}
+                                title={activeFilters.length > 0 ? "条件に一致する社員が見つかりません" : "社員データがまだ登録されていません"}
+                                description={activeFilters.length > 0 ? "検索条件や絞り込みを変更してください" : isAdminOrHr ? "「社員を追加」から登録できます" : "管理者に社員登録を依頼してください"}
+                                action={activeFilters.length > 0 ? { label: "条件を解除", onClick: clearFilters, variant: "outline" } : undefined}
+                            />
                         </CardContent>
                     </Card>
                 ) : (
@@ -403,8 +409,13 @@ export function EmployeesClient({
                     <TableBody>
                         {initialEmployees.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground font-medium">
-                                    該当する社員が見つかりません。
+                                <TableCell colSpan={7}>
+                                    <EmptyState
+                                        icon={Users}
+                                        title={activeFilters.length > 0 ? "条件に一致する社員が見つかりません" : "社員データがまだ登録されていません"}
+                                        description={activeFilters.length > 0 ? "検索条件や絞り込みを変更してください" : isAdminOrHr ? "「社員を追加」から登録できます" : "管理者に社員登録を依頼してください"}
+                                        action={activeFilters.length > 0 ? { label: "条件を解除", onClick: clearFilters, variant: "outline" } : undefined}
+                                    />
                                 </TableCell>
                             </TableRow>
                         ) : (

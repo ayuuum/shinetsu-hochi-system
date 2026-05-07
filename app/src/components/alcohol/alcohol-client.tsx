@@ -22,7 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Pencil, Trash2, Download, ShieldAlert } from "lucide-react";
+import { Pencil, Trash2, Download, ShieldAlert, UserX, ClipboardList } from "lucide-react";
 import { AddAlcoholCheckModal } from "./add-alcohol-check-modal";
 import { EditAlcoholCheckModal } from "./edit-alcohol-check-modal";
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
@@ -37,6 +37,7 @@ import { deleteAlcoholCheckAction } from "@/app/actions/admin-record-actions";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { PageHeader } from "@/components/shared/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export type AlcoholCheckRow = {
     id: string;
@@ -110,6 +111,7 @@ export function AlcoholClient({
     monthlySummary,
     currentPage,
     totalPages,
+    unrecordedEmployees = [],
 }: {
     initialChecks: AlcoholCheckRow[];
     employees: Employee[];
@@ -121,6 +123,7 @@ export function AlcoholClient({
     monthlySummary: MonthlyAlcoholSummary[];
     currentPage: number;
     totalPages: number;
+    unrecordedEmployees?: Employee[];
 }) {
     const [editingItem, setEditingItem] = useState<AlcoholCheckRow | null>(null);
     const [deletingItem, setDeletingItem] = useState<AlcoholCheckRow | null>(null);
@@ -265,11 +268,35 @@ export function AlcoholClient({
             />
 
             {abnormalCount > 0 && (
-                <div className="flex items-start gap-3 p-4 rounded-[16px] bg-destructive/10 border border-destructive/20">
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20">
                     <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
                     <p className="text-sm font-bold text-destructive">
                         不適正記録が {abnormalCount} 件あります。安全運転管理者の対応が必要です。
                     </p>
+                </div>
+            )}
+
+            {isAdminOrHr && unrecordedEmployees.length > 0 && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                        <UserX className="h-4 w-4 text-amber-600 shrink-0" />
+                        <p className="text-sm font-semibold text-amber-800">
+                            {currentDate} の未記録者 {unrecordedEmployees.length}名
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {unrecordedEmployees.map((emp) => (
+                            <button
+                                key={emp.id}
+                                type="button"
+                                onClick={() => updateFilters({ employee: emp.id, page: 1 })}
+                                className="inline-flex items-center rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-medium text-amber-800 hover:bg-amber-100 transition-colors"
+                            >
+                                {emp.name}
+                            </button>
+                        ))}
+                    </div>
+                    <p className="text-xs text-amber-600">名前をクリックすると、その社員の記録フォームが開きます。</p>
                 </div>
             )}
 
@@ -464,8 +491,13 @@ export function AlcoholClient({
             <div className="space-y-3 md:hidden">
                 {initialChecks.length === 0 ? (
                     <Card size="sm" className="border-border/60">
-                        <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                            該当する記録がありません。
+                        <CardContent className="p-0">
+                            <EmptyState
+                                icon={ClipboardList}
+                                title={activeFilters.length > 0 ? "条件に一致する記録がありません" : "この日の記録はまだありません"}
+                                description={activeFilters.length > 0 ? "絞り込み条件を変更してください" : canRecordAlcohol ? "上部の「記録を追加」から登録できます" : undefined}
+                                action={activeFilters.length > 0 ? { label: "条件を解除", onClick: clearFilters, variant: "outline" } : undefined}
+                            />
                         </CardContent>
                     </Card>
                 ) : (
@@ -562,8 +594,13 @@ export function AlcoholClient({
                     <TableBody>
                         {initialChecks.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={columnCount} className="h-24 text-center text-muted-foreground">
-                                    該当する記録がありません。
+                                <TableCell colSpan={columnCount}>
+                                    <EmptyState
+                                        icon={ClipboardList}
+                                        title={activeFilters.length > 0 ? "条件に一致する記録がありません" : "この日の記録はまだありません"}
+                                        description={activeFilters.length > 0 ? "絞り込み条件を変更してください" : canRecordAlcohol ? "上部の「記録を追加」から登録できます" : undefined}
+                                        action={activeFilters.length > 0 ? { label: "条件を解除", onClick: clearFilters, variant: "outline" } : undefined}
+                                    />
                                 </TableCell>
                             </TableRow>
                         ) : (
