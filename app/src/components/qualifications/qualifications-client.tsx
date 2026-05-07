@@ -23,7 +23,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, FileImage, Tags, Plus, Download } from "lucide-react";
+import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, FileImage, Tags, Plus, ScrollText, Download } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { differenceInDays } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { alertStyles, getAlertLevel, type AlertLevel } from "@/lib/alert-utils";
@@ -443,8 +444,13 @@ export function QualificationsClient({
             <div className="space-y-3 md:hidden" aria-busy={isPending}>
                 {initialQualifications.length === 0 ? (
                     <Card size="sm" className="border-border/60">
-                        <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                            該当する資格データがありません。
+                        <CardContent className="p-0">
+                            <EmptyState
+                                icon={ScrollText}
+                                title={activeFilters.length > 0 ? "条件に一致する資格がありません" : "資格データがまだ登録されていません"}
+                                description={activeFilters.length > 0 ? "検索条件または期限フィルタを変更してください" : isAdminOrHr ? "「資格を追加」から登録できます" : "登録・更新は管理者または人事権限が必要です"}
+                                action={activeFilters.length > 0 ? { label: "条件を解除", onClick: clearFilters, variant: "outline" } : undefined}
+                            />
                         </CardContent>
                     </Card>
                 ) : (
@@ -542,8 +548,13 @@ export function QualificationsClient({
                     <TableBody>
                         {initialQualifications.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={columnCount} className="h-24 text-center text-muted-foreground">
-                                    該当する資格データがありません。
+                                <TableCell colSpan={columnCount}>
+                                    <EmptyState
+                                        icon={ScrollText}
+                                        title={activeFilters.length > 0 ? "条件に一致する資格がありません" : "資格データがまだ登録されていません"}
+                                        description={activeFilters.length > 0 ? "検索条件または期限フィルタを変更してください" : isAdminOrHr ? "「資格を追加」から登録できます" : "登録・更新は管理者または人事権限が必要です"}
+                                        action={activeFilters.length > 0 ? { label: "条件を解除", onClick: clearFilters, variant: "outline" } : undefined}
+                                    />
                                 </TableCell>
                             </TableRow>
                         ) : (

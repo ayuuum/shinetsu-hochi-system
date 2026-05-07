@@ -31,6 +31,7 @@ export default async function AlcoholChecksPage({
     let empData: { id: string; name: string }[] = [];
     let hasNextPage = false;
     let monthlySummary: { employeeId: string; employeeName: string; branch: string; recordedDays: number; monthDays: number; completionRate: number }[] = [];
+    let unrecordedEmployees: { id: string; name: string }[] = [];
 
     try {
         const auth = await getFastAuthSnapshot();
@@ -111,6 +112,10 @@ export default async function AlcoholChecksPage({
         empData = empResult as { id: string; name: string }[];
         hasNextPage = checks.length > PAGE_SIZE;
 
+        // Compute unrecorded employees for the selected date
+        const recordedEmployeeIds = new Set(checksData.map((c) => c.employee_id).filter(Boolean));
+        unrecordedEmployees = empData.filter((e) => !recordedEmployeeIds.has(e.id));
+
         const monthlyChecks = monthlyResult.data || [];
         const recordedDaysByEmployee = new Map<string, Set<string>>();
         const metaByEmployee = new Map<string, { name: string; branch: string }>();
@@ -158,6 +163,7 @@ export default async function AlcoholChecksPage({
             monthlySummary={monthlySummary}
             currentPage={page}
             hasNextPage={hasNextPage}
+            unrecordedEmployees={unrecordedEmployees}
         />
     );
 }

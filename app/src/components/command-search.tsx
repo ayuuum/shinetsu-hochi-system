@@ -495,8 +495,20 @@ export function CommandSearch({
                             )}
 
                             {showEmptyState && (
-                                <Command.Empty className="py-8 text-center text-sm text-muted-foreground">
-                                    {errorMessage || "該当する結果がありません。"}
+                                <Command.Empty className="py-6 text-center">
+                                    {errorMessage ? (
+                                        <p className="text-sm text-muted-foreground">{errorMessage}</p>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            <p className="text-sm font-medium text-foreground">「{query}」に一致する結果がありません</p>
+                                            <p className="text-xs text-muted-foreground">
+                                                社員名・フリガナ・社員番号・資格名・車両番号・工事名で検索できます
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                漢字で見つからない場合はフリガナをお試しください
+                                            </p>
+                                        </div>
+                                    )}
                                 </Command.Empty>
                             )}
 
