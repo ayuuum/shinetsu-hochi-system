@@ -22,6 +22,7 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { DatePickerField } from "@/components/shared/date-picker-field";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -111,7 +112,7 @@ export function AddSeminarModal({ employeeId, onSuccess }: AddSeminarModalProps)
                             <FormField control={form.control} name="held_date" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>開催日 *</FormLabel>
-                                    <FormControl><Input type="date" {...field} /></FormControl>
+                                    <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />

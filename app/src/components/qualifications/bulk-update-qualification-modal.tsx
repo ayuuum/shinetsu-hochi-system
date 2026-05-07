@@ -18,7 +18,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
+import { DatePickerField } from "@/components/shared/date-picker-field";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -153,18 +153,16 @@ export function BulkUpdateQualificationModal({
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-2">
                                 <Label>取得日</Label>
-                                <Input
-                                    type="date"
+                                <DatePickerField
                                     value={acquiredDate}
-                                    onChange={(e) => setAcquiredDate(e.target.value)}
+                                    onChange={setAcquiredDate}
                                 />
                             </div>
                             <div className="space-y-2">
                                 <Label>有効期限</Label>
-                                <Input
-                                    type="date"
+                                <DatePickerField
                                     value={expiryDate}
-                                    onChange={(e) => setExpiryDate(e.target.value)}
+                                    onChange={setExpiryDate}
                                 />
                             </div>
                         </div>

@@ -31,6 +31,7 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { DatePickerField } from "@/components/shared/date-picker-field";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Loader2, Pencil, Trash2, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
@@ -85,7 +86,7 @@ function ScheduleForm({
                 <FormField control={form.control} name="scheduled_date" render={({ field }) => (
                     <FormItem>
                         <FormLabel>日付</FormLabel>
-                        <FormControl><Input type="date" {...field} /></FormControl>
+                        <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
                         <FormMessage />
                     </FormItem>
                 )} />

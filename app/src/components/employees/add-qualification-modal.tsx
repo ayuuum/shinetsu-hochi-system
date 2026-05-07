@@ -29,7 +29,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
+import { DatePickerField } from "@/components/shared/date-picker-field";
 import { Button } from "@/components/ui/button";
 import { Plus, Award, Loader2, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -333,12 +333,11 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                                 <FormItem>
                                     <FormLabel>取得日 (交付日 / 前回講習日)</FormLabel>
                                     <FormControl>
-                                        <Input
-                                            type="date"
-                                            {...field}
-                                            onChange={(e) => {
-                                                field.onChange(e);
-                                                recalculateExpiry({ acquiredDate: e.target.value });
+                                        <DatePickerField
+                                            value={field.value}
+                                            onChange={(value) => {
+                                                field.onChange(value);
+                                                recalculateExpiry({ acquiredDate: value });
                                             }}
                                         />
                                     </FormControl>
@@ -354,7 +353,7 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                                 <FormItem>
                                     <FormLabel>次回講習期限 / 有効期限 (自動算出)</FormLabel>
                                     <FormControl>
-                                        <Input type="date" {...field} />
+                                        <DatePickerField value={field.value} onChange={field.onChange} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

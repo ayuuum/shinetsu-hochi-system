@@ -29,6 +29,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { DatePickerField } from "@/components/shared/date-picker-field";
 import { Button } from "@/components/ui/button";
 import { UserPlus, Loader2, User, Phone, Briefcase, Plus } from "lucide-react";
 import { getTodayInTokyo } from "@/lib/date";
@@ -193,7 +194,7 @@ export function AddEmployeeModal() {
                                 <FormField control={form.control} name="birth_date" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>生年月日 *</FormLabel>
-                                        <FormControl><Input type="date" {...field} /></FormControl>
+                                        <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )} />
@@ -273,7 +274,7 @@ export function AddEmployeeModal() {
                                 <FormField control={form.control} name="hire_date" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>入社日 *</FormLabel>
-                                        <FormControl><Input type="date" {...field} /></FormControl>
+                                        <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )} />

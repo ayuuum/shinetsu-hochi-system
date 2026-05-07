@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { DatePickerField } from "@/components/shared/date-picker-field";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { createLifeInsuranceAction, updateLifeInsuranceAction } from "@/app/actions/admin-record-actions";
@@ -155,7 +156,7 @@ export function AddLifeInsuranceModal({ employeeId, existingRecord, onSuccess }:
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>加入日 <span className="text-destructive">*</span></FormLabel>
-                                        <FormControl><Input type="date" {...field} /></FormControl>
+                                        <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -166,7 +167,7 @@ export function AddLifeInsuranceModal({ employeeId, existingRecord, onSuccess }:
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>満期日 <span className="text-destructive">*</span></FormLabel>
-                                        <FormControl><Input type="date" {...field} /></FormControl>
+                                        <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -177,7 +178,7 @@ export function AddLifeInsuranceModal({ employeeId, existingRecord, onSuccess }:
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>返戻金ピーク日</FormLabel>
-                                        <FormControl><Input type="date" {...field} value={field.value || ""} /></FormControl>
+                                        <FormControl><DatePickerField value={field.value || ""} onChange={field.onChange} /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}

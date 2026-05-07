@@ -30,6 +30,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { DatePickerField } from "@/components/shared/date-picker-field";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -137,7 +138,7 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
                             <FormField control={form.control} name="training_date" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>受講日 *</FormLabel>
-                                    <FormControl><Input type="date" {...field} /></FormControl>
+                                    <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />
@@ -177,7 +178,7 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
                         <FormField control={form.control} name="next_due_date" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>次回期限</FormLabel>
-                                <FormControl><Input type="date" {...field} /></FormControl>
+                                <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )} />

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { DatePickerField } from "@/components/shared/date-picker-field";
 import {
     createEmployeeFamilyAction,
     deleteEmployeeFamilyAction,
@@ -168,7 +169,7 @@ export function AddFamilyModal({ employeeId, existingRecord, onSuccess }: AddFam
                             <FormField control={form.control} name="birth_date" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>生年月日</FormLabel>
-                                    <FormControl><Input type="date" {...field} /></FormControl>
+                                    <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />

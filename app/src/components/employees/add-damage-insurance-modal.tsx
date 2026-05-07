@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { DatePickerField } from "@/components/shared/date-picker-field";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { createDamageInsuranceAction, updateDamageInsuranceAction } from "@/app/actions/admin-record-actions";
@@ -164,7 +165,7 @@ export function AddDamageInsuranceModal({ employeeId, existingRecord, onSuccess 
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>更改日（更新日） <span className="text-destructive">*</span></FormLabel>
-                                        <FormControl><Input type="date" {...field} /></FormControl>
+                                        <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}

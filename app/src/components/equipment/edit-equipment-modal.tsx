@@ -21,6 +21,7 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { DatePickerField } from "@/components/shared/date-picker-field";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -130,7 +131,7 @@ export function EditEquipmentModal({
                                     <FormItem>
                                         <FormLabel>購入日</FormLabel>
                                         <FormControl>
-                                            <Input type="date" {...field} />
+                                            <DatePickerField value={field.value} onChange={field.onChange} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

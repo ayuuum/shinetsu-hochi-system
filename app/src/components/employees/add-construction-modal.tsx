@@ -29,6 +29,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { DatePickerField } from "@/components/shared/date-picker-field";
 import { Button } from "@/components/ui/button";
 import { Plus, HardHat, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -119,7 +120,7 @@ export function AddConstructionModal({ employeeId, onSuccess }: AddConstructionM
                             <FormField control={form.control} name="construction_date" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>着工日 *</FormLabel>
-                                    <FormControl><Input type="date" {...field} /></FormControl>
+                                    <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />

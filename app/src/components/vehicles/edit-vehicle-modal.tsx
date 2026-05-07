@@ -28,6 +28,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { DatePickerField } from "@/components/shared/date-picker-field";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -128,21 +129,21 @@ export function EditVehicleModal({ vehicle, employees, open, onOpenChange }: Edi
                         <FormField control={form.control} name="inspection_expiry" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>車検満了日</FormLabel>
-                                <FormControl><Input type="date" {...field} /></FormControl>
+                                <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )} />
                         <FormField control={form.control} name="liability_insurance_expiry" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>自賠責保険満期日</FormLabel>
-                                <FormControl><Input type="date" {...field} /></FormControl>
+                                <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )} />
                         <FormField control={form.control} name="voluntary_insurance_expiry" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>任意保険満期日</FormLabel>
-                                <FormControl><Input type="date" {...field} /></FormControl>
+                                <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )} />

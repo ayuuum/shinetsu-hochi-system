@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { TableCellLink } from "@/components/shared/table-cell-link";
 import { ActiveFilters } from "@/components/shared/active-filters";
 import { MobileFiltersSheet } from "@/components/shared/mobile-filters-sheet";
+import { DatePickerField } from "@/components/shared/date-picker-field";
 import { getTodayInTokyo } from "@/lib/date";
 import { deleteAlcoholCheckAction } from "@/app/actions/admin-record-actions";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
@@ -323,11 +324,10 @@ export function AlcoholClient({
             </Card>
 
             <div className="space-y-3 md:hidden">
-                <Input
-                    aria-label="対象日"
-                    type="date"
+                <DatePickerField
+                    ariaLabel="対象日"
                     value={currentDate}
-                    onChange={(e) => updateFilters({ date: e.target.value, page: 1 })}
+                    onChange={(date) => updateFilters({ date, page: 1 })}
                     className="h-11 w-full"
                 />
                 <div className="flex items-center gap-3">
@@ -407,11 +407,10 @@ export function AlcoholClient({
             </div>
 
             <div className="hidden md:flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <Input
-                    aria-label="対象日"
-                    type="date"
+                <DatePickerField
+                    ariaLabel="対象日"
                     value={currentDate}
-                    onChange={(e) => updateFilters({ date: e.target.value, page: 1 })}
+                    onChange={(date) => updateFilters({ date, page: 1 })}
                     className="w-[180px]"
                 />
                 <Select
