@@ -26,13 +26,9 @@ function CallbackContent() {
             const code = searchParams.get("code");
 
             if (code) {
-                const response = await fetch("/api/auth/callback", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ code }),
-                });
+                const { error } = await supabase.auth.exchangeCodeForSession(code);
 
-                if (!response.ok) {
+                if (error) {
                     throw new Error("code_exchange_failed");
                 }
             } else {
