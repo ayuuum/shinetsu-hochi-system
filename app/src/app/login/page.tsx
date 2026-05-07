@@ -23,6 +23,7 @@ function LoginForm() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [redirecting, setRedirecting] = useState(false);
     const [resetOpen, setResetOpen] = useState(false);
     const [resetEmail, setResetEmail] = useState("");
     const [resetLoading, setResetLoading] = useState(false);
@@ -88,8 +89,8 @@ function LoginForm() {
             setError(getLoginErrorMessage(error.message));
         } else {
             const redirectTo = searchParams.get("redirectTo") || "/";
+            setRedirecting(true);
             router.push(redirectTo);
-            router.refresh();
         }
     }
 
@@ -159,9 +160,9 @@ function LoginForm() {
             {error && (
                 <p aria-live="polite" className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">{error}</p>
             )}
-            <Button type="submit" className="mt-1 w-full" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                ログイン
+            <Button type="submit" className="mt-1 w-full" disabled={loading || redirecting}>
+                {(loading || redirecting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {redirecting ? "移動中..." : "ログイン"}
             </Button>
             <p className="pt-1 text-center text-sm">
                 <button
@@ -225,14 +226,14 @@ function LoginForm() {
 
 export default function LoginPage() {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
             <div className="w-full max-w-md space-y-6">
                 <div className="text-center space-y-3">
                     <h1 className="sr-only">株式会社信越報知 社員・資格管理システム</h1>
                     <BrandLogo priority className="mx-auto w-[240px] max-w-full" />
                     <p className="text-sm text-muted-foreground">社員・資格管理システム</p>
                 </div>
-                <Card className="shadow-xl border-0">
+                <Card className="border border-border/50">
                     <CardContent className="pt-6">
                         <Suspense fallback={<div className="h-48 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>}>
                             <LoginForm />
