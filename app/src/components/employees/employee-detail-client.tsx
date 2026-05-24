@@ -145,6 +145,7 @@ export function EmployeeDetailClient({
     const [showDeletedQuals, setShowDeletedQuals] = useState(false);
     const { isAdmin, isAdminOrHr, role, linkedEmployeeId } = useAuth();
     const isTechnicianSelf = role === "technician" && linkedEmployeeId === employee.id;
+    const isPartner = employee.person_type === "partner";
 
     const today = new Date();
     const housingAllowanceEnd = employee.hire_date
@@ -303,15 +304,18 @@ export function EmployeeDetailClient({
                         </div>
                         <div>
                             <div className="flex items-center gap-3">
-                                <h1 className="text-3xl font-bold tracking-tight">{employee.name}</h1>
+                                <h1 className="text-3xl font-bold tracking-tight">{isPartner ? employee.partner_company || employee.name : employee.name}</h1>
+                                <Badge variant={isPartner ? "outline" : "secondary"}>{isPartner ? "協力会社" : "弊社従業員"}</Badge>
                                 <Badge variant="secondary">{employee.branch || "支店未設定"}</Badge>
                                 {employee.termination_date && <Badge variant="destructive">退職済</Badge>}
                                 {isAdminOrHr && hasFamilyAllowance && <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">家族手当あり</Badge>}
                             </div>
-                            <p className="text-muted-foreground font-medium">{employee.name_kana} | {employee.employee_number}</p>
+                            <p className="text-muted-foreground font-medium">
+                                {isPartner ? employee.partner_contact_name || employee.name : employee.name_kana} | {employee.employee_number}
+                            </p>
                             <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                                 <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{employee.address || "住所未登録"}</span>
-                                <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{employee.hire_date ? `入社: ${formatDisplayDate(employee.hire_date)}` : "入社日未登録"}</span>
+                                <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{employee.hire_date ? `${isPartner ? "取引開始" : "入社"}: ${formatDisplayDate(employee.hire_date)}` : `${isPartner ? "取引開始日" : "入社日"}未登録`}</span>
                             </div>
                         </div>
                     </div>
@@ -354,9 +358,9 @@ export function EmployeeDetailClient({
                 <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>社員の削除</DialogTitle>
+                            <DialogTitle>{isPartner ? "協力会社" : "社員"}の削除</DialogTitle>
                             <DialogDescription>
-                                {employee.name}（{employee.employee_number}）を一覧から非表示にします。関連する施工実績、健康診断、アルコール記録も運用画面から除外され、監査履歴は保持されます。
+                                {employee.name}（{employee.employee_number}）を一覧から非表示にします。関連する運用記録も画面から除外され、監査履歴は保持されます。
                             </DialogDescription>
                         </DialogHeader>
                         <DialogFooter>

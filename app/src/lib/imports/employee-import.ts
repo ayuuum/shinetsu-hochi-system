@@ -32,6 +32,7 @@ function normalizeText(value?: string) {
 
 export function buildEmployeeImportValues(row: EmployeeImportSourceRow): EmployeeCreateValues {
     return {
+        person_type: row.person_type === "partner" || row.person_type === "協力会社" ? "partner" : "employee",
         employee_number: normalizeText(row.employee_number),
         name: normalizeText(row.name),
         name_kana: normalizeText(row.name_kana),
@@ -48,6 +49,9 @@ export function buildEmployeeImportValues(row: EmployeeImportSourceRow): Employe
         emp_insurance_no: normalizeText(row.emp_insurance_no),
         health_insurance_no: normalizeText(row.health_insurance_no),
         pension_no: normalizeText(row.pension_no),
+        partner_company: normalizeText(row.partner_company),
+        partner_contact_name: normalizeText(row.partner_contact_name),
+        partner_notes: normalizeText(row.partner_notes),
     };
 }
 

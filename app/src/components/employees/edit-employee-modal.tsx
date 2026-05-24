@@ -52,6 +52,7 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
     const [discardOpen, setDiscardOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [photoFile, setPhotoFile] = useState<File | null>(null);
+    const isPartner = employee.person_type === "partner";
 
     const form = useForm<EmployeeUpdateValues>({
         resolver: zodResolver(employeeUpdateSchema),
@@ -127,7 +128,7 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
             return;
         }
 
-        toast.success("社員情報を更新しました");
+        toast.success(isPartner ? "協力会社情報を更新しました" : "社員情報を更新しました");
         if (uploadedPhotoPath && employee.photo_url && employee.photo_url !== uploadedPhotoPath) {
             await supabase.storage.from("certificates").remove([employee.photo_url]);
         }
@@ -142,36 +143,57 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>社員情報の編集</DialogTitle>
+                    <DialogTitle>{isPartner ? "協力会社情報の編集" : "社員情報の編集"}</DialogTitle>
                     <DialogDescription>{employee.name}（{employee.employee_number}）</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <FormField control={form.control} name="employee_number" render={({ field }) => (
                             <FormItem>
-                                <FormLabel>社員番号 *</FormLabel>
+                                <FormLabel>{isPartner ? "管理番号 *" : "社員番号 *"}</FormLabel>
                                 <FormControl><Input autoComplete="off" spellCheck={false} {...field} /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )} />
 
+                        {isPartner ? (
+                            <FormField control={form.control} name="partner_company" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>会社名</FormLabel>
+                                    <FormControl><Input placeholder="株式会社〇〇設備" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                        ) : null}
+
                         <div className="grid grid-cols-2 gap-4">
                             <FormField control={form.control} name="name" render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>氏名 *</FormLabel>
+                                    <FormLabel>{isPartner ? "表示名 *" : "氏名 *"}</FormLabel>
                                     <FormControl><Input autoComplete="name" {...field} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />
                             <FormField control={form.control} name="name_kana" render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>フリガナ *</FormLabel>
+                                    <FormLabel>{isPartner ? "表示名カナ *" : "フリガナ *"}</FormLabel>
                                     <FormControl><Input autoComplete="off" spellCheck={false} {...field} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />
                         </div>
 
+                        {isPartner ? (
+                            <FormField control={form.control} name="partner_contact_name" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>担当者名</FormLabel>
+                                    <FormControl><Input autoComplete="name" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                        ) : null}
+
+                        {!isPartner ? (
                         <div className="grid grid-cols-2 gap-4">
                             <FormField control={form.control} name="birth_date" render={({ field }) => (
                                 <FormItem>
@@ -196,6 +218,7 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
                                 </FormItem>
                             )} />
                         </div>
+                        ) : null}
 
                         <div className="grid grid-cols-2 gap-4">
                             <FormField control={form.control} name="phone_number" render={({ field }) => (
@@ -239,7 +262,7 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
                         <div className="grid grid-cols-3 gap-4">
                             <FormField control={form.control} name="hire_date" render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>入社日</FormLabel>
+                                    <FormLabel>{isPartner ? "取引開始日" : "入社日"}</FormLabel>
                                     <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -269,6 +292,7 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
                             )} />
                         </div>
 
+                        {!isPartner ? (
                         <div className="grid grid-cols-2 gap-4">
                             <FormField control={form.control} name="employment_type" render={({ field }) => (
                                 <FormItem>
@@ -294,7 +318,9 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
                                 </FormItem>
                             )} />
                         </div>
+                        ) : null}
 
+                        {!isPartner ? (
                         <FormField control={form.control} name="position" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>役職</FormLabel>
@@ -302,7 +328,17 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
                                 <FormMessage />
                             </FormItem>
                         )} />
+                        ) : (
+                            <FormField control={form.control} name="partner_notes" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>備考</FormLabel>
+                                    <FormControl><Input placeholder="契約範囲・注意事項など" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                        )}
 
+                        {!isPartner ? (
                         <div className="grid grid-cols-3 gap-4">
                             <FormField control={form.control} name="emp_insurance_no" render={({ field }) => (
                                 <FormItem>
@@ -326,6 +362,7 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
                                 </FormItem>
                             )} />
                         </div>
+                        ) : null}
 
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>キャンセル</Button>

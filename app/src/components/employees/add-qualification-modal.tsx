@@ -31,12 +31,13 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePickerField } from "@/components/shared/date-picker-field";
 import { Button } from "@/components/ui/button";
-import { Plus, Award, Loader2, Upload } from "lucide-react";
+import { Plus, Award, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Tables } from "@/types/supabase";
 import { calculateFireDefenseExpiry, calculateGeneralExpiry } from "@/lib/qualification-logic";
 import { format } from "date-fns";
+import { CertificateFilePicker } from "@/components/shared/certificate-file-picker";
 
 const ACQUISITION_TYPES = ["試験", "講習", "実務経験"] as const;
 
@@ -389,26 +390,7 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                         <div>
                             <label className="text-sm font-medium">証書画像（複数選択可・任意）</label>
                             <div className="mt-1.5">
-                                <label className="flex items-center gap-2 px-3 py-2 border border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors text-sm text-muted-foreground">
-                                    <Upload className="h-4 w-4" />
-                                    {certificateFiles.length > 0
-                                        ? `${certificateFiles.length}枚を選択中`
-                                        : "画像を選択..."}
-                                    <input
-                                        type="file"
-                                        accept="image/*,.pdf"
-                                        multiple
-                                        className="hidden"
-                                        onChange={(e) => setCertificateFiles(Array.from(e.target.files ?? []))}
-                                    />
-                                </label>
-                                {certificateFiles.length > 0 && (
-                                    <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-                                        {certificateFiles.map((f, i) => (
-                                            <li key={`${f.name}-${i}`} className="truncate">• {f.name}</li>
-                                        ))}
-                                    </ul>
-                                )}
+                                <CertificateFilePicker files={certificateFiles} onFilesChange={setCertificateFiles} />
                             </div>
                         </div>
 

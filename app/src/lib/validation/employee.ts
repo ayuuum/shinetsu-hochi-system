@@ -25,6 +25,7 @@ const optionalEmail = z
     .refine((value) => !value || z.string().email().safeParse(value).success, "メールアドレスの形式が不正です");
 
 const employeeBaseSchema = z.object({
+    person_type: z.enum(["employee", "partner"]),
     employee_number: requiredText("社員番号"),
     name: requiredText("氏名"),
     name_kana: requiredText("フリガナ"),
@@ -41,6 +42,9 @@ const employeeBaseSchema = z.object({
     health_insurance_no: optionalText,
     pension_no: optionalText,
     photo_url: optionalText,
+    partner_company: optionalText,
+    partner_contact_name: optionalText,
+    partner_notes: optionalText,
 });
 
 export const employeeCreateSchema = employeeBaseSchema.extend({
@@ -76,6 +80,7 @@ function normalizeRequiredText(value: string) {
 export function toEmployeeInsert(values: EmployeeCreateValues): TablesInsert<"employees"> {
     return {
         employee_number: normalizeRequiredText(values.employee_number),
+        person_type: values.person_type,
         name: normalizeRequiredText(values.name),
         name_kana: normalizeRequiredText(values.name_kana),
         birth_date: values.birth_date,
@@ -92,12 +97,16 @@ export function toEmployeeInsert(values: EmployeeCreateValues): TablesInsert<"em
         health_insurance_no: normalizeNullableText(values.health_insurance_no),
         pension_no: normalizeNullableText(values.pension_no),
         photo_url: normalizeNullableText(values.photo_url),
+        partner_company: normalizeNullableText(values.partner_company),
+        partner_contact_name: normalizeNullableText(values.partner_contact_name),
+        partner_notes: normalizeNullableText(values.partner_notes),
     };
 }
 
 export function toEmployeeUpdate(values: EmployeeUpdateValues): TablesUpdate<"employees"> {
     return {
         employee_number: normalizeRequiredText(values.employee_number),
+        person_type: values.person_type,
         name: normalizeRequiredText(values.name),
         name_kana: normalizeRequiredText(values.name_kana),
         birth_date: values.birth_date,
@@ -115,12 +124,16 @@ export function toEmployeeUpdate(values: EmployeeUpdateValues): TablesUpdate<"em
         health_insurance_no: normalizeNullableText(values.health_insurance_no),
         pension_no: normalizeNullableText(values.pension_no),
         photo_url: normalizeNullableText(values.photo_url),
+        partner_company: normalizeNullableText(values.partner_company),
+        partner_contact_name: normalizeNullableText(values.partner_contact_name),
+        partner_notes: normalizeNullableText(values.partner_notes),
     };
 }
 
 export function toEmployeeUpdateFormValues(employee: Tables<"employees">): EmployeeUpdateValues {
     return {
         employee_number: employee.employee_number,
+        person_type: employee.person_type === "partner" ? "partner" : "employee",
         name: employee.name,
         name_kana: employee.name_kana,
         birth_date: employee.birth_date || "",
@@ -138,5 +151,8 @@ export function toEmployeeUpdateFormValues(employee: Tables<"employees">): Emplo
         health_insurance_no: employee.health_insurance_no || "",
         pension_no: employee.pension_no || "",
         photo_url: employee.photo_url || "",
+        partner_company: employee.partner_company || "",
+        partner_contact_name: employee.partner_contact_name || "",
+        partner_notes: employee.partner_notes || "",
     };
 }

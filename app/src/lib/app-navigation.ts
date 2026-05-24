@@ -105,6 +105,15 @@ export const appNavItems: AppNavItem[] = [
         hideForTechnician: true,
     },
     {
+        title: "協力会社台帳",
+        description: "協力会社と担当者・資格情報を確認",
+        url: "/partners",
+        icon: Users,
+        section: "people",
+        keywords: ["partner", "vendor", "company", "協力会社"],
+        hideForTechnician: true,
+    },
+    {
         title: "資格・講習管理",
         description: "資格期限と講習履歴を確認",
         url: "/qualifications",

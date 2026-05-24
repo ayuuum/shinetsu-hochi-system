@@ -153,6 +153,7 @@ async function recordAuditLog({
 function revalidateEmployeePaths(employeeId?: string) {
     revalidatePath("/");
     revalidatePath("/employees");
+    revalidatePath("/partners");
     revalidatePath("/qualifications");
     revalidatePath("/vehicles");
     revalidatePath("/projects");

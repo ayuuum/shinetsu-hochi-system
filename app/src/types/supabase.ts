@@ -622,9 +622,13 @@ export type Database = {
           name_kana: string
           pension_no: string | null
           pension_type: string | null
+          person_type: string
           phone_number: string | null
           photo_url: string | null
           position: string | null
+          partner_company: string | null
+          partner_contact_name: string | null
+          partner_notes: string | null
           salary_increase_notes: string | null
           termination_date: string | null
           updated_at: string | null
@@ -659,9 +663,13 @@ export type Database = {
           name_kana: string
           pension_no?: string | null
           pension_type?: string | null
+          person_type?: string
           phone_number?: string | null
           photo_url?: string | null
           position?: string | null
+          partner_company?: string | null
+          partner_contact_name?: string | null
+          partner_notes?: string | null
           salary_increase_notes?: string | null
           termination_date?: string | null
           updated_at?: string | null
@@ -696,9 +704,13 @@ export type Database = {
           name_kana?: string
           pension_no?: string | null
           pension_type?: string | null
+          person_type?: string
           phone_number?: string | null
           photo_url?: string | null
           position?: string | null
+          partner_company?: string | null
+          partner_contact_name?: string | null
+          partner_notes?: string | null
           salary_increase_notes?: string | null
           termination_date?: string | null
           updated_at?: string | null

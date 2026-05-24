@@ -50,7 +50,7 @@ export default async function OperationsLogPage() {
             <div className="space-y-6">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">運用履歴</h1>
-                    <p className="mt-2 text-muted-foreground">インポート履歴を確認します。メール通知は運用対象外です。</p>
+                    <p className="mt-2 text-muted-foreground">インポート履歴と資格期限通知の実行結果を確認します。</p>
                 </div>
                 <Card>
                     <CardContent className="space-y-4 pt-6">
@@ -92,7 +92,7 @@ export default async function OperationsLogPage() {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">運用履歴</h1>
                     <p className="mt-2 text-muted-foreground">
-                        インポート結果と、過去に実行された通知ジョブの履歴を確認します。現在、メール通知は無効です。
+                        インポート結果と、過去に実行された資格期限通知ジョブの履歴を確認します。
                     </p>
                 </div>
                 <ManualDailyAlertButton />

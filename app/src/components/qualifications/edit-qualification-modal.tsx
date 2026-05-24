@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,10 +32,11 @@ import { Input } from "@/components/ui/input";
 import { DatePickerField } from "@/components/shared/date-picker-field";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { QualificationRow } from "@/components/qualifications/qualifications-client";
+import { CertificateFilePicker } from "@/components/shared/certificate-file-picker";
 
 const ACQUISITION_TYPES = ["試験", "講習", "実務経験"] as const;
 
@@ -60,10 +61,8 @@ interface EditQualificationModalProps {
 export function EditQualificationModal({ qualification, open, onOpenChange }: EditQualificationModalProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [additionalFiles, setAdditionalFiles] = useState<File[]>([]);
-    const [certificateFile, setCertificateFile] = useState<File | null>(null);
+    const [certificateFiles, setCertificateFiles] = useState<File[]>([]);
     const [removeCertificate, setRemoveCertificate] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const additionalInputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
     const employeeId = qualification.employees?.id;
     const acquisitionTypeRaw = (qualification as { acquisition_type?: string | null }).acquisition_type ?? "";
@@ -98,7 +97,7 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
 
     useEffect(() => {
         if (!open) {
-            setCertificateFile(null);
+            setCertificateFiles([]);
             setRemoveCertificate(false);
             setAdditionalFiles([]);
         }
@@ -113,6 +112,7 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
         try {
             let nextCertificateUrl: string | null | undefined = undefined;
 
+            const certificateFile = certificateFiles[0] ?? null;
             if (certificateFile) {
                 if (!employeeId) {
                     toast.error("社員情報が取得できないため証書をアップロードできません。");
@@ -303,56 +303,18 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
                             <p className="text-xs text-muted-foreground">
                                 スキャンした免状・証書を保存できます。差し替える場合は新しい画像を選択してください。
                             </p>
-                            {qualification.certificate_url && !removeCertificate && !certificateFile ? (
+                            {qualification.certificate_url && !removeCertificate && certificateFiles.length === 0 ? (
                                 <p className="text-xs text-muted-foreground">現在、証書画像が登録されています。</p>
                             ) : null}
-                            {certificateFile ? (
-                                <p className="text-xs text-foreground">選択中: {certificateFile.name}</p>
-                            ) : null}
-                            <div className="flex flex-wrap items-center gap-3">
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept="image/*,.pdf"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                        const f = e.target.files?.[0];
-                                        setCertificateFile(f ?? null);
-                                        if (f) setRemoveCertificate(false);
-                                    }}
-                                />
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => fileInputRef.current?.click()}
-                                >
-                                    <Upload className="mr-2 h-4 w-4" />
-                                    {qualification.certificate_url ? "画像を差し替え" : "画像をアップロード"}
+                            <CertificateFilePicker files={certificateFiles} onFilesChange={(files) => {
+                                setCertificateFiles(files.slice(0, 1));
+                                if (files.length > 0) setRemoveCertificate(false);
+                            }} multiple={false} />
+                            {qualification.certificate_url && !removeCertificate && certificateFiles.length === 0 ? (
+                                <Button type="button" variant="ghost" size="sm" onClick={() => setRemoveCertificate(true)}>
+                                    登録画像を削除
                                 </Button>
-                                {certificateFile ? (
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => {
-                                            setCertificateFile(null);
-                                            if (fileInputRef.current) fileInputRef.current.value = "";
-                                        }}
-                                    >
-                                        選択をクリア
-                                    </Button>
-                                ) : qualification.certificate_url && !removeCertificate ? (
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setRemoveCertificate(true)}
-                                    >
-                                        登録画像を削除
-                                    </Button>
-                                ) : null}
-                            </div>
+                            ) : null}
                             {qualification.certificate_url ? (
                                 <label className="flex cursor-pointer items-center gap-2 text-sm">
                                     <Checkbox
@@ -361,8 +323,7 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
                                             const on = c === true;
                                             setRemoveCertificate(on);
                                             if (on) {
-                                                setCertificateFile(null);
-                                                if (fileInputRef.current) fileInputRef.current.value = "";
+                                                setCertificateFiles([]);
                                             }
                                         }}
                                     />
@@ -372,29 +333,8 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
 
                             <div className="border-t pt-3">
                                 <p className="text-xs font-medium">追加の証書画像（複数選択可）</p>
-                                <input
-                                    ref={additionalInputRef}
-                                    type="file"
-                                    accept="image/*,.pdf"
-                                    multiple
-                                    className="hidden"
-                                    onChange={(e) => setAdditionalFiles(Array.from(e.target.files ?? []))}
-                                />
-                                <div className="mt-2 flex flex-wrap items-center gap-3">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => additionalInputRef.current?.click()}
-                                    >
-                                        <Upload className="mr-2 h-4 w-4" />
-                                        画像を追加
-                                    </Button>
-                                    {additionalFiles.length > 0 && (
-                                        <span className="text-xs text-muted-foreground">
-                                            {additionalFiles.length}枚を追加予定
-                                        </span>
-                                    )}
+                                <div className="mt-2">
+                                    <CertificateFilePicker files={additionalFiles} onFilesChange={setAdditionalFiles} />
                                 </div>
                             </div>
                         </div>

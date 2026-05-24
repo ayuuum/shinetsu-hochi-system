@@ -12,14 +12,12 @@ function parsePageParam(value?: string) {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 }
 
-export default async function EmployeesPage({
+export default async function PartnersPage({
     searchParams,
 }: {
-    searchParams: Promise<{ page?: string; q?: string; branch?: string; qualification?: string; sort?: string; type?: string }>;
+    searchParams: Promise<{ page?: string; q?: string; branch?: string; qualification?: string; sort?: string }>;
 }) {
-    const authPromise = getFastAuthSnapshot();
-    const paramsPromise = searchParams;
-    const [auth, params] = await Promise.all([authPromise, paramsPromise]);
+    const [auth, params] = await Promise.all([getFastAuthSnapshot(), searchParams]);
     if (auth.role === "technician") {
         redirect(auth.linkedEmployeeId ? `/employees/${auth.linkedEmployeeId}` : "/me");
     }
@@ -31,7 +29,6 @@ export default async function EmployeesPage({
     const currentBranch = (params.branch || "").trim();
     const currentQualification = (params.qualification || "").trim();
     const currentSort = (params.sort || "").trim();
-    const currentPersonType = params.type === "partner" ? "partner" : params.type === "all" ? "all" : "employee";
 
     let employees: EmployeeWithQualCount[] = [];
     let mastersData: Tables<"qualification_master">[] = [];
@@ -69,18 +66,17 @@ export default async function EmployeesPage({
                 .from("employees")
                 .select("*")
                 .is("deleted_at", null)
+                .eq("person_type", "partner")
                 .order(sortColumn, { ascending: sortAscending, nullsFirst: false })
                 .range(from, toPlusOne);
-
-            if (currentPersonType !== "all") {
-                employeeQuery = employeeQuery.eq("person_type", currentPersonType);
-            }
 
             if (currentSearch) {
                 employeeQuery = employeeQuery.or([
                     `name.ilike.${searchPattern}`,
                     `name_kana.ilike.${searchPattern}`,
                     `employee_number.ilike.${searchPattern}`,
+                    `partner_company.ilike.${searchPattern}`,
+                    `partner_contact_name.ilike.${searchPattern}`,
                 ].join(","));
             }
 
@@ -105,8 +101,8 @@ export default async function EmployeesPage({
                 };
             });
         }
-    } catch (e) {
-        console.error("Failed to load employees:", e);
+    } catch (error) {
+        console.error("Failed to load partners:", error);
     }
 
     return (
@@ -116,10 +112,11 @@ export default async function EmployeesPage({
             currentSearch={currentSearch}
             currentBranch={currentBranch}
             currentQualification={currentQualification}
-            currentPersonType={currentPersonType}
+            currentPersonType="partner"
             currentSort={currentSort}
             currentPage={page}
             hasNextPage={hasNextPage}
+            mode="partners"
         />
     );
 }

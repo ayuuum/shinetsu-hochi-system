@@ -12,6 +12,7 @@ import {
     validateEmployeeImportValues,
 } from "@/lib/imports/employee-import";
 import { toEmployeeInsert } from "@/lib/validation/employee";
+import { executeDailyAlertJob } from "@/lib/jobs/daily-alert";
 
 type ErrorResult = { success: false; error: string };
 
@@ -383,8 +384,60 @@ export async function runDailyAlertJobAction(): Promise<DailyAlertRunResult> {
         return { success: false, error: auth.error };
     }
 
-    return {
-        success: false,
-        error: "メール通知機能は運用対象外のため無効化されています。期限はダッシュボードで確認してください。",
-    };
+    const supabase = await createSupabaseServer();
+    const { data: run, error: runError } = await supabase
+        .from("job_runs")
+        .insert([{
+            job_key: "daily-alert",
+            job_label: "資格期限通知",
+            trigger_type: "manual",
+            status: "running",
+            triggered_by: auth.user.id,
+            triggered_email: auth.user.email,
+            started_at: new Date().toISOString(),
+        }])
+        .select("id")
+        .single();
+
+    if (runError) {
+        console.error("Failed to create daily alert run:", runError);
+    }
+
+    try {
+        const result = await executeDailyAlertJob(supabase);
+        if (run?.id) {
+            await supabase
+                .from("job_runs")
+                .update({
+                    status: "completed",
+                    total_items: result.totalAlerts,
+                    processed_items: result.emailTargetCount,
+                    finished_at: new Date().toISOString(),
+                })
+                .eq("id", run.id);
+        }
+
+        revalidatePath("/operations-log");
+        return {
+            success: true,
+            runId: run?.id ?? null,
+            totalAlerts: result.totalAlerts,
+            emailTargetCount: result.emailTargetCount,
+            emailSent: result.emailSent,
+        };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "資格期限通知に失敗しました。";
+        if (run?.id) {
+            await supabase
+                .from("job_runs")
+                .update({
+                    status: "failed",
+                    error_message: message,
+                    finished_at: new Date().toISOString(),
+                })
+                .eq("id", run.id);
+        }
+        console.error("Failed to run daily alert job:", error);
+        return { success: false, error: "資格期限通知に失敗しました。" };
+    }
 }

@@ -38,13 +38,15 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q") || "";
     const branch = searchParams.get("branch") || "";
+    const type = searchParams.get("type") || "employee";
 
     let query = supabase
         .from("employees")
         .select("*")
         .is("deleted_at", null);
+    if (type !== "all") query = query.eq("person_type", type === "partner" ? "partner" : "employee");
     if (branch) query = query.eq("branch", branch);
-    if (q) query = query.or(`name.ilike.%${q}%,name_kana.ilike.%${q}%,employee_number.ilike.%${q}%`);
+    if (q) query = query.or(`name.ilike.%${q}%,name_kana.ilike.%${q}%,employee_number.ilike.%${q}%,partner_company.ilike.%${q}%,partner_contact_name.ilike.%${q}%`);
     query = query.order("employee_number", { ascending: true });
 
     const { data: employees, error } = await query;
@@ -54,15 +56,18 @@ export async function GET(request: Request) {
     }
 
     const headers = [
-        "社員番号", "氏名", "フリガナ", "生年月日", "性別",
+        "区分", "社員番号/管理番号", "氏名/表示名", "フリガナ", "会社名", "担当者名", "生年月日", "性別",
         "電話番号", "メール", "住所", "入社日", "退職日",
         "拠点", "雇用形態", "職種", "役職", "血液型",
     ];
 
     const rows = (employees || []).map(emp => [
+        emp.person_type === "partner" ? "協力会社" : "弊社従業員",
         emp.employee_number,
         emp.name,
         emp.name_kana,
+        emp.partner_company || "",
+        emp.partner_contact_name || "",
         emp.birth_date || "",
         emp.gender || "",
         emp.phone_number || "",

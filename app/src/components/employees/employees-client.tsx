@@ -44,21 +44,25 @@ interface EmployeesClientProps {
     currentSearch: string;
     currentBranch: string;
     currentQualification: string;
+    currentPersonType?: "employee" | "partner" | "all";
     currentSort?: string;
     currentPage?: number;
     hasNextPage?: boolean;
+    mode?: "employees" | "partners";
 }
 
 function buildEmployeesHref(pathname: string, {
     search,
     branch,
     qualification,
+    personType,
     sort,
     page,
 }: {
     search: string;
     branch: string;
     qualification: string;
+    personType?: "employee" | "partner" | "all";
     sort: string;
     page: number;
 }) {
@@ -72,6 +76,9 @@ function buildEmployeesHref(pathname: string, {
     }
     if (qualification) {
         params.set("qualification", qualification);
+    }
+    if (personType && personType !== "employee") {
+        params.set("type", personType);
     }
     if (sort) {
         params.set("sort", sort);
@@ -90,18 +97,22 @@ export function EmployeesClient({
     currentSearch,
     currentBranch,
     currentQualification,
+    currentPersonType = "employee",
     currentSort = "",
     currentPage = 1,
     hasNextPage = false,
+    mode = currentPersonType === "partner" ? "partners" : "employees",
 }: EmployeesClientProps) {
     const [search, setSearch] = useState(currentSearch);
     const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
     const [mobileBranch, setMobileBranch] = useState(currentBranch);
     const [mobileQualification, setMobileQualification] = useState(currentQualification);
+    const [mobilePersonType, setMobilePersonType] = useState(currentPersonType);
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
     const pathname = usePathname();
     const { isAdminOrHr } = useAuth();
+    const isPartnerMode = mode === "partners";
     const qualificationOptions = qualMasters.map((master) => ({
         value: master.id,
         label: master.name,
@@ -119,6 +130,7 @@ export function EmployeesClient({
                             search: "",
                             branch: currentBranch,
                             qualification: currentQualification,
+                            personType: currentPersonType,
                             sort: currentSort,
                             page: 1,
                         }), { scroll: false });
@@ -140,6 +152,13 @@ export function EmployeesClient({
                 onRemove: () => updateFilters({ qualification: "", page: 1 }),
             }
             : null,
+        currentPersonType !== "employee"
+            ? {
+                key: "person_type",
+                label: `区分: ${currentPersonType === "partner" ? "協力会社" : "すべて"}`,
+                onRemove: () => updateFilters({ personType: "employee", page: 1 }),
+            }
+            : null,
     ].filter((item): item is NonNullable<typeof item> => item !== null);
 
     useEffect(() => {
@@ -150,7 +169,8 @@ export function EmployeesClient({
         if (isMobileFiltersOpen) return;
         setMobileBranch(currentBranch);
         setMobileQualification(currentQualification);
-    }, [currentBranch, currentQualification, isMobileFiltersOpen]);
+        setMobilePersonType(currentPersonType);
+    }, [currentBranch, currentQualification, currentPersonType, isMobileFiltersOpen]);
 
     useEffect(() => {
         const timer = window.setTimeout(() => {
@@ -161,6 +181,7 @@ export function EmployeesClient({
                     search,
                     branch: currentBranch,
                     qualification: currentQualification,
+                    personType: currentPersonType,
                     sort: currentSort,
                     page: 1,
                 }), { scroll: false });
@@ -168,14 +189,15 @@ export function EmployeesClient({
         }, 250);
 
         return () => window.clearTimeout(timer);
-    }, [currentBranch, currentQualification, currentSearch, pathname, router, search]);
+    }, [currentBranch, currentQualification, currentPersonType, currentSearch, currentSort, pathname, router, search]);
 
-    const updateFilters = (updates: Partial<{ branch: string; qualification: string; sort: string; page: number }>) => {
+    const updateFilters = (updates: Partial<{ branch: string; qualification: string; personType: "employee" | "partner" | "all"; sort: string; page: number }>) => {
         startTransition(() => {
             router.replace(buildEmployeesHref(pathname, {
                 search,
                 branch: updates.branch ?? currentBranch,
                 qualification: updates.qualification ?? currentQualification,
+                personType: updates.personType ?? currentPersonType,
                 sort: updates.sort ?? currentSort,
                 page: updates.page ?? 1,
             }), { scroll: false });
@@ -189,6 +211,7 @@ export function EmployeesClient({
                 search: "",
                 branch: "",
                 qualification: "",
+                personType: isPartnerMode ? "partner" : "employee",
                 sort: currentSort,
                 page: 1,
             }), { scroll: false });
@@ -199,6 +222,7 @@ export function EmployeesClient({
         if (open) {
             setMobileBranch(currentBranch);
             setMobileQualification(currentQualification);
+            setMobilePersonType(currentPersonType);
         }
         setIsMobileFiltersOpen(open);
     };
@@ -210,6 +234,7 @@ export function EmployeesClient({
                 search,
                 branch: mobileBranch,
                 qualification: mobileQualification,
+                personType: mobilePersonType,
                 sort: currentSort,
                 page: 1,
             }), { scroll: false });
@@ -219,21 +244,22 @@ export function EmployeesClient({
     return (
         <div className="space-y-6 animate-in fade-in duration-200">
             <PageHeader
-                title="社員台帳"
-                description="全従業員の基本情報、所属、資格情報を一元管理します。"
+                title={isPartnerMode ? "協力会社台帳" : "社員台帳"}
+                description={isPartnerMode ? "協力会社の会社情報、担当者、資格情報を管理します。" : "全従業員の基本情報、所属、資格情報を一元管理します。"}
                 actions={(
                     <>
                         <Button variant="outline" onClick={() => {
                             const params = new URLSearchParams();
                             if (search.trim()) params.set("q", search.trim());
                             if (currentBranch) params.set("branch", currentBranch);
+                            if (currentPersonType !== "employee") params.set("type", currentPersonType);
                             const qs = params.toString();
                             window.open(qs ? `/api/export/employees?${qs}` : "/api/export/employees", "_blank");
                         }}>
                             <Download className="mr-2 h-4 w-4" />
                             CSV出力
                         </Button>
-                        {isAdminOrHr && <AddEmployeeModal />}
+                        {isAdminOrHr && <AddEmployeeModal personType={isPartnerMode ? "partner" : "employee"} />}
                     </>
                 )}
             />
@@ -259,9 +285,9 @@ export function EmployeesClient({
                     )}
                 </div>
                 <MobileFiltersSheet
-                    title="社員を絞り込む"
-                    description="拠点や資格で対象者を絞り込みます。"
-                    summary="拠点・資格"
+                    title={`${isPartnerMode ? "協力会社" : "社員"}を絞り込む`}
+                    description="区分・拠点・資格で対象者を絞り込みます。"
+                    summary="区分・拠点・資格"
                     activeCount={activeFilters.length}
                     onClearAll={() => {
                         clearFilters();
@@ -275,6 +301,25 @@ export function EmployeesClient({
                         </Button>
                     )}
                 >
+                    {!isPartnerMode ? (
+                    <div className="space-y-2">
+                        <p className="text-sm font-medium">区分</p>
+                        <Select
+                            value={mobilePersonType}
+                            onValueChange={(value) => setMobilePersonType((value || "employee") as "employee" | "partner" | "all")}
+                        >
+                            <SelectTrigger className="w-full">
+                                <Users className="mr-2 h-4 w-4 text-muted-foreground" />
+                                <SelectValue placeholder="区分を選択" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="employee">弊社従業員</SelectItem>
+                                <SelectItem value="partner">協力会社</SelectItem>
+                                <SelectItem value="all">すべて</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    ) : null}
                     <div className="space-y-2">
                         <p className="text-sm font-medium">拠点</p>
                         <Select
@@ -338,6 +383,20 @@ export function EmployeesClient({
                     )}
                 </div>
                 <Select
+                    value={currentPersonType}
+                    onValueChange={(value) => updateFilters({ personType: (value || "employee") as "employee" | "partner" | "all", page: 1 })}
+                >
+                    <SelectTrigger className="w-full md:w-[160px]">
+                        <Users className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <SelectValue placeholder="区分" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="employee">弊社従業員</SelectItem>
+                        <SelectItem value="partner">協力会社</SelectItem>
+                        <SelectItem value="all">すべて</SelectItem>
+                    </SelectContent>
+                </Select>
+                <Select
                     value={currentBranch || undefined}
                     onValueChange={(value) => updateFilters({ branch: value && value !== "all" ? value : "", page: 1 })}
                 >
@@ -395,8 +454,8 @@ export function EmployeesClient({
                         <CardContent className="p-0">
                             <EmptyState
                                 icon={Users}
-                                title={activeFilters.length > 0 ? "条件に一致する社員が見つかりません" : "社員データがまだ登録されていません"}
-                                description={activeFilters.length > 0 ? "検索条件や絞り込みを変更してください" : isAdminOrHr ? "「社員を追加」から登録できます" : "管理者に社員登録を依頼してください"}
+                                title={activeFilters.length > 0 ? "条件に一致する対象者が見つかりません" : `${isPartnerMode ? "協力会社" : "社員"}データがまだ登録されていません`}
+                                description={activeFilters.length > 0 ? "検索条件や絞り込みを変更してください" : isAdminOrHr ? "登録ボタンから追加できます" : "管理者に登録を依頼してください"}
                                 action={activeFilters.length > 0 ? { label: "条件を解除", onClick: clearFilters, variant: "outline" } : undefined}
                             />
                         </CardContent>
@@ -414,7 +473,7 @@ export function EmployeesClient({
                                             <p className="text-[11px] font-semibold tracking-[0.1em] text-muted-foreground/70 uppercase">
                                                 {emp.employee_number}
                                             </p>
-                                            <p className="mt-1.5 truncate text-base font-semibold text-foreground">{emp.name}</p>
+                                            <p className="mt-1.5 truncate text-base font-semibold text-foreground">{emp.person_type === "partner" ? emp.partner_company || emp.name : emp.name}</p>
                                             <p className="truncate text-sm text-muted-foreground">{emp.name_kana}</p>
                                         </div>
                                         {emp.branch ? <Badge variant="outline" className="text-[11px] font-medium">{emp.branch}</Badge> : null}
@@ -422,7 +481,7 @@ export function EmployeesClient({
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1">
                                             <p className="text-xs text-muted-foreground/70">役職</p>
-                                            <p className="text-sm font-medium text-foreground">{emp.job_title || "-"}</p>
+                                            <p className="text-sm font-medium text-foreground">{emp.person_type === "partner" ? emp.partner_contact_name || "-" : emp.job_title || "-"}</p>
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-xs text-muted-foreground/70">入社日</p>
@@ -448,12 +507,12 @@ export function EmployeesClient({
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-muted/30 hover:bg-muted/30">
-                            <TableHead className="sticky left-0 z-20 w-[120px] bg-muted/30 shadow-[inset_-1px_0_0_hsl(var(--border)/0.3)]">社員番号</TableHead>
-                            <TableHead>氏名</TableHead>
+                            <TableHead className="sticky left-0 z-20 w-[120px] bg-muted/30 shadow-[inset_-1px_0_0_hsl(var(--border)/0.3)]">{isPartnerMode ? "管理番号" : "社員番号"}</TableHead>
+                            <TableHead>{isPartnerMode ? "会社名 / 表示名" : "氏名"}</TableHead>
                             <TableHead>フリガナ</TableHead>
                             <TableHead>拠点</TableHead>
-                            <TableHead>役職</TableHead>
-                            <TableHead>入社日</TableHead>
+                            <TableHead>{isPartnerMode ? "担当者" : "役職"}</TableHead>
+                            <TableHead>{isPartnerMode ? "取引開始日" : "入社日"}</TableHead>
                             <TableHead className="text-center">保有資格</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -463,8 +522,8 @@ export function EmployeesClient({
                                 <TableCell colSpan={7}>
                                     <EmptyState
                                         icon={Users}
-                                        title={activeFilters.length > 0 ? "条件に一致する社員が見つかりません" : "社員データがまだ登録されていません"}
-                                        description={activeFilters.length > 0 ? "検索条件や絞り込みを変更してください" : isAdminOrHr ? "「社員を追加」から登録できます" : "管理者に社員登録を依頼してください"}
+                                        title={activeFilters.length > 0 ? "条件に一致する対象者が見つかりません" : `${isPartnerMode ? "協力会社" : "社員"}データがまだ登録されていません`}
+                                        description={activeFilters.length > 0 ? "検索条件や絞り込みを変更してください" : isAdminOrHr ? "登録ボタンから追加できます" : "管理者に登録を依頼してください"}
                                         action={activeFilters.length > 0 ? { label: "条件を解除", onClick: clearFilters, variant: "outline" } : undefined}
                                     />
                                 </TableCell>
@@ -479,8 +538,9 @@ export function EmployeesClient({
                                     </TableCell>
                                     <TableCell className="font-semibold text-foreground">
                                         <TableCellLink href={`/employees/${emp.id}`} className="font-semibold hover:text-primary transition-colors">
-                                            {emp.name}
+                                            {emp.person_type === "partner" ? emp.partner_company || emp.name : emp.name}
                                         </TableCellLink>
+                                        {emp.person_type === "partner" ? <Badge variant="outline" className="ml-2">協力会社</Badge> : null}
                                     </TableCell>
                                     <TableCell className="text-muted-foreground">
                                         <TableCellLink href={`/employees/${emp.id}`} className="text-muted-foreground hover:text-foreground transition-colors">
@@ -494,7 +554,7 @@ export function EmployeesClient({
                                     </TableCell>
                                     <TableCell className="text-foreground/80">
                                         <TableCellLink href={`/employees/${emp.id}`} className="hover:text-foreground transition-colors">
-                                            {emp.job_title || "-"}
+                                            {emp.person_type === "partner" ? emp.partner_contact_name || "-" : emp.job_title || "-"}
                                         </TableCellLink>
                                     </TableCell>
                                     <TableCell className="tabular-nums text-foreground/80">
@@ -532,6 +592,7 @@ export function EmployeesClient({
                             search: currentSearch,
                             branch: currentBranch,
                             qualification: currentQualification,
+                            personType: currentPersonType,
                             sort: currentSort,
                             page: currentPage - 1,
                         })} />}
@@ -550,6 +611,7 @@ export function EmployeesClient({
                             search: currentSearch,
                             branch: currentBranch,
                             qualification: currentQualification,
+                            personType: currentPersonType,
                             sort: currentSort,
                             page: currentPage + 1,
                         })} />}
