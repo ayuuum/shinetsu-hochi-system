@@ -31,6 +31,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePickerField } from "@/components/shared/date-picker-field";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Plus, Award, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -45,6 +46,8 @@ const formSchema = z.object({
     qualification_id: z.string().min(1, "資格を選択してください"),
     acquired_date: z.string().min(1, "取得日は必須です"),
     expiry_date: z.string().optional(),
+    certificate_number: z.string().optional(),
+    issuing_authority: z.string().optional(),
     is_initial: z.boolean(),
     acquisition_type: z.enum(ACQUISITION_TYPES).optional(),
 });
@@ -70,6 +73,8 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
             qualification_id: "",
             acquired_date: "",
             expiry_date: "",
+            certificate_number: "",
+            issuing_authority: "",
             is_initial: false,
             acquisition_type: undefined,
         },
@@ -153,6 +158,9 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
             }
 
             const primaryPath = uploadedPaths[0] ?? null;
+            const selectedQualification = masters.find((master) => master.id === values.qualification_id);
+            const isFireDefenseQualification = !!selectedQualification?.name?.includes("消防設備士");
+            const normalizedCertificateNumber = values.certificate_number?.trim() || null;
 
             const { data: insertedQualification, error } = await supabase
                 .from("employee_qualifications")
@@ -163,6 +171,8 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                         acquired_date: values.acquired_date,
                         expiry_date: values.expiry_date || null,
                         acquisition_type: values.acquisition_type ?? null,
+                        certificate_number: normalizedCertificateNumber,
+                        issuing_authority: values.issuing_authority?.trim() || null,
                         certificate_url: primaryPath,
                     },
                 ])
@@ -192,6 +202,28 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                 }
             }
 
+            if (primaryPath && isFireDefenseQualification && normalizedCertificateNumber) {
+                const { data: sameCertRows } = await supabase
+                    .from("employee_qualifications")
+                    .select("id, qualification_id")
+                    .eq("employee_id", employeeId)
+                    .eq("certificate_number", normalizedCertificateNumber)
+                    .neq("id", insertedQualification.id)
+                    .is("deleted_at", null);
+
+                const sameFireDefenseRows = (sameCertRows || []).filter((row) => {
+                    const master = masters.find((m) => m.id === row.qualification_id);
+                    return !!master?.name?.includes("消防設備士");
+                });
+
+                if (sameFireDefenseRows.length > 0) {
+                    await supabase
+                        .from("employee_qualifications")
+                        .update({ certificate_url: primaryPath, issuing_authority: values.issuing_authority?.trim() || null })
+                        .in("id", sameFireDefenseRows.map((row) => row.id));
+                }
+            }
+
             toast.success("資格を登録しました");
 
             if (continuous) {
@@ -199,6 +231,8 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                     qualification_id: "",
                     acquired_date: values.acquired_date,
                     expiry_date: "",
+                    certificate_number: "",
+                    issuing_authority: "",
                     is_initial: false,
                     acquisition_type: undefined,
                 });
@@ -386,6 +420,35 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                                 </FormItem>
                             )}
                         />
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="certificate_number"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>証明書番号（任意）</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="例: 第12345号" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="issuing_authority"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>交付機関（任意）</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="例: 長野県知事" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
 
                         <div>
                             <label className="text-sm font-medium">証書画像（複数選択可・任意）</label>

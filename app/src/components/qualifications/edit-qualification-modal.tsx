@@ -165,6 +165,39 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
                 await supabase.storage.from("certificates").remove([previousPath]);
             }
 
+            const isFireDefenseQualification = qualification.qualification_master?.name?.includes("消防設備士");
+            const normalizedCertificateNumber = values.certificate_number?.trim() || null;
+            if (nextCertificateUrl && isFireDefenseQualification && employeeId && normalizedCertificateNumber) {
+                const { data: sameCertRows } = await supabase
+                    .from("employee_qualifications")
+                    .select("id, qualification_id")
+                    .eq("employee_id", employeeId)
+                    .eq("certificate_number", normalizedCertificateNumber)
+                    .neq("id", qualification.id)
+                    .is("deleted_at", null);
+
+                if (sameCertRows && sameCertRows.length > 0) {
+                    const qualificationIds = [...new Set(sameCertRows.map((row) => row.qualification_id).filter(Boolean))];
+                    const { data: masters } = await supabase
+                        .from("qualification_master")
+                        .select("id, name")
+                        .in("id", qualificationIds as string[]);
+                    const fireDefenseMasterIds = new Set(
+                        (masters || []).filter((m) => m.name?.includes("消防設備士")).map((m) => m.id)
+                    );
+                    const syncIds = sameCertRows
+                        .filter((row) => row.qualification_id && fireDefenseMasterIds.has(row.qualification_id))
+                        .map((row) => row.id);
+
+                    if (syncIds.length > 0) {
+                        await supabase
+                            .from("employee_qualifications")
+                            .update({ certificate_url: nextCertificateUrl, issuing_authority: values.issuing_authority?.trim() || null })
+                            .in("id", syncIds);
+                    }
+                }
+            }
+
             // Upload additional images into certificate_images
             if (additionalFiles.length > 0 && employeeId) {
                 const uploadedExtras: string[] = [];
