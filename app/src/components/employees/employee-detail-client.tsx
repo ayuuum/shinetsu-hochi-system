@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Tables } from "@/types/supabase";
@@ -132,6 +132,7 @@ export function EmployeeDetailClient({
 }) {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<EmployeeDetailTab>(initialTab);
+    const [isTabPending, startTabTransition] = useTransition();
     const [editOpen, setEditOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleting, setDeleting] = useState(false);
@@ -146,6 +147,10 @@ export function EmployeeDetailClient({
     const { isAdmin, isAdminOrHr, role, linkedEmployeeId } = useAuth();
     const isTechnicianSelf = role === "technician" && linkedEmployeeId === employee.id;
     const isPartner = employee.person_type === "partner";
+
+    useEffect(() => {
+        setActiveTab(initialTab);
+    }, [initialTab]);
 
     const today = new Date();
     const housingAllowanceEnd = employee.hire_date
@@ -175,6 +180,9 @@ export function EmployeeDetailClient({
 
     const handleTabChange = (tab: EmployeeDetailTab) => {
         setActiveTab(tab);
+        startTabTransition(() => {
+            router.push(`/employees/${employee.id}?tab=${tab}`, { scroll: false });
+        });
     };
 
     const handleDeleteLifeInsurance = async (insuranceId: string) => {
@@ -406,6 +414,13 @@ export function EmployeeDetailClient({
                         )}
                     </TabsList>
                 </div>
+
+                {isTabPending ? (
+                    <div className="mt-4 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-primary">
+                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+                        タブ内容を読み込んでいます...
+                    </div>
+                ) : null}
 
                 <TabsContent value="basic" className="mt-6 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -108,6 +108,7 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
 
         const previousPath = qualification.certificate_url;
         let uploadedPath: string | null = null;
+        let syncedFireDefenseCount = 0;
 
         try {
             let nextCertificateUrl: string | null | undefined = undefined;
@@ -194,6 +195,7 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
                             .from("employee_qualifications")
                             .update({ certificate_url: nextCertificateUrl, issuing_authority: values.issuing_authority?.trim() || null })
                             .in("id", syncIds);
+                        syncedFireDefenseCount = syncIds.length;
                     }
                 }
             }
@@ -232,7 +234,11 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
                 }
             }
 
-            toast.success("資格情報を更新しました");
+            toast.success(
+                syncedFireDefenseCount > 0
+                    ? `資格情報を更新しました。同じ免状番号の消防設備士資格 ${syncedFireDefenseCount}件にも証書を反映しました`
+                    : "資格情報を更新しました"
+            );
             onOpenChange(false);
             router.refresh();
         } finally {
@@ -332,9 +338,14 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
                         )} />
 
                         <div className="space-y-3 rounded-lg border border-border/60 p-4">
-                            <p className="text-sm font-medium">証書画像（任意）</p>
-                            <p className="text-xs text-muted-foreground">
-                                スキャンした免状・証書を保存できます。差し替える場合は新しい画像を選択してください。
+                            <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-sm font-medium">証書画像（任意）</p>
+                                {qualification.certificate_url && !removeCertificate ? (
+                                    <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">登録済み</span>
+                                ) : null}
+                            </div>
+                            <p className="text-xs leading-relaxed text-muted-foreground">
+                                スキャンした免状・証書を保存できます。消防設備士で同じ証明書番号を入力した場合、差し替えた証書は同じ社員の同一免状資格にも反映されます。
                             </p>
                             {qualification.certificate_url && !removeCertificate && certificateFiles.length === 0 ? (
                                 <p className="text-xs text-muted-foreground">現在、証書画像が登録されています。</p>
@@ -343,6 +354,9 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
                                 setCertificateFiles(files.slice(0, 1));
                                 if (files.length > 0) setRemoveCertificate(false);
                             }} multiple={false} />
+                            {certificateFiles.length > 0 ? (
+                                <p className="text-xs font-medium text-primary">差し替え用の証書を選択中</p>
+                            ) : null}
                             {qualification.certificate_url && !removeCertificate && certificateFiles.length === 0 ? (
                                 <Button type="button" variant="ghost" size="sm" onClick={() => setRemoveCertificate(true)}>
                                     登録画像を削除

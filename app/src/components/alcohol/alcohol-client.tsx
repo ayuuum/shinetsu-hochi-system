@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
     Table,
@@ -22,7 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Pencil, Trash2, Download, ShieldAlert, UserX, ClipboardList } from "lucide-react";
+import { Pencil, Trash2, Download, ShieldAlert, UserX, ClipboardList, Loader2 } from "lucide-react";
 import { AddAlcoholCheckModal } from "./add-alcohol-check-modal";
 import { EditAlcoholCheckModal } from "./edit-alcohol-check-modal";
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
@@ -39,6 +39,7 @@ import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useIntentPrefetch } from "@/hooks/use-intent-prefetch";
 
 export type AlcoholCheckRow = {
     id: string;
@@ -132,9 +133,11 @@ export function AlcoholClient({
     const [mobileLocation, setMobileLocation] = useState(currentLocation);
     const [mobileStatus, setMobileStatus] = useState(currentStatus);
     const [mobileEmployee, setMobileEmployee] = useState(currentEmployee);
+    const [isPending, startTransition] = useTransition();
     const router = useRouter();
     const pathname = usePathname();
     const { isAdminOrHr, role, linkedEmployeeId } = useAuth();
+    const { getIntentPrefetchProps } = useIntentPrefetch();
     const showActions = isAdminOrHr;
     const canRecordAlcohol = isAdminOrHr || (role === "technician" && !!linkedEmployeeId);
     const columnCount = showActions ? 9 : 8;
@@ -184,13 +187,15 @@ export function AlcoholClient({
     };
 
     const updateFilters = (updates: Partial<{ date: string; location: string; status: string; employee: string; page: number }>) => {
-        router.replace(buildAlcoholChecksHref(pathname, {
-            date: updates.date ?? currentDate,
-            location: updates.location ?? currentLocation,
-            status: updates.status ?? currentStatus,
-            employee: updates.employee ?? currentEmployee,
-            page: updates.page ?? 1,
-        }), { scroll: false });
+        startTransition(() => {
+            router.replace(buildAlcoholChecksHref(pathname, {
+                date: updates.date ?? currentDate,
+                location: updates.location ?? currentLocation,
+                status: updates.status ?? currentStatus,
+                employee: updates.employee ?? currentEmployee,
+                page: updates.page ?? 1,
+            }), { scroll: false });
+        });
     };
 
     const handleDelete = async () => {
@@ -219,13 +224,15 @@ export function AlcoholClient({
     };
 
     const clearFilters = () => {
-        router.replace(buildAlcoholChecksHref(pathname, {
-            date: todayInTokyo,
-            location: "",
-            status: "",
-            employee: "",
-            page: 1,
-        }), { scroll: false });
+        startTransition(() => {
+            router.replace(buildAlcoholChecksHref(pathname, {
+                date: todayInTokyo,
+                location: "",
+                status: "",
+                employee: "",
+                page: 1,
+            }), { scroll: false });
+        });
     };
 
     const handleMobileFiltersOpenChange = (open: boolean) => {
@@ -316,7 +323,9 @@ export function AlcoholClient({
                                 onChange={(e) => {
                                     const params = new URLSearchParams(window.location.search);
                                     params.set("month", e.target.value);
-                                    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+                                    startTransition(() => {
+                                        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+                                    });
                                 }}
                                 className="h-11"
                             />
@@ -487,7 +496,14 @@ export function AlcoholClient({
 
             <ActiveFilters items={activeFilters} onClearAll={clearFilters} />
 
-            <div className="space-y-3 md:hidden">
+            {isPending ? (
+                <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-primary">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    表示条件を更新しています...
+                </div>
+            ) : null}
+
+            <div className="space-y-3 md:hidden" aria-busy={isPending}>
                 {initialChecks.length === 0 ? (
                     <Card size="sm" className="border-border/60">
                         <CardContent className="p-0">
@@ -500,7 +516,11 @@ export function AlcoholClient({
                         </CardContent>
                     </Card>
                 ) : (
-                    initialChecks.map((check) => (
+                    initialChecks.map((check) => {
+                        const employeeHref = check.employee?.id ? `/employees/${check.employee.id}?tab=basic` : "";
+                        const employeePrefetchProps = employeeHref ? getIntentPrefetchProps(employeeHref) : {};
+
+                        return (
                         <Card
                             key={check.id}
                             size="sm"
@@ -510,7 +530,7 @@ export function AlcoholClient({
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0">
                                         {check.employee?.id ? (
-                                            <TableCellLink href={`/employees/${check.employee.id}`} className="truncate text-base font-semibold hover:underline">
+                                            <TableCellLink href={employeeHref} className="truncate text-base font-semibold hover:underline" {...employeePrefetchProps}>
                                                 {check.employee.name}
                                             </TableCellLink>
                                         ) : (
@@ -551,11 +571,14 @@ export function AlcoholClient({
                                     </div>
                                     <div className="space-y-1">
                                         <p className="text-sm text-muted-foreground">確認者</p>
-                                        {check.checker?.id ? (
-                                            <TableCellLink href={`/employees/${check.checker.id}`} className="font-medium hover:underline">
+                                        {check.checker?.id ? (() => {
+                                            const checkerHref = `/employees/${check.checker.id}?tab=basic`;
+                                            return (
+                                            <TableCellLink href={checkerHref} className="font-medium hover:underline" {...getIntentPrefetchProps(checkerHref)}>
                                                 {check.checker.name}
                                             </TableCellLink>
-                                        ) : (
+                                            );
+                                        })() : (
                                             <p className="font-medium">{check.checker?.name || "-"}</p>
                                         )}
                                     </div>
@@ -571,11 +594,12 @@ export function AlcoholClient({
                                 ) : null}
                             </CardContent>
                         </Card>
-                    ))
+                    );
+                    })
                 )}
             </div>
 
-            <div className="hidden overflow-x-auto rounded-[24px] border border-border/60 bg-card shadow-[0_1px_2px_rgba(38,42,46,0.04),0_12px_28px_rgba(38,42,46,0.05)] md:block">
+            <div className="hidden overflow-x-auto rounded-[24px] border border-border/60 bg-card shadow-[0_1px_2px_rgba(38,42,46,0.04),0_12px_28px_rgba(38,42,46,0.05)] md:block" aria-busy={isPending}>
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-muted/50">
@@ -603,11 +627,17 @@ export function AlcoholClient({
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            initialChecks.map((check) => (
+                            initialChecks.map((check) => {
+                                const employeeHref = check.employee?.id ? `/employees/${check.employee.id}?tab=basic` : "";
+                                const employeePrefetchProps = employeeHref ? getIntentPrefetchProps(employeeHref) : {};
+                                const checkerHref = check.checker?.id ? `/employees/${check.checker.id}?tab=basic` : "";
+                                const checkerPrefetchProps = checkerHref ? getIntentPrefetchProps(checkerHref) : {};
+
+                                return (
                                 <TableRow key={check.id} className={check.is_abnormal ? "group bg-blue-600/5 hover:bg-blue-600/10" : "group hover:bg-muted/30 transition-colors"}>
                                     <TableCell className={`sticky left-0 z-10 font-medium shadow-[inset_-1px_0_0_hsl(var(--border))] ${check.is_abnormal ? "bg-background group-hover:bg-blue-600/10" : "bg-card group-hover:bg-muted/30"}`}>
                                         {check.employee?.id ? (
-                                            <TableCellLink href={`/employees/${check.employee.id}`} className="font-medium hover:underline">
+                                            <TableCellLink href={employeeHref} className="font-medium hover:underline" {...employeePrefetchProps}>
                                                 {check.employee.name}
                                             </TableCellLink>
                                         ) : (
@@ -622,7 +652,7 @@ export function AlcoholClient({
                                     </TableCell>
                                     <TableCell>
                                         {check.checker?.id ? (
-                                            <TableCellLink href={`/employees/${check.checker.id}`} className="hover:underline">
+                                            <TableCellLink href={checkerHref} className="hover:underline" {...checkerPrefetchProps}>
                                                 {check.checker.name}
                                             </TableCellLink>
                                         ) : (
@@ -655,7 +685,8 @@ export function AlcoholClient({
                                         </TableCell>
                                     )}
                                 </TableRow>
-                            ))
+                            );
+                            })
                         )}
                     </TableBody>
                 </Table>

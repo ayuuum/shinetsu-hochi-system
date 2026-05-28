@@ -23,7 +23,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Pencil, Search, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Search, Trash2 } from "lucide-react";
 import { AddHealthCheckModal } from "./add-health-check-modal";
 import { EditHealthCheckModal } from "./edit-health-check-modal";
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
@@ -42,6 +42,7 @@ import {
     normalizeHealthCheckListResultValue,
 } from "@/lib/display-labels";
 import { PageHeader } from "@/components/shared/page-header";
+import { useIntentPrefetch } from "@/hooks/use-intent-prefetch";
 
 export type HealthCheckWithEmployee = Tables<"health_checks"> & {
     employees: { id: string; name: string; branch: string | null } | null;
@@ -107,6 +108,7 @@ export function HealthChecksClient({
     const router = useRouter();
     const pathname = usePathname();
     const { isAdminOrHr } = useAuth();
+    const { getIntentPrefetchProps } = useIntentPrefetch();
     const showActions = isAdminOrHr;
     const columnCount = showActions ? 8 : 7;
     const activeFilters = [
@@ -222,6 +224,13 @@ export function HealthChecksClient({
                 actions={isAdminOrHr ? <AddHealthCheckModal employees={employees} /> : undefined}
             />
 
+            {isPending ? (
+                <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-primary">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    表示条件を更新しています...
+                </div>
+            ) : null}
+
             <div className="space-y-3 md:hidden">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -336,13 +345,17 @@ export function HealthChecksClient({
                         </CardContent>
                     </Card>
                 ) : (
-                    initialChecks.map((check) => (
+                    initialChecks.map((check) => {
+                        const employeeHref = check.employees?.id ? `/employees/${check.employees.id}?tab=basic` : "";
+                        const employeePrefetchProps = employeeHref ? getIntentPrefetchProps(employeeHref) : {};
+
+                        return (
                         <Card key={check.id} size="sm" className="border-border/60">
                             <CardContent className="space-y-3">
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0">
                                         {check.employees?.id ? (
-                                            <TableCellLink href={`/employees/${check.employees.id}`} className="truncate text-base font-semibold hover:underline">
+                                            <TableCellLink href={employeeHref} className="truncate text-base font-semibold hover:underline" {...employeePrefetchProps}>
                                                 {check.employees.name}
                                             </TableCellLink>
                                         ) : (
@@ -399,7 +412,8 @@ export function HealthChecksClient({
                                 </div>
                             </CardContent>
                         </Card>
-                    ))
+                    );
+                    })
                 )}
             </div>
 
@@ -425,11 +439,15 @@ export function HealthChecksClient({
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            initialChecks.map((check) => (
+                            initialChecks.map((check) => {
+                                const employeeHref = check.employees?.id ? `/employees/${check.employees.id}?tab=basic` : "";
+                                const employeePrefetchProps = employeeHref ? getIntentPrefetchProps(employeeHref) : {};
+
+                                return (
                                 <TableRow key={check.id} className="hover:bg-transparent">
                                     <TableCell className="sticky left-0 z-10 bg-card font-medium shadow-[inset_-1px_0_0_hsl(var(--border))]">
                                         {check.employees?.id ? (
-                                            <TableCellLink href={`/employees/${check.employees.id}`} className="font-medium hover:underline">
+                                            <TableCellLink href={employeeHref} className="font-medium hover:underline" {...employeePrefetchProps}>
                                                 {check.employees.name}
                                             </TableCellLink>
                                         ) : (
@@ -469,7 +487,8 @@ export function HealthChecksClient({
                                         </TableCell>
                                     )}
                                 </TableRow>
-                            ))
+                            );
+                            })
                         )}
                     </TableBody>
                 </Table>

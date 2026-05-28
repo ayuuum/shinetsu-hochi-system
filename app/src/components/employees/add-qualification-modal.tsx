@@ -222,6 +222,10 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                         .update({ certificate_url: primaryPath, issuing_authority: values.issuing_authority?.trim() || null })
                         .in("id", sameFireDefenseRows.map((row) => row.id));
                 }
+
+                if (sameFireDefenseRows.length > 0) {
+                    toast.success(`同じ免状番号の消防設備士資格 ${sameFireDefenseRows.length}件にも証書を反映しました`);
+                }
             }
 
             toast.success("資格を登録しました");
@@ -452,9 +456,17 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
 
                         <div>
                             <label className="text-sm font-medium">証書画像（複数選択可・任意）</label>
+                            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                                消防設備士で同じ証明書番号を入力した場合、登録した証書は同じ社員の同一免状資格にも反映されます。
+                            </p>
                             <div className="mt-1.5">
                                 <CertificateFilePicker files={certificateFiles} onFilesChange={setCertificateFiles} />
                             </div>
+                            {certificateFiles.length > 0 ? (
+                                <p className="mt-2 text-xs font-medium text-primary">
+                                    {certificateFiles.length}件の証書を選択中
+                                </p>
+                            ) : null}
                         </div>
 
                         <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">

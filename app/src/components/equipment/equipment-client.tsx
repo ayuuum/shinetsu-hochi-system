@@ -15,7 +15,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Package, Pencil, Search, Trash2 } from "lucide-react";
+import { Loader2, Package, Pencil, Search, Trash2 } from "lucide-react";
 import { AddEquipmentModal } from "@/components/equipment/add-equipment-modal";
 import { EditEquipmentModal } from "@/components/equipment/edit-equipment-modal";
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { deleteEquipmentAction } from "@/app/actions/admin-record-actions";
 import { ActiveFilters } from "@/components/shared/active-filters";
 import { PageHeader } from "@/components/shared/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export type EquipmentRow = Tables<"equipment_items">;
 
@@ -136,13 +137,25 @@ export function EquipmentClient({
                 />
             </div>
 
+            {isPending ? (
+                <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-primary">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    表示条件を更新しています...
+                </div>
+            ) : null}
+
             <ActiveFilters items={activeFilters} onClearAll={clearFilters} />
 
             <div className="space-y-3 md:hidden" aria-busy={isPending}>
                 {initialItems.length === 0 ? (
                     <Card size="sm" className="border-border/60">
-                        <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                            {currentSearch ? "該当する備品がありません。" : "備品データがありません。"}
+                        <CardContent className="p-0">
+                            <EmptyState
+                                icon={Package}
+                                title={currentSearch ? "条件に一致する備品がありません" : "備品データがまだ登録されていません"}
+                                description={currentSearch ? "検索条件を変更してください" : isAdminOrHr ? "「備品を追加」から登録できます" : "登録は管理者または人事権限が必要です"}
+                                action={currentSearch ? { label: "条件を解除", onClick: clearFilters, variant: "outline" } : undefined}
+                            />
                         </CardContent>
                     </Card>
                 ) : (
@@ -220,8 +233,13 @@ export function EquipmentClient({
                     <TableBody>
                         {initialItems.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={columnCount} className="h-24 text-center text-muted-foreground">
-                                    {currentSearch ? "該当する備品がありません。" : "備品データがありません。"}
+                                <TableCell colSpan={columnCount}>
+                                    <EmptyState
+                                        icon={Package}
+                                        title={currentSearch ? "条件に一致する備品がありません" : "備品データがまだ登録されていません"}
+                                        description={currentSearch ? "検索条件を変更してください" : isAdminOrHr ? "「備品を追加」から登録できます" : "登録は管理者または人事権限が必要です"}
+                                        action={currentSearch ? { label: "条件を解除", onClick: clearFilters, variant: "outline" } : undefined}
+                                    />
                                 </TableCell>
                             </TableRow>
                         ) : (

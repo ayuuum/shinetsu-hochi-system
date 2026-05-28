@@ -1,14 +1,22 @@
 import type { EmployeeDetailTab } from "@/components/employees/employee-detail-client";
 
 export function getEmployeeDetailSelect(tab: EmployeeDetailTab) {
-    void tab;
-    return `
-        *,
-        employee_qualifications(*, qualification_master(*)),
-        employee_family(*),
-        employee_life_insurances(*),
-        employee_damage_insurances(*)
-    `;
+    const relations: string[] = [];
+
+    if (tab === "qualifications") {
+        relations.push("employee_qualifications(*, qualification_master(*))");
+    }
+
+    if (tab === "family") {
+        relations.push("employee_family(*)");
+    }
+
+    if (tab === "insurance") {
+        relations.push("employee_life_insurances(*)");
+        relations.push("employee_damage_insurances(*)");
+    }
+
+    return ["*", ...relations].join(",");
 }
 
 export function shouldLoadEmployeeItAccounts(tab: EmployeeDetailTab, canManageItAccounts: boolean) {

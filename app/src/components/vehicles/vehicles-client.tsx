@@ -39,6 +39,7 @@ import { deleteVehicleAction } from "@/app/actions/admin-record-actions";
 import { formatDisplayDate } from "@/lib/date";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { useIntentPrefetch } from "@/hooks/use-intent-prefetch";
 
 export type VehicleWithUser = Tables<"vehicles"> & {
     employees?: { id: string; name: string } | null;
@@ -123,6 +124,7 @@ export function VehiclesClient({
     const router = useRouter();
     const pathname = usePathname();
     const { isAdminOrHr } = useAuth();
+    const { getIntentPrefetchProps } = useIntentPrefetch();
     const showActions = isAdminOrHr;
     const columnCount = showActions ? 8 : 7;
 
@@ -270,6 +272,8 @@ export function VehiclesClient({
                 ) : (
                     initialVehicles.map((vehicle) => {
                         const status = getWorstStatus(vehicle);
+                        const employeeHref = vehicle.employees?.id ? `/employees/${vehicle.employees.id}?tab=basic` : "";
+                        const employeePrefetchProps = employeeHref ? getIntentPrefetchProps(employeeHref) : {};
 
                         return (
                             <Card key={vehicle.id} size="sm" className="border-border/60">
@@ -283,7 +287,7 @@ export function VehiclesClient({
                                             <p className="mt-1 text-sm text-muted-foreground">{vehicle.vehicle_name || "車両名未設定"}</p>
                                             <p className="mt-2 text-sm text-primary">
                                                 {vehicle.employees?.id ? (
-                                                    <TableCellLink href={`/employees/${vehicle.employees.id}`} className="font-medium underline-offset-4 hover:underline">
+                                                    <TableCellLink href={employeeHref} className="font-medium underline-offset-4 hover:underline" {...employeePrefetchProps}>
                                                         主使用者: {vehicle.employees.name}
                                                     </TableCellLink>
                                                 ) : (
@@ -371,7 +375,11 @@ export function VehiclesClient({
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            initialVehicles.map((vehicle) => (
+                            initialVehicles.map((vehicle) => {
+                                const employeeHref = vehicle.employees?.id ? `/employees/${vehicle.employees.id}?tab=basic` : "";
+                                const employeePrefetchProps = employeeHref ? getIntentPrefetchProps(employeeHref) : {};
+
+                                return (
                                 <TableRow key={vehicle.id} className="group hover:bg-muted/30 transition-colors">
                                     <TableCell className="sticky left-0 z-10 bg-card font-bold shadow-[inset_-1px_0_0_hsl(var(--border))] group-hover:bg-muted/30">
                                         <div className="flex items-center gap-2">
@@ -382,7 +390,7 @@ export function VehiclesClient({
                                     <TableCell>{vehicle.vehicle_name || "-"}</TableCell>
                                     <TableCell>
                                         {vehicle.employees?.id ? (
-                                            <TableCellLink href={`/employees/${vehicle.employees.id}`} className="font-medium hover:underline">
+                                            <TableCellLink href={employeeHref} className="font-medium hover:underline" {...employeePrefetchProps}>
                                                 {vehicle.employees.name}
                                             </TableCellLink>
                                         ) : (
@@ -435,7 +443,8 @@ export function VehiclesClient({
                                         </div>
                                     </TableCell>
                                 </TableRow>
-                            ))
+                            );
+                            })
                         )}
                     </TableBody>
                 </Table>

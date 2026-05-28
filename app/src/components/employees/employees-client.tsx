@@ -32,6 +32,7 @@ import { MobileFiltersSheet } from "@/components/shared/mobile-filters-sheet";
 import { formatDisplayDate } from "@/lib/date";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useIntentPrefetch } from "@/hooks/use-intent-prefetch";
 
 export type EmployeeWithQualCount = Tables<"employees"> & {
     qualification_count: number;
@@ -112,6 +113,7 @@ export function EmployeesClient({
     const router = useRouter();
     const pathname = usePathname();
     const { isAdminOrHr } = useAuth();
+    const { getIntentPrefetchProps } = useIntentPrefetch();
     const isPartnerMode = mode === "partners";
     const qualificationOptions = qualMasters.map((master) => ({
         value: master.id,
@@ -461,8 +463,12 @@ export function EmployeesClient({
                         </CardContent>
                     </Card>
                 ) : (
-                    initialEmployees.map((emp) => (
-                        <Link key={emp.id} href={`/employees/${emp.id}`} className="block">
+                    initialEmployees.map((emp) => {
+                        const employeeHref = `/employees/${emp.id}?tab=basic`;
+                        const employeePrefetchProps = getIntentPrefetchProps(employeeHref);
+
+                        return (
+                        <Link key={emp.id} href={employeeHref} className="block" {...employeePrefetchProps}>
                             <Card
                                 size="sm"
                                 className="transition-all duration-200 active:scale-[0.99] hover:shadow-md"
@@ -499,7 +505,8 @@ export function EmployeesClient({
                                 </CardContent>
                             </Card>
                         </Link>
-                    ))
+                    );
+                    })
                 )}
             </div>
 
@@ -529,41 +536,45 @@ export function EmployeesClient({
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            initialEmployees.map((emp) => (
+                            initialEmployees.map((emp) => {
+                                const employeeHref = `/employees/${emp.id}?tab=basic`;
+                                const employeePrefetchProps = getIntentPrefetchProps(employeeHref);
+
+                                return (
                                 <TableRow key={emp.id} className="group transition-all duration-200">
                                     <TableCell className="sticky left-0 z-10 bg-card font-mono text-muted-foreground shadow-[inset_-1px_0_0_hsl(var(--border)/0.3)] group-hover:bg-muted/40 transition-colors">
-                                        <TableCellLink href={`/employees/${emp.id}`} className="font-mono text-muted-foreground hover:text-foreground transition-colors">
+                                        <TableCellLink href={employeeHref} className="font-mono text-muted-foreground hover:text-foreground transition-colors" {...employeePrefetchProps}>
                                             {emp.employee_number}
                                         </TableCellLink>
                                     </TableCell>
                                     <TableCell className="font-semibold text-foreground">
-                                        <TableCellLink href={`/employees/${emp.id}`} className="font-semibold hover:text-primary transition-colors">
+                                        <TableCellLink href={employeeHref} className="font-semibold hover:text-primary transition-colors" {...employeePrefetchProps}>
                                             {emp.person_type === "partner" ? emp.partner_company || emp.name : emp.name}
                                         </TableCellLink>
                                         {emp.person_type === "partner" ? <Badge variant="outline" className="ml-2">協力会社</Badge> : null}
                                     </TableCell>
                                     <TableCell className="text-muted-foreground">
-                                        <TableCellLink href={`/employees/${emp.id}`} className="text-muted-foreground hover:text-foreground transition-colors">
+                                        <TableCellLink href={employeeHref} className="text-muted-foreground hover:text-foreground transition-colors" {...employeePrefetchProps}>
                                             {emp.name_kana}
                                         </TableCellLink>
                                     </TableCell>
                                     <TableCell className="text-foreground/80">
-                                        <TableCellLink href={`/employees/${emp.id}`} className="hover:text-foreground transition-colors">
+                                        <TableCellLink href={employeeHref} className="hover:text-foreground transition-colors" {...employeePrefetchProps}>
                                             {emp.branch || "-"}
                                         </TableCellLink>
                                     </TableCell>
                                     <TableCell className="text-foreground/80">
-                                        <TableCellLink href={`/employees/${emp.id}`} className="hover:text-foreground transition-colors">
+                                        <TableCellLink href={employeeHref} className="hover:text-foreground transition-colors" {...employeePrefetchProps}>
                                             {emp.person_type === "partner" ? emp.partner_contact_name || "-" : emp.job_title || "-"}
                                         </TableCellLink>
                                     </TableCell>
                                     <TableCell className="tabular-nums text-foreground/80">
-                                        <TableCellLink href={`/employees/${emp.id}`} className="tabular-nums hover:text-foreground transition-colors">
+                                        <TableCellLink href={employeeHref} className="tabular-nums hover:text-foreground transition-colors" {...employeePrefetchProps}>
                                             {formatDisplayDate(emp.hire_date)}
                                         </TableCellLink>
                                     </TableCell>
                                     <TableCell className="text-center">
-                                        <TableCellLink href={`/employees/${emp.id}`} className="hover:text-foreground transition-colors">
+                                        <TableCellLink href={employeeHref} className="hover:text-foreground transition-colors" {...employeePrefetchProps}>
                                             <div className="flex items-center justify-center gap-1.5">
                                                 <Badge variant="secondary" className="text-[11px] font-medium">{emp.qualification_count}件</Badge>
                                                 {emp.expiring_count > 0 && (
@@ -575,7 +586,8 @@ export function EmployeesClient({
                                         </TableCellLink>
                                     </TableCell>
                                 </TableRow>
-                            ))
+                            );
+                            })
                         )}
                     </TableBody>
                 </Table>

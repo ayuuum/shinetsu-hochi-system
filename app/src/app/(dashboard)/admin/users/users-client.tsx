@@ -20,7 +20,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Trash2, UserPlus } from "lucide-react";
+import { ShieldAlert, Trash2, UserPlus } from "lucide-react";
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
 import { InviteUserModal } from "./invite-user-modal";
 import {
@@ -30,6 +30,8 @@ import {
 } from "@/app/actions/admin-user-actions";
 import { formatDisplayDate } from "@/lib/date";
 import { getUserRoleLabel } from "@/lib/display-labels";
+import { PageHeader } from "@/components/shared/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type UserRoleValue = "admin" | "hr" | "technician" | null;
 
@@ -206,18 +208,16 @@ export function UsersClient({ users: initialUsers, currentUserId, employees }: U
 
     return (
         <div className="space-y-6 p-6">
-            <div className="flex items-start justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">ユーザー管理</h1>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                        システムアカウントの招待・ロール設定・削除を行います。
-                    </p>
-                </div>
-                <Button onClick={() => setInviteOpen(true)}>
+            <PageHeader
+                title="ユーザー管理"
+                description="システムアカウントの招待・ロール設定・社員紐づけを管理します。"
+                actions={(
+                    <Button onClick={() => setInviteOpen(true)}>
                     <UserPlus className="mr-2 h-4 w-4" />
                     招待する
-                </Button>
-            </div>
+                    </Button>
+                )}
+            />
 
             <Card>
                 <CardContent className="p-0">
@@ -234,8 +234,12 @@ export function UsersClient({ users: initialUsers, currentUserId, employees }: U
                         <TableBody>
                             {users.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
-                                        ユーザーが見つかりません。
+                                    <TableCell colSpan={5}>
+                                        <EmptyState
+                                            icon={ShieldAlert}
+                                            title="ユーザーが見つかりません"
+                                            description="「招待する」からシステム利用者を追加できます。"
+                                        />
                                     </TableCell>
                                 </TableRow>
                             )}

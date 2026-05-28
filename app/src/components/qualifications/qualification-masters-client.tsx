@@ -33,7 +33,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Loader2, ArrowLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, ArrowLeft, Tags } from "lucide-react";
 import { toast } from "sonner";
 import type { Tables } from "@/types/supabase";
 import {
@@ -49,6 +49,7 @@ import {
 } from "@/app/actions/qualification-master-actions";
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type MasterRow = Tables<"qualification_master">;
 
@@ -358,8 +359,12 @@ export function QualificationMastersClient({ masters }: { masters: MasterRow[] }
                     <TableBody>
                         {masters.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
-                                    マスタがまだありません。「マスタを追加」から登録してください。
+                                <TableCell colSpan={5}>
+                                    <EmptyState
+                                        icon={Tags}
+                                        title="資格マスタがまだ登録されていません"
+                                        description="「マスタを追加」から社員に紐づける資格の種類を登録できます。"
+                                    />
                                 </TableCell>
                             </TableRow>
                         ) : (

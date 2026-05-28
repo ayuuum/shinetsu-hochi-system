@@ -23,7 +23,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, FileImage, Tags, Plus, ScrollText, Download } from "lucide-react";
+import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, FileImage, Tags, ScrollText, Download, Loader2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { differenceInDays } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
@@ -37,6 +37,9 @@ import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { AddQualificationFromListModal } from "./add-qualification-from-list-modal";
 import { BulkUpdateQualificationModal } from "./bulk-update-qualification-modal";
+import { PageHeader } from "@/components/shared/page-header";
+import { getQualificationLevelLabel } from "@/lib/display-labels";
+import { useIntentPrefetch } from "@/hooks/use-intent-prefetch";
 
 export type QualificationRow = Tables<"employee_qualifications"> & {
     employees: { id: string; name: string; branch: string | null } | null;
@@ -111,15 +114,9 @@ export function QualificationsClient({
     const router = useRouter();
     const pathname = usePathname();
     const { isAdminOrHr } = useAuth();
+    const { getIntentPrefetchProps } = useIntentPrefetch();
     const showActions = isAdminOrHr;
     const columnCount = showActions ? 10 : 9;
-    const levelLabels: Record<string, string> = {
-        danger: "期限切れ",
-        urgent: "14日以内",
-        warning: "30日以内",
-        info: "60日以内",
-        ok: "正常",
-    };
     const activeFilters = [
         currentSearch
             ? {
@@ -143,7 +140,7 @@ export function QualificationsClient({
         currentLevel
             ? {
                 key: "level",
-                label: `状態: ${levelLabels[currentLevel] || currentLevel}`,
+                label: `状態: ${getQualificationLevelLabel(currentLevel)}`,
                 onRemove: () => updateFilters({ level: "", page: 1 }),
             }
             : null,
@@ -223,14 +220,11 @@ export function QualificationsClient({
 
     return (
         <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">資格・講習管理</h1>
-                    <p className="text-muted-foreground mt-2">全従業員の資格・免状の期限と更新予定を一元管理します。</p>
-                </div>
-                {/* Fix: add qualification button for direct addition from list page */}
-                {isAdminOrHr && (
-                    <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            <PageHeader
+                title="資格・講習管理"
+                description="全従業員の資格・免状の期限と更新予定を一元管理します。"
+                actions={isAdminOrHr ? (
+                    <>
                         <AddQualificationFromListModal employees={employees} onSuccess={() => router.refresh()} />
                         <BulkUpdateQualificationModal qualificationMasters={qualificationMasters} employees={employees} />
                         <Button
@@ -256,12 +250,20 @@ export function QualificationsClient({
                             <Tags className="mr-2 h-4 w-4" />
                             資格マスタ
                         </Button>
-                    </div>
-                )}
-            </div>
+                    </>
+                ) : undefined}
+                actionsClassName="flex-wrap"
+            />
+
+            {isPending ? (
+                <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-primary">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    表示条件を更新しています...
+                </div>
+            ) : null}
 
             {/* Summary Cards */}
-            <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
                 <Card className="transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_1px_2px_rgba(38,42,46,0.04),0_12px_24px_rgba(38,42,46,0.06)]">
                     <button
                         type="button"
@@ -273,7 +275,7 @@ export function QualificationsClient({
                             <div className={`p-2 rounded-lg ${alertStyles.danger.icon}`}><AlertCircle className="h-5 w-5" /></div>
                             <div>
                                 <p className={`text-2xl font-bold ${alertStyles.danger.strong}`}>{counts.danger || 0}</p>
-                                <p className="text-sm text-muted-foreground">期限切れ</p>
+                                <p className="whitespace-nowrap text-sm text-muted-foreground">期限切れ</p>
                             </div>
                         </CardContent>
                     </button>
@@ -289,7 +291,7 @@ export function QualificationsClient({
                             <div className={`p-2 rounded-lg ${alertStyles.urgent.icon}`}><ShieldAlert className="h-5 w-5" /></div>
                             <div>
                                 <p className={`text-2xl font-bold ${alertStyles.urgent.strong}`}>{counts.urgent || 0}</p>
-                                <p className="text-sm text-muted-foreground">14日以内</p>
+                                <p className="whitespace-nowrap text-sm text-muted-foreground">14日以内</p>
                             </div>
                         </CardContent>
                     </button>
@@ -305,7 +307,7 @@ export function QualificationsClient({
                             <div className={`p-2 rounded-lg ${alertStyles.warning.icon}`}><Clock className="h-5 w-5" /></div>
                             <div>
                                 <p className={`text-2xl font-bold ${alertStyles.warning.strong}`}>{counts.warning || 0}</p>
-                                <p className="text-sm text-muted-foreground">30日以内</p>
+                                <p className="whitespace-nowrap text-sm text-muted-foreground">30日以内</p>
                             </div>
                         </CardContent>
                     </button>
@@ -321,7 +323,7 @@ export function QualificationsClient({
                             <div className={`p-2 rounded-lg ${alertStyles.ok.icon}`}><ShieldCheck className="h-5 w-5" /></div>
                             <div>
                                 <p className={`text-2xl font-bold ${alertStyles.ok.strong}`}>{counts.ok || 0}</p>
-                                <p className="text-sm text-muted-foreground">正常</p>
+                                <p className="whitespace-nowrap text-sm text-muted-foreground">正常</p>
                             </div>
                         </CardContent>
                     </button>
@@ -458,18 +460,22 @@ export function QualificationsClient({
                         const level = getAlertLevel(q.expiry_date);
                         const config = levelConfig[level];
                         const days = q.expiry_date ? differenceInDays(new Date(q.expiry_date), new Date()) : null;
+                        const qualificationHref = `/qualifications/${q.id}`;
+                        const qualificationPrefetchProps = getIntentPrefetchProps(qualificationHref);
+                        const employeeHref = q.employees?.id ? `/employees/${q.employees.id}?tab=basic` : "";
+                        const employeePrefetchProps = employeeHref ? getIntentPrefetchProps(employeeHref) : {};
 
                         return (
                             <Card key={q.id} size="sm" className="border-border/60">
                                 <CardContent className="space-y-3">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0 space-y-1">
-                                            <TableCellLink href={`/qualifications/${q.id}`} className="line-clamp-2 text-base font-semibold hover:underline">
+                                            <TableCellLink href={qualificationHref} className="line-clamp-2 text-base font-semibold hover:underline" {...qualificationPrefetchProps}>
                                                 {q.qualification_master?.name || "-"}
                                             </TableCellLink>
                                             <div className="flex flex-wrap items-center gap-2 text-sm">
                                                 {q.employees?.id ? (
-                                                    <TableCellLink href={`/employees/${q.employees.id}`} className="font-medium hover:underline">
+                                                    <TableCellLink href={employeeHref} className="font-medium hover:underline" {...employeePrefetchProps}>
                                                         {q.employees.name}
                                                     </TableCellLink>
                                                 ) : (
@@ -562,11 +568,15 @@ export function QualificationsClient({
                                 const level = getAlertLevel(q.expiry_date);
                                 const config = levelConfig[level];
                                 const days = q.expiry_date ? differenceInDays(new Date(q.expiry_date), new Date()) : null;
+                                const qualificationHref = `/qualifications/${q.id}`;
+                                const qualificationPrefetchProps = getIntentPrefetchProps(qualificationHref);
+                                const employeeHref = q.employees?.id ? `/employees/${q.employees.id}?tab=basic` : "";
+                                const employeePrefetchProps = employeeHref ? getIntentPrefetchProps(employeeHref) : {};
                                 return (
                                     <TableRow key={q.id} className="hover:bg-muted/30">
                                         <TableCell className="sticky left-0 z-10 bg-card py-4 font-bold shadow-[inset_-1px_0_0_hsl(var(--border))]">
                                             {q.employees?.id ? (
-                                                <TableCellLink href={`/employees/${q.employees.id}`} className="font-bold hover:underline">
+                                                <TableCellLink href={employeeHref} className="font-bold hover:underline" {...employeePrefetchProps}>
                                                     {q.employees.name}
                                                 </TableCellLink>
                                             ) : (
@@ -575,7 +585,7 @@ export function QualificationsClient({
                                         </TableCell>
                                         <TableCell className="py-4 text-sm">{q.employees?.branch || "-"}</TableCell>
                                         <TableCell className="py-4 text-sm font-medium">
-                                            <TableCellLink href={`/qualifications/${q.id}`} className="text-sm font-medium hover:underline">
+                                            <TableCellLink href={qualificationHref} className="text-sm font-medium hover:underline" {...qualificationPrefetchProps}>
                                                 {q.qualification_master?.name || "-"}
                                             </TableCellLink>
                                         </TableCell>

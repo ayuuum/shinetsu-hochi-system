@@ -1,8 +1,11 @@
 "use client";
 
 import {
+    PanelLeftClose,
+    PanelLeftOpen,
     LogOut,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/brand-logo";
 import {
     Sidebar,
@@ -17,6 +20,7 @@ import {
     SidebarMenuButton,
     SidebarRail,
     SidebarSeparator,
+    useSidebar,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -24,14 +28,16 @@ import { useAuth } from "@/hooks/use-auth";
 import { useIntentPrefetch } from "@/hooks/use-intent-prefetch";
 import { getGroupedAppNavigation, isAppNavActive } from "@/lib/app-navigation";
 import { cn } from "@/lib/utils";
+import { getUserRoleLabel } from "@/lib/display-labels";
 
 export function AppSidebar() {
     const pathname = usePathname();
     const { user, role, signOut, isAdminOrHr, linkedEmployeeId } = useAuth();
     const { getIntentPrefetchProps } = useIntentPrefetch();
+    const { state, toggleSidebar } = useSidebar();
 
     const displayName = user?.email?.split("@")[0] || "ユーザー";
-    const roleLabel = role === "admin" ? "管理者" : role === "hr" ? "人事" : role === "technician" ? "技術者" : "";
+    const roleLabel = role ? getUserRoleLabel(role) : "";
     const navigationSections = getGroupedAppNavigation(isAdminOrHr, role, linkedEmployeeId);
 
     return (
@@ -46,6 +52,21 @@ export function AppSidebar() {
                         variant="mark"
                         className="hidden h-9 w-9 group-data-[collapsible=icon]:block"
                     />
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={toggleSidebar}
+                        title={state === "collapsed" ? "サイドバーを開く" : "サイドバーを閉じる"}
+                        aria-label={state === "collapsed" ? "サイドバーを開く" : "サイドバーを閉じる"}
+                        className="ml-auto rounded-lg border border-sidebar-border/70 bg-sidebar-accent/50 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:mt-2"
+                    >
+                        {state === "collapsed" ? (
+                            <PanelLeftOpen className="h-4 w-4" />
+                        ) : (
+                            <PanelLeftClose className="h-4 w-4" />
+                        )}
+                    </Button>
                 </div>
             </SidebarHeader>
             <SidebarContent className="py-4">

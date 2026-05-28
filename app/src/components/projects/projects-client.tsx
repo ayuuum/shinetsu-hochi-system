@@ -37,6 +37,7 @@ import { formatDisplayDate } from "@/lib/date";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { PageHeader } from "@/components/shared/page-header";
+import { useIntentPrefetch } from "@/hooks/use-intent-prefetch";
 
 export type ConstructionWithEmployee = Tables<"construction_records"> & {
     employees: { id: string; name: string; branch: string | null } | null;
@@ -93,6 +94,7 @@ export function ProjectsClient({
     const router = useRouter();
     const pathname = usePathname();
     const { isAdminOrHr } = useAuth();
+    const { getIntentPrefetchProps } = useIntentPrefetch();
     const showActions = isAdminOrHr;
     const columnCount = showActions ? 7 : 6;
     const activeFilters = [
@@ -293,7 +295,11 @@ export function ProjectsClient({
                         </CardContent>
                     </Card>
                 ) : (
-                    initialRecords.map((record) => (
+                    initialRecords.map((record) => {
+                        const employeeHref = record.employees?.id ? `/employees/${record.employees.id}?tab=basic` : "";
+                        const employeePrefetchProps = employeeHref ? getIntentPrefetchProps(employeeHref) : {};
+
+                        return (
                         <Card key={record.id} className="border-border/60 shadow-sm rounded-3xl overflow-hidden">
                             <div className="flex flex-col gap-3 p-5">
                                 <div className="flex items-start justify-between min-w-0">
@@ -341,7 +347,7 @@ export function ProjectsClient({
                                     <div className="space-y-1">
                                         <p className="text-sm font-medium text-muted-foreground">担当技術者</p>
                                         {record.employees?.id ? (
-                                            <TableCellLink href={`/employees/${record.employees.id}`} className="font-semibold text-primary hover:underline">
+                                            <TableCellLink href={employeeHref} className="font-semibold text-primary hover:underline" {...employeePrefetchProps}>
                                                 {record.employees.name}
                                                 {record.role && <span className="text-muted-foreground ml-1 font-normal text-xs">({record.role})</span>}
                                             </TableCellLink>
@@ -359,7 +365,8 @@ export function ProjectsClient({
                                 </div>
                             </div>
                         </Card>
-                    ))
+                    );
+                    })
                 )}
             </div>
 
@@ -383,7 +390,11 @@ export function ProjectsClient({
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            initialRecords.map((record) => (
+                            initialRecords.map((record) => {
+                                const employeeHref = record.employees?.id ? `/employees/${record.employees.id}?tab=basic` : "";
+                                const employeePrefetchProps = employeeHref ? getIntentPrefetchProps(employeeHref) : {};
+
+                                return (
                                 <TableRow key={record.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
                                     <TableCell className="sticky left-0 z-10 bg-white dark:bg-card shadow-[inset_-1px_0_0_hsl(var(--border))] py-4">
                                         <p className="font-bold text-foreground text-base">{record.construction_name}</p>
@@ -415,7 +426,7 @@ export function ProjectsClient({
                                     <TableCell>
                                         <div className="flex flex-col gap-0.5">
                                             {record.employees?.id ? (
-                                                <TableCellLink href={`/employees/${record.employees.id}`} className="font-semibold text-primary hover:underline text-sm truncate">
+                                                <TableCellLink href={employeeHref} className="font-semibold text-primary hover:underline text-sm truncate" {...employeePrefetchProps}>
                                                     {record.employees.name}
                                                 </TableCellLink>
                                             ) : (
@@ -442,7 +453,8 @@ export function ProjectsClient({
                                         </TableCell>
                                     )}
                                 </TableRow>
-                            ))
+                            );
+                            })
                         )}
                     </TableBody>
                 </Table>

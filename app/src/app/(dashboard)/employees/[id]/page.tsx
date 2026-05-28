@@ -2,7 +2,17 @@ import { notFound, redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { EmployeeDetailClient, type EmployeeDetail, type EmployeeDetailTab } from "@/components/employees/employee-detail-client";
-import { getEmployeeDetailSelect } from "@/lib/employee-detail";
+import {
+    getEmployeeDetailSelect,
+    shouldLoadConstructionRecords,
+    shouldLoadDeletedQualifications,
+    shouldLoadEmployeeItAccounts,
+    shouldLoadEmployeePhoto,
+    shouldLoadExamHistory,
+    shouldLoadHealthChecks,
+    shouldLoadQualificationCertificateUrls,
+    shouldLoadSeminarRecords,
+} from "@/lib/employee-detail";
 import { Tables } from "@/types/supabase";
 
 type EmployeeQualification = Tables<"employee_qualifications"> & {
@@ -44,6 +54,7 @@ export default async function EmployeeDetailPage({
     }
 
     const isAdminOrHr = auth.role === "admin" || auth.role === "hr";
+    const loadStart = process.hrtime.bigint();
     const [employeeResult, constructionResult, healthResult, itResult, examHistoryResult, seminarResult, deletedQualsResult] = await Promise.all([
         supabase
             .from("employees")
@@ -51,19 +62,23 @@ export default async function EmployeeDetailPage({
             .eq("id", id)
             .is("deleted_at", null)
             .maybeSingle(),
-        supabase
-            .from("construction_records")
-            .select("*")
-            .eq("employee_id", id)
-            .is("deleted_at", null)
-            .order("construction_date", { ascending: false }),
-        supabase
-            .from("health_checks")
-            .select("*")
-            .eq("employee_id", id)
-            .is("deleted_at", null)
-            .order("check_date", { ascending: false }),
-        isAdminOrHr
+        shouldLoadConstructionRecords(currentTab)
+            ? supabase
+                .from("construction_records")
+                .select("*")
+                .eq("employee_id", id)
+                .is("deleted_at", null)
+                .order("construction_date", { ascending: false })
+            : Promise.resolve({ data: [] as Tables<"construction_records">[], error: null }),
+        shouldLoadHealthChecks(currentTab)
+            ? supabase
+                .from("health_checks")
+                .select("*")
+                .eq("employee_id", id)
+                .is("deleted_at", null)
+                .order("check_date", { ascending: false })
+            : Promise.resolve({ data: [] as Tables<"health_checks">[], error: null }),
+        shouldLoadEmployeeItAccounts(currentTab, isAdminOrHr)
             ? supabase
                 .from("employee_it_accounts")
                 .select("*")
@@ -71,23 +86,30 @@ export default async function EmployeeDetailPage({
                 .order("sort_order", { ascending: true })
                 .order("created_at", { ascending: true })
             : Promise.resolve({ data: [] as Tables<"employee_it_accounts">[], error: null }),
-        supabase
-            .from("qualification_exam_history")
-            .select("*")
-            .eq("employee_id", id)
-            .order("exam_date", { ascending: false }),
-        supabase
-            .from("seminar_records")
-            .select("*")
-            .eq("employee_id", id)
-            .order("held_date", { ascending: false }),
-        supabase
-            .from("employee_qualifications")
-            .select("*, qualification_master(*)")
-            .eq("employee_id", id)
-            .not("deleted_at", "is", null)
-            .order("deleted_at", { ascending: false }),
+        shouldLoadExamHistory(currentTab)
+            ? supabase
+                .from("qualification_exam_history")
+                .select("*")
+                .eq("employee_id", id)
+                .order("exam_date", { ascending: false })
+            : Promise.resolve({ data: [] as Tables<"qualification_exam_history">[], error: null }),
+        shouldLoadSeminarRecords(currentTab)
+            ? supabase
+                .from("seminar_records")
+                .select("*")
+                .eq("employee_id", id)
+                .order("held_date", { ascending: false })
+            : Promise.resolve({ data: [] as Tables<"seminar_records">[], error: null }),
+        shouldLoadDeletedQualifications(currentTab)
+            ? supabase
+                .from("employee_qualifications")
+                .select("*, qualification_master(*)")
+                .eq("employee_id", id)
+                .not("deleted_at", "is", null)
+                .order("deleted_at", { ascending: false })
+            : Promise.resolve({ data: [] as EmployeeQualification[], error: null }),
     ]);
+    const dataLoadMs = Number((process.hrtime.bigint() - loadStart) / BigInt(1_000_000));
 
     if (employeeResult.error) {
         console.error("Failed to load employee detail:", employeeResult.error);
@@ -132,7 +154,7 @@ export default async function EmployeeDetailPage({
     const certUrls: Record<string, string> = {};
     let photoUrl: string | null = null;
 
-    {
+    if (shouldLoadQualificationCertificateUrls(currentTab)) {
         const certPaths = [...employee.employee_qualifications, ...employee.deleted_qualifications]
             .filter((qualification) => qualification.certificate_url)
             .map((qualification) => ({ id: qualification.id, path: qualification.certificate_url! }));
@@ -154,11 +176,21 @@ export default async function EmployeeDetailPage({
         }
     }
 
-    if (employee.photo_url) {
+    if (shouldLoadEmployeePhoto(currentTab) && employee.photo_url) {
         const { data: signedPhoto } = await supabase.storage
             .from("certificates")
             .createSignedUrl(employee.photo_url, 3600);
         photoUrl = signedPhoto?.signedUrl || null;
+    }
+
+    if (process.env.NODE_ENV === "development") {
+        console.info("[employee-detail]", {
+            employeeId: id,
+            tab: currentTab,
+            dataLoadMs,
+            certSignedUrlCount: Object.keys(certUrls).length,
+            photoSignedUrl: !!photoUrl,
+        });
     }
 
     return (
