@@ -38,8 +38,8 @@ export function ActiveFilters({
                 </button>
             ))}
             {onClearAll && (
-                <Button type="button" variant="ghost" size="sm" className="ml-auto" onClick={onClearAll}>
-                    条件をクリア
+                <Button type="button" variant="outline" size="sm" className="ml-auto bg-background" onClick={onClearAll}>
+                    すべて解除
                 </Button>
             )}
         </div>

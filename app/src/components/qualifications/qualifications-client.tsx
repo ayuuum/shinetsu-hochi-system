@@ -23,7 +23,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, FileImage, Tags, ScrollText, Download, Loader2 } from "lucide-react";
+import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, FileImage, Tags, ScrollText, Download, Loader2, ArrowRight } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { differenceInDays } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
@@ -116,7 +116,7 @@ export function QualificationsClient({
     const { isAdminOrHr } = useAuth();
     const { getIntentPrefetchProps } = useIntentPrefetch();
     const showActions = isAdminOrHr;
-    const columnCount = showActions ? 10 : 9;
+    const columnCount = showActions ? 11 : 10;
     const activeFilters = [
         currentSearch
             ? {
@@ -548,6 +548,7 @@ export function QualificationsClient({
                             <TableHead>ステータス</TableHead>
                             <TableHead>申込状況</TableHead>
                             <TableHead className="w-[52px] text-center">証書</TableHead>
+                            <TableHead className="w-[88px] text-right">詳細</TableHead>
                             {showActions && <TableHead className="w-[80px]">操作</TableHead>}
                         </TableRow>
                     </TableHeader>
@@ -610,6 +611,12 @@ export function QualificationsClient({
                                             ) : (
                                                 <span className="text-muted-foreground">—</span>
                                             )}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button size="sm" variant="ghost" className="h-8 px-2 text-xs" render={<Link href={qualificationHref} {...qualificationPrefetchProps} />}>
+                                                開く
+                                                <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                                            </Button>
                                         </TableCell>
                                         {showActions && (
                                             <TableCell>

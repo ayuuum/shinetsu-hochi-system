@@ -19,13 +19,6 @@ type OwnQualification = {
     level: ReturnType<typeof getAlertLevel>;
 };
 
-type TodayAlcohol = {
-    id: string;
-    checkType: string;
-    isAbnormal: boolean;
-    checkDatetime: string;
-} | null;
-
 async function getTechnicianData(employeeId: string) {
     const supabase = await createSupabaseServer();
     const today = getTodayInTokyo();

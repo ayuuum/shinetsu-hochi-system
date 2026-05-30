@@ -59,12 +59,10 @@ interface ScheduleClientProps {
 
 function ScheduleForm({
     defaultValues,
-    fiscalYear,
     onSubmit,
     isSubmitting,
 }: {
     defaultValues: FormValues;
-    fiscalYear: number;
     onSubmit: (values: FormValues) => Promise<void>;
     isSubmitting: boolean;
 }) {
@@ -133,13 +131,6 @@ export function ScheduleClient({ schedules, fiscalYear, currentFiscalYear, isAdm
         }
         return map;
     }, [schedules]);
-
-    const eventDates = useMemo(() =>
-        schedules
-            .filter(s => s.scheduled_date)
-            .map(s => new Date(s.scheduled_date + "T00:00:00")),
-        [schedules]
-    );
 
     const selectedDateStr = selectedDate ? format(selectedDate, "yyyy-MM-dd") : null;
     const scheduledItems = selectedDateStr
@@ -231,7 +222,6 @@ export function ScheduleClient({ schedules, fiscalYear, currentFiscalYear, isAdm
                             </DialogHeader>
                             <ScheduleForm
                                 defaultValues={{ title: "", scheduled_date: "", description: "" }}
-                                fiscalYear={fiscalYear}
                                 onSubmit={handleCreate}
                                 isSubmitting={isSubmitting}
                             />
@@ -354,7 +344,6 @@ export function ScheduleClient({ schedules, fiscalYear, currentFiscalYear, isAdm
                                 scheduled_date: editingRecord.scheduled_date || "",
                                 description: editingRecord.description || "",
                             }}
-                            fiscalYear={fiscalYear}
                             onSubmit={handleUpdate}
                             isSubmitting={isSubmitting}
                         />

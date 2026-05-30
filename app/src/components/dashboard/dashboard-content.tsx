@@ -2,7 +2,6 @@ import { cache } from "react";
 import { addDays, isAfter, isBefore } from "date-fns";
 import Link from "next/link";
 import {
-    AlertCircle,
     ArrowRight,
     Calendar,
     HeartPulse,
@@ -10,7 +9,6 @@ import {
     ShieldAlert,
     ShieldCheck,
     Truck,
-    Users,
     Wine,
     type LucideIcon,
 } from "lucide-react";
@@ -110,7 +108,6 @@ type PrioritySnapshot = {
 };
 
 const countFormatter = new Intl.NumberFormat("ja-JP");
-const neutralSurfaceClassName = "border border-border/30 bg-white/80";
 const neutralIconClassName = "bg-muted/60 text-muted-foreground";
 
 const monthScheduleCategoryPriority: Record<string, number> = {
@@ -655,7 +652,7 @@ export async function DashboardMonthScheduleSection() {
                     </div>
                 ) : (
                     <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-4">
-                        {items.map((item, i) => (
+                        {items.map((item) => (
                             <li key={item.id}>
                                 <Link
                                     href={item.href}

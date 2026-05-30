@@ -16,14 +16,13 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Truck, AlertTriangle, Pencil, Search, Trash2, ArrowUpDown } from "lucide-react";
+import { Truck, AlertTriangle, Pencil, Search, Trash2, ArrowUpDown, ArrowRight } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
-    SelectValue,
 } from "@/components/ui/select";
 import { isBefore, addDays } from "date-fns";
 import { AddVehicleModal } from "./add-vehicle-modal";
@@ -40,6 +39,7 @@ import { formatDisplayDate } from "@/lib/date";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useIntentPrefetch } from "@/hooks/use-intent-prefetch";
+import { getVehicleExpiryFilterLabel, getVehicleSortLabel } from "@/lib/display-labels";
 
 export type VehicleWithUser = Tables<"vehicles"> & {
     employees?: { id: string; name: string } | null;
@@ -147,16 +147,16 @@ export function VehiclesClient({
         } : null,
         currentExpiry === "expired" ? {
             key: "expiry",
-            label: "期限切れのみ",
+            label: getVehicleExpiryFilterLabel(currentExpiry),
             onRemove: () => updateFilters({ expiry: "", page: 1 }),
         } : currentExpiry === "soon" ? {
             key: "expiry",
-            label: "30日以内",
+            label: getVehicleExpiryFilterLabel(currentExpiry),
             onRemove: () => updateFilters({ expiry: "", page: 1 }),
         } : null,
         currentSort !== "plate" ? {
             key: "sort",
-            label: `並び順: ${currentSort === "inspection" ? "車検満了日" : currentSort === "liability" ? "自賠責満期" : "任意保険満期"}`,
+            label: `並び順: ${getVehicleSortLabel(currentSort)}`,
             onRemove: () => updateFilters({ sort: "plate", page: 1 }),
         } : null,
     ].filter((f): f is NonNullable<typeof f> => f !== null);
@@ -302,7 +302,8 @@ export function VehiclesClient({
                                                     ? <Badge variant="secondary" className={alertStyles.warning.badge}>注意</Badge>
                                                     : <Badge variant="secondary" className={alertStyles.ok.badge}>正常</Badge>}
                                             <Button size="sm" variant="ghost" className="text-xs h-7 px-2" render={<Link href={`/vehicles/${vehicle.id}`} />}>
-                                                詳細
+                                                開く
+                                                <ArrowRight className="ml-1 h-3.5 w-3.5" />
                                             </Button>
                                             {showActions ? (
                                                 <RecordActionsMenu label={vehicle.plate_number}>

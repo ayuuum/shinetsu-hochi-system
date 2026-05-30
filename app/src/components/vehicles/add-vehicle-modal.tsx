@@ -75,7 +75,12 @@ export function AddVehicleModal({ employees }: { employees: Employee[] }) {
             return;
         }
 
-        toast.success("車両を登録しました");
+        toast.success("車両を登録しました", {
+            action: {
+                label: "車両一覧を見る",
+                onClick: () => router.push("/vehicles"),
+            },
+        });
         if (continuous) {
             form.reset({
                 plate_number: "",

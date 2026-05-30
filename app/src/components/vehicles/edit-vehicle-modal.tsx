@@ -78,7 +78,12 @@ export function EditVehicleModal({ vehicle, employees, open, onOpenChange }: Edi
             return;
         }
 
-        toast.success("車両情報を更新しました");
+        toast.success("車両情報を更新しました", {
+            action: {
+                label: "詳細を見る",
+                onClick: () => router.push(`/vehicles/${vehicle.id}`),
+            },
+        });
         onOpenChange(false);
         router.refresh();
     }

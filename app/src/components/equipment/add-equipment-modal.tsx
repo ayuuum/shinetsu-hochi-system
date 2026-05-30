@@ -65,7 +65,12 @@ export function AddEquipmentModal() {
             return;
         }
 
-        toast.success("備品を登録しました");
+        toast.success("備品を登録しました", {
+            action: {
+                label: "備品一覧を見る",
+                onClick: () => router.push("/vehicles"),
+            },
+        });
         setOpen(false);
         form.reset(defaultValues);
         router.refresh();

@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Command } from "lucide-react";
+import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const OPEN_COMMAND_SEARCH_EVENT = "app:open-command-search";

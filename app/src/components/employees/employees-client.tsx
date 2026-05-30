@@ -22,7 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, MapPin, Award, Download, Users, X, ArrowUpDown } from "lucide-react";
+import { Search, MapPin, Award, Download, Users, X, ArrowUpDown, ArrowRight } from "lucide-react";
 import { AddEmployeeModal } from "@/components/employees/add-employee-modal";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -521,12 +521,13 @@ export function EmployeesClient({
                             <TableHead>{isPartnerMode ? "担当者" : "役職"}</TableHead>
                             <TableHead>{isPartnerMode ? "取引開始日" : "入社日"}</TableHead>
                             <TableHead className="text-center">保有資格</TableHead>
+                            <TableHead className="w-[88px] text-right">詳細</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {initialEmployees.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={7}>
+                                <TableCell colSpan={8}>
                                     <EmptyState
                                         icon={Users}
                                         title={activeFilters.length > 0 ? "条件に一致する対象者が見つかりません" : `${isPartnerMode ? "協力会社" : "社員"}データがまだ登録されていません`}
@@ -584,6 +585,12 @@ export function EmployeesClient({
                                                 )}
                                             </div>
                                         </TableCellLink>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Button size="sm" variant="ghost" className="h-8 px-2 text-xs" render={<Link href={employeeHref} {...employeePrefetchProps} />}>
+                                            開く
+                                            <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                                        </Button>
                                     </TableCell>
                                 </TableRow>
                             );
