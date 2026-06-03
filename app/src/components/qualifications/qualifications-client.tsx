@@ -40,6 +40,7 @@ import { BulkUpdateQualificationModal } from "./bulk-update-qualification-modal"
 import { PageHeader } from "@/components/shared/page-header";
 import { getQualificationLevelLabel } from "@/lib/display-labels";
 import { useIntentPrefetch } from "@/hooks/use-intent-prefetch";
+import { type LicenseGroupInfo } from "@/lib/license-groups";
 
 export type QualificationRow = Tables<"employee_qualifications"> & {
     employees: { id: string; name: string; branch: string | null } | null;
@@ -61,6 +62,16 @@ interface QualificationsClientProps {
     hasNextPage: boolean;
     employees?: Employee[];
     qualificationMasters?: { id: string; name: string; category: string | null }[];
+    licenseGroups?: Record<string, LicenseGroupInfo>;
+}
+
+function LicenseGroupBadge({ info }: { info?: LicenseGroupInfo }) {
+    if (!info) return null;
+    return info.isLatest ? (
+        <Badge className="border-transparent bg-emerald-100 text-emerald-700">最新免状</Badge>
+    ) : (
+        <Badge variant="outline" className="text-muted-foreground">同一免状</Badge>
+    );
 }
 
 function buildQualificationsHref(pathname: string, {
@@ -104,6 +115,7 @@ export function QualificationsClient({
     hasNextPage,
     employees = [],
     qualificationMasters = [],
+    licenseGroups = {},
 }: QualificationsClientProps) {
     const [search, setSearch] = useState(currentSearch);
     const [editingItem, setEditingItem] = useState<QualificationRow | null>(null);
@@ -527,6 +539,7 @@ export function QualificationsClient({
                                                 証書あり
                                             </Badge>
                                         ) : null}
+                                        <LicenseGroupBadge info={licenseGroups[q.id]} />
                                     </div>
                                 </CardContent>
                             </Card>
@@ -586,9 +599,12 @@ export function QualificationsClient({
                                         </TableCell>
                                         <TableCell className="py-4 text-sm">{q.employees?.branch || "-"}</TableCell>
                                         <TableCell className="py-4 text-sm font-medium">
-                                            <TableCellLink href={qualificationHref} className="text-sm font-medium hover:underline" {...qualificationPrefetchProps}>
-                                                {q.qualification_master?.name || "-"}
-                                            </TableCellLink>
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                <TableCellLink href={qualificationHref} className="text-sm font-medium hover:underline" {...qualificationPrefetchProps}>
+                                                    {q.qualification_master?.name || "-"}
+                                                </TableCellLink>
+                                                <LicenseGroupBadge info={licenseGroups[q.id]} />
+                                            </div>
                                         </TableCell>
                                         <TableCell className="py-4 text-sm text-muted-foreground">{q.qualification_master?.category || "-"}</TableCell>
                                         <TableCell className="py-4 text-sm tabular-nums">{formatDisplayDate(q.acquired_date)}</TableCell>

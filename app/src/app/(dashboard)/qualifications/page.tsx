@@ -6,6 +6,7 @@ import { QualificationsClient, type QualificationRow } from "@/components/qualif
 import { formatDateInTokyo, getTodayInTokyo } from "@/lib/date";
 import { getAlertLevel, type AlertLevel } from "@/lib/alert-utils";
 import { getCachedQualificationCategories, getCachedEmployeeList, getCachedQualificationCounts, getCachedQualificationMasters } from "@/lib/cached-queries";
+import { computeLicenseGroupRecord, type LicenseGroupInfo, type LicenseGroupInput } from "@/lib/license-groups";
 
 const PAGE_SIZE = 50;
 
@@ -57,9 +58,20 @@ export default async function QualificationsPage({
     let hasNextPage = false;
     let employees: { id: string; name: string; branch: string | null }[] = [];
     let qualificationMasters: { id: string; name: string; category: string | null }[] = [];
+    let licenseGroups: Record<string, LicenseGroupInfo> = {};
 
     try {
         const supabase = await createSupabaseServer();
+
+        // 同一免状（同じ社員×同じ免状番号）の最新版判定は全件を対象に算出する必要があるため、
+        // 免状番号を持つ有効な資格を一覧取得しておく（ページネーションとは独立して並行実行）。
+        const licenseGroupPromise = supabase
+            .from("employee_qualifications")
+            .select("id, employee_id, certificate_number, acquired_date, created_at, employees!inner(id)")
+            .is("deleted_at", null)
+            .is("employees.deleted_at", null)
+            .not("certificate_number", "is", null)
+            .limit(5000);
         const today = getTodayInTokyo();
         const urgentLimit = formatDateInTokyo(addDays(new Date(), 14));
         const warningLimit = formatDateInTokyo(addDays(new Date(), 30));
@@ -186,6 +198,9 @@ export default async function QualificationsPage({
                 return acc;
             }, { danger: 0, urgent: 0, warning: 0, info: 0, ok: 0 });
         }
+
+        const licenseGroupResult = await licenseGroupPromise;
+        licenseGroups = computeLicenseGroupRecord((licenseGroupResult.data ?? []) as LicenseGroupInput[]);
     } catch (e) {
         console.error("Failed to load qualifications:", e);
     }
@@ -201,7 +216,8 @@ export default async function QualificationsPage({
             currentPage={currentPage}
             hasNextPage={hasNextPage}
             employees={employees}
-        qualificationMasters={qualificationMasters}
+            qualificationMasters={qualificationMasters}
+            licenseGroups={licenseGroups}
         />
     );
 }
