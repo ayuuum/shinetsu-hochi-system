@@ -37,6 +37,8 @@ export const healthCheckSchema = z.object({
     }),
     height: optionalDecimal("身長"),
     weight: optionalDecimal("体重"),
+    blood_pressure_systolic: optionalDecimal("最高血圧"),
+    blood_pressure_diastolic: optionalDecimal("最低血圧"),
     notes: optionalText,
 });
 
@@ -61,6 +63,8 @@ export function toHealthCheckInsert(values: HealthCheckValues): TablesInsert<"he
         is_normal: values.is_normal === "true",
         height: normalizeNullableNumber(values.height),
         weight: normalizeNullableNumber(values.weight),
+        blood_pressure_systolic: normalizeNullableNumber(values.blood_pressure_systolic),
+        blood_pressure_diastolic: normalizeNullableNumber(values.blood_pressure_diastolic),
         notes: normalizeNullableText(values.notes),
     };
 }
@@ -74,6 +78,8 @@ export function toHealthCheckUpdate(values: HealthCheckValues): TablesUpdate<"he
         is_normal: values.is_normal === "true",
         height: normalizeNullableNumber(values.height),
         weight: normalizeNullableNumber(values.weight),
+        blood_pressure_systolic: normalizeNullableNumber(values.blood_pressure_systolic),
+        blood_pressure_diastolic: normalizeNullableNumber(values.blood_pressure_diastolic),
         notes: normalizeNullableText(values.notes),
     };
 }
@@ -87,6 +93,8 @@ export function toHealthCheckFormValues(record: Tables<"health_checks">): Health
         is_normal: record.is_normal === false ? "false" : "true",
         height: record.height != null ? String(record.height) : "",
         weight: record.weight != null ? String(record.weight) : "",
+        blood_pressure_systolic: record.blood_pressure_systolic != null ? String(record.blood_pressure_systolic) : "",
+        blood_pressure_diastolic: record.blood_pressure_diastolic != null ? String(record.blood_pressure_diastolic) : "",
         notes: record.notes || "",
     };
 }

@@ -364,6 +364,86 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
                         </div>
                         ) : null}
 
+                        {/* 経験年数（基準日時点の値を保存し、4月1日基準で自動加算） */}
+                        <div className="space-y-1.5">
+                            <div className="grid grid-cols-3 gap-4">
+                                <FormField control={form.control} name="experience_years" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>経験年数（年）</FormLabel>
+                                        <FormControl><Input type="number" min="0" step="1" inputMode="numeric" placeholder="10" {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} />
+                                <FormField control={form.control} name="experience_months" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>経験年数（月）</FormLabel>
+                                        <FormControl><Input type="number" min="0" max="11" step="1" inputMode="numeric" placeholder="0" {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} />
+                                <FormField control={form.control} name="experience_base_date" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>基準日</FormLabel>
+                                        <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} />
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                基準日（通常は当年度の4月1日）時点の経験年数を入力すると、以降は自動で加算して表示されます。
+                            </p>
+                        </div>
+
+                        {/* 加入している社会保険 */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField control={form.control} name="health_insurance_type" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>加入している健康保険（名称）</FormLabel>
+                                    <FormControl><Input placeholder="例: 全国健康保険協会" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                            <FormField control={form.control} name="emp_insurance_enrolled" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>雇用保険 加入の有無</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger><SelectValue placeholder="選択" /></SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="true">加入</SelectItem>
+                                            <SelectItem value="false">未加入</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField control={form.control} name="pension_enrolled" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>年金 加入の有無</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger><SelectValue placeholder="選択" /></SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="true">加入</SelectItem>
+                                            <SelectItem value="false">未加入</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                            <FormField control={form.control} name="pension_type" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>加入している年金（名称）</FormLabel>
+                                    <FormControl><Input placeholder="例: 厚生年金" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                        </div>
+
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>キャンセル</Button>
                             <Button type="submit" disabled={isSubmitting}>

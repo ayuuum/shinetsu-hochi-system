@@ -608,8 +608,12 @@ export type Database = {
           deleted_by: string | null
           email: string | null
           emp_insurance_no: string | null
+          emp_insurance_enrolled: boolean | null
           employee_number: string
           employment_type: string | null
+          experience_base_date: string | null
+          experience_months: number | null
+          experience_years: number | null
           gender: string | null
           health_insurance_no: string | null
           health_insurance_type: string | null
@@ -622,6 +626,7 @@ export type Database = {
           name_kana: string
           pension_no: string | null
           pension_type: string | null
+          pension_enrolled: boolean | null
           person_type: string
           phone_number: string | null
           photo_url: string | null
@@ -649,8 +654,12 @@ export type Database = {
           deleted_by?: string | null
           email?: string | null
           emp_insurance_no?: string | null
+          emp_insurance_enrolled?: boolean | null
           employee_number: string
           employment_type?: string | null
+          experience_base_date?: string | null
+          experience_months?: number | null
+          experience_years?: number | null
           gender?: string | null
           health_insurance_no?: string | null
           health_insurance_type?: string | null
@@ -663,6 +672,7 @@ export type Database = {
           name_kana: string
           pension_no?: string | null
           pension_type?: string | null
+          pension_enrolled?: boolean | null
           person_type?: string
           phone_number?: string | null
           photo_url?: string | null
@@ -690,8 +700,12 @@ export type Database = {
           deleted_by?: string | null
           email?: string | null
           emp_insurance_no?: string | null
+          emp_insurance_enrolled?: boolean | null
           employee_number?: string
           employment_type?: string | null
+          experience_base_date?: string | null
+          experience_months?: number | null
+          experience_years?: number | null
           gender?: string | null
           health_insurance_no?: string | null
           health_insurance_type?: string | null
@@ -704,6 +718,7 @@ export type Database = {
           name_kana?: string
           pension_no?: string | null
           pension_type?: string | null
+          pension_enrolled?: boolean | null
           person_type?: string
           phone_number?: string | null
           photo_url?: string | null
@@ -766,6 +781,8 @@ export type Database = {
       }
       health_checks: {
         Row: {
+          blood_pressure_diastolic: number | null
+          blood_pressure_systolic: number | null
           check_date: string
           check_type: string | null
           created_at: string | null
@@ -780,6 +797,8 @@ export type Database = {
           weight: number | null
         }
         Insert: {
+          blood_pressure_diastolic?: number | null
+          blood_pressure_systolic?: number | null
           check_date: string
           check_type?: string | null
           created_at?: string | null
@@ -794,6 +813,8 @@ export type Database = {
           weight?: number | null
         }
         Update: {
+          blood_pressure_diastolic?: number | null
+          blood_pressure_systolic?: number | null
           check_date?: string
           check_type?: string | null
           created_at?: string | null

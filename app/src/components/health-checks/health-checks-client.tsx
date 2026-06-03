@@ -110,7 +110,7 @@ export function HealthChecksClient({
     const { isAdminOrHr } = useAuth();
     const { getIntentPrefetchProps } = useIntentPrefetch();
     const showActions = isAdminOrHr;
-    const columnCount = showActions ? 8 : 7;
+    const columnCount = showActions ? 9 : 8;
     const activeFilters = [
         currentSearch
             ? {
@@ -409,6 +409,14 @@ export function HealthChecksClient({
                                                 : "-"}
                                         </p>
                                     </div>
+                                    <div className="space-y-1">
+                                        <p className="text-sm text-muted-foreground">血圧 (最高 / 最低)</p>
+                                        <p className="font-medium">
+                                            {check.blood_pressure_systolic != null || check.blood_pressure_diastolic != null
+                                                ? `${check.blood_pressure_systolic ?? "-"} / ${check.blood_pressure_diastolic ?? "-"} mmHg`
+                                                : "-"}
+                                        </p>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
@@ -428,6 +436,7 @@ export function HealthChecksClient({
                             <TableHead className="min-w-[120px]">医療機関</TableHead>
                             <TableHead className="min-w-[80px]">結果</TableHead>
                             <TableHead className="min-w-[120px]">身長/体重</TableHead>
+                            <TableHead className="min-w-[130px]">血圧(最高/最低)</TableHead>
                             {showActions && <TableHead className="min-w-[100px]">操作</TableHead>}
                         </TableRow>
                     </TableHeader>
@@ -470,6 +479,11 @@ export function HealthChecksClient({
                                     <TableCell>
                                         {check.height != null || check.weight != null
                                             ? `${check.height != null ? `${check.height}cm` : "-"} / ${check.weight != null ? `${check.weight}kg` : "-"}`
+                                            : "-"}
+                                    </TableCell>
+                                    <TableCell className="tabular-nums">
+                                        {check.blood_pressure_systolic != null || check.blood_pressure_diastolic != null
+                                            ? `${check.blood_pressure_systolic ?? "-"} / ${check.blood_pressure_diastolic ?? "-"}`
                                             : "-"}
                                     </TableCell>
                                     {showActions && (
