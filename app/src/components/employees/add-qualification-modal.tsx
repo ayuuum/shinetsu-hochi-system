@@ -158,8 +158,6 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
             }
 
             const primaryPath = uploadedPaths[0] ?? null;
-            const selectedQualification = masters.find((master) => master.id === values.qualification_id);
-            const isFireDefenseQualification = !!selectedQualification?.name?.includes("消防設備士");
             const normalizedCertificateNumber = values.certificate_number?.trim() || null;
 
             const { data: insertedQualification, error } = await supabase
@@ -202,29 +200,22 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                 }
             }
 
-            if (primaryPath && isFireDefenseQualification && normalizedCertificateNumber) {
+            // 同一免状（同じ社員 × 同じ免状番号）の他資格にも、登録した証書を反映する
+            if (primaryPath && normalizedCertificateNumber) {
                 const { data: sameCertRows } = await supabase
                     .from("employee_qualifications")
-                    .select("id, qualification_id")
+                    .select("id")
                     .eq("employee_id", employeeId)
                     .eq("certificate_number", normalizedCertificateNumber)
                     .neq("id", insertedQualification.id)
                     .is("deleted_at", null);
 
-                const sameFireDefenseRows = (sameCertRows || []).filter((row) => {
-                    const master = masters.find((m) => m.id === row.qualification_id);
-                    return !!master?.name?.includes("消防設備士");
-                });
-
-                if (sameFireDefenseRows.length > 0) {
+                if (sameCertRows && sameCertRows.length > 0) {
                     await supabase
                         .from("employee_qualifications")
                         .update({ certificate_url: primaryPath, issuing_authority: values.issuing_authority?.trim() || null })
-                        .in("id", sameFireDefenseRows.map((row) => row.id));
-                }
-
-                if (sameFireDefenseRows.length > 0) {
-                    toast.success(`同じ免状番号の消防設備士資格 ${sameFireDefenseRows.length}件にも証書を反映しました`);
+                        .in("id", sameCertRows.map((row) => row.id));
+                    toast.success(`同じ免状番号の資格 ${sameCertRows.length}件にも証書を反映しました`);
                 }
             }
 
@@ -457,7 +448,7 @@ export function AddQualificationModal({ employeeId, onSuccess }: AddQualificatio
                         <div>
                             <label className="text-sm font-medium">証書画像（複数選択可・任意）</label>
                             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                                消防設備士で同じ証明書番号を入力した場合、登録した証書は同じ社員の同一免状資格にも反映されます。
+                                同じ免状番号を入力した場合、登録した証書は同じ社員の同一免状資格（消防設備士・危険物取扱者など）にも反映されます。
                             </p>
                             <div className="mt-1.5">
                                 <CertificateFilePicker files={certificateFiles} onFilesChange={setCertificateFiles} />

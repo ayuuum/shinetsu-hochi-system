@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Tables } from "@/types/supabase";
@@ -50,6 +50,7 @@ import { AddFamilyModal } from "@/components/employees/add-family-modal";
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { alertStyles } from "@/lib/alert-utils";
+import { computeLicenseGroups } from "@/lib/license-groups";
 import {
     deleteEmployeeAction,
     deleteProjectAction,
@@ -147,6 +148,10 @@ export function EmployeeDetailClient({
     const { isAdmin, isAdminOrHr, role, linkedEmployeeId } = useAuth();
     const isTechnicianSelf = role === "technician" && linkedEmployeeId === employee.id;
     const isPartner = employee.person_type === "partner";
+    const licenseGroups = useMemo(
+        () => computeLicenseGroups(employee.employee_qualifications),
+        [employee.employee_qualifications],
+    );
 
     useEffect(() => {
         setActiveTab(initialTab);
@@ -633,11 +638,18 @@ export function EmployeeDetailClient({
                         <Card className="bg-muted/10 border-dashed"><CardContent className="py-10 text-center text-muted-foreground text-sm">資格情報が登録されていません。</CardContent></Card>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {employee.employee_qualifications.map((qualification) => (
+                            {employee.employee_qualifications.map((qualification) => {
+                                const licenseGroup = licenseGroups.get(qualification.id);
+                                return (
                                 <Card key={qualification.id} className="shadow-sm">
                                     <CardHeader className="pb-2">
                                             <div className="flex items-center justify-between">
-                                                <Badge className="w-fit">{qualification.qualification_master?.category || "一般"}</Badge>
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                    <Badge className="w-fit">{qualification.qualification_master?.category || "一般"}</Badge>
+                                                    {licenseGroup?.isLatest && (
+                                                        <Badge className="w-fit border-transparent bg-emerald-100 text-emerald-700">最新免状</Badge>
+                                                    )}
+                                                </div>
                                                 <div className="flex items-center gap-1">
                                                     {getExpiryBadge(qualification.expiry_date)}
                                                     {isAdminOrHr && (
@@ -658,6 +670,14 @@ export function EmployeeDetailClient({
                                     </CardHeader>
                                     <CardContent className="text-sm space-y-1">
                                         <div className="flex justify-between"><span className="text-muted-foreground">免状番号</span><span>{qualification.certificate_number || "-"}</span></div>
+                                        {licenseGroup && (
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">同一免状</span>
+                                                <span className={licenseGroup.isLatest ? "text-emerald-700" : "text-muted-foreground"}>
+                                                    {licenseGroup.isLatest ? `最新（全${licenseGroup.groupSize}件）` : `旧版（全${licenseGroup.groupSize}件）`}
+                                                </span>
+                                            </div>
+                                        )}
                                         <div className="flex justify-between"><span className="text-muted-foreground">取得日</span><span className="tabular-nums">{formatDisplayDate(qualification.acquired_date)}</span></div>
                                         <div className="flex justify-between font-bold">
                                             <span className="text-muted-foreground">有効期限</span>
@@ -674,7 +694,8 @@ export function EmployeeDetailClient({
                                         )}
                                     </CardContent>
                                 </Card>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
 

@@ -108,7 +108,7 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
 
         const previousPath = qualification.certificate_url;
         let uploadedPath: string | null = null;
-        let syncedFireDefenseCount = 0;
+        let syncedLicenseCount = 0;
 
         try {
             let nextCertificateUrl: string | null | undefined = undefined;
@@ -166,37 +166,23 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
                 await supabase.storage.from("certificates").remove([previousPath]);
             }
 
-            const isFireDefenseQualification = qualification.qualification_master?.name?.includes("消防設備士");
+            // 同一免状（同じ社員 × 同じ免状番号）の他資格にも、差し替えた証書を反映する
             const normalizedCertificateNumber = values.certificate_number?.trim() || null;
-            if (nextCertificateUrl && isFireDefenseQualification && employeeId && normalizedCertificateNumber) {
+            if (nextCertificateUrl && employeeId && normalizedCertificateNumber) {
                 const { data: sameCertRows } = await supabase
                     .from("employee_qualifications")
-                    .select("id, qualification_id")
+                    .select("id")
                     .eq("employee_id", employeeId)
                     .eq("certificate_number", normalizedCertificateNumber)
                     .neq("id", qualification.id)
                     .is("deleted_at", null);
 
                 if (sameCertRows && sameCertRows.length > 0) {
-                    const qualificationIds = [...new Set(sameCertRows.map((row) => row.qualification_id).filter(Boolean))];
-                    const { data: masters } = await supabase
-                        .from("qualification_master")
-                        .select("id, name")
-                        .in("id", qualificationIds as string[]);
-                    const fireDefenseMasterIds = new Set(
-                        (masters || []).filter((m) => m.name?.includes("消防設備士")).map((m) => m.id)
-                    );
-                    const syncIds = sameCertRows
-                        .filter((row) => row.qualification_id && fireDefenseMasterIds.has(row.qualification_id))
-                        .map((row) => row.id);
-
-                    if (syncIds.length > 0) {
-                        await supabase
-                            .from("employee_qualifications")
-                            .update({ certificate_url: nextCertificateUrl, issuing_authority: values.issuing_authority?.trim() || null })
-                            .in("id", syncIds);
-                        syncedFireDefenseCount = syncIds.length;
-                    }
+                    await supabase
+                        .from("employee_qualifications")
+                        .update({ certificate_url: nextCertificateUrl, issuing_authority: values.issuing_authority?.trim() || null })
+                        .in("id", sameCertRows.map((row) => row.id));
+                    syncedLicenseCount = sameCertRows.length;
                 }
             }
 
@@ -235,8 +221,8 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
             }
 
             toast.success(
-                syncedFireDefenseCount > 0
-                    ? `資格情報を更新しました。同じ免状番号の消防設備士資格 ${syncedFireDefenseCount}件にも証書を反映しました`
+                syncedLicenseCount > 0
+                    ? `資格情報を更新しました。同じ免状番号の資格 ${syncedLicenseCount}件にも証書を反映しました`
                     : "資格情報を更新しました"
             );
             onOpenChange(false);
@@ -345,7 +331,7 @@ export function EditQualificationModal({ qualification, open, onOpenChange }: Ed
                                 ) : null}
                             </div>
                             <p className="text-xs leading-relaxed text-muted-foreground">
-                                スキャンした免状・証書を保存できます。消防設備士で同じ証明書番号を入力した場合、差し替えた証書は同じ社員の同一免状資格にも反映されます。
+                                スキャンした免状・証書を保存できます。同じ免状番号を入力した場合、差し替えた証書は同じ社員の同一免状資格（消防設備士・危険物取扱者など）にも反映されます。
                             </p>
                             {qualification.certificate_url && !removeCertificate && certificateFiles.length === 0 ? (
                                 <p className="text-xs text-muted-foreground">現在、証書画像が登録されています。</p>
