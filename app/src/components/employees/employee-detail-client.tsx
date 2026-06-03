@@ -51,6 +51,7 @@ import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { alertStyles } from "@/lib/alert-utils";
 import { computeLicenseGroups } from "@/lib/license-groups";
+import { computeCurrentExperience, formatExperience } from "@/lib/experience";
 import {
     deleteEmployeeAction,
     deleteProjectAction,
@@ -117,6 +118,13 @@ function DetailItem({ label, value }: { label: string; value: string | null | nu
 function maskedEmploymentValue(isTechnicianSelf: boolean, value: string | null | number) {
     if (!isTechnicianSelf) return value;
     return "—";
+}
+
+// 加入の有無（＋任意で名称）を「加入（名称）」「未加入」「-」で表示する
+function formatEnrollment(enrolled: boolean | null | undefined, name?: string | null) {
+    if (enrolled == null) return "-";
+    if (!enrolled) return "未加入";
+    return name?.trim() ? `加入（${name.trim()}）` : "加入";
 }
 
 
@@ -452,9 +460,13 @@ export function EmployeeDetailClient({
                                 <DetailItem label="雇用形態" value={maskedEmploymentValue(isTechnicianSelf, employee.employment_type)} />
                                 <DetailItem label="入社年月日" value={formatDisplayDate(employee.hire_date)} />
                                 <DetailItem label="退職日" value={formatDisplayDate(employee.termination_date)} />
+                                <DetailItem label="経験年数" value={formatExperience(computeCurrentExperience(employee.experience_years, employee.experience_months, employee.experience_base_date))} />
                                 <DetailItem label="健康保険番号" value={maskedEmploymentValue(isTechnicianSelf, employee.health_insurance_no)} />
+                                <DetailItem label="健康保険（名称）" value={maskedEmploymentValue(isTechnicianSelf, employee.health_insurance_type)} />
                                 <DetailItem label="年金番号" value={maskedEmploymentValue(isTechnicianSelf, employee.pension_no)} />
+                                <DetailItem label="年金（加入状況）" value={isTechnicianSelf ? "—" : formatEnrollment(employee.pension_enrolled, employee.pension_type)} />
                                 <DetailItem label="雇用保険番号" value={maskedEmploymentValue(isTechnicianSelf, employee.emp_insurance_no)} />
+                                <DetailItem label="雇用保険（加入状況）" value={isTechnicianSelf ? "—" : formatEnrollment(employee.emp_insurance_enrolled)} />
                             </CardContent>
                         </Card>
                     </div>
@@ -873,6 +885,22 @@ export function EmployeeDetailClient({
                                                 <Badge variant={healthCheck.is_normal == null ? "secondary" : healthCheck.is_normal ? "outline" : "destructive"}>
                                                     {getHealthCheckResultLabel(healthCheck.is_normal)}
                                                 </Badge>
+                                            </div>
+                                            <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+                                                <span className="text-muted-foreground">
+                                                    身長/体重：<span className="text-foreground tabular-nums">
+                                                        {healthCheck.height != null || healthCheck.weight != null
+                                                            ? `${healthCheck.height != null ? `${healthCheck.height}cm` : "-"} / ${healthCheck.weight != null ? `${healthCheck.weight}kg` : "-"}`
+                                                            : "-"}
+                                                    </span>
+                                                </span>
+                                                <span className="text-muted-foreground">
+                                                    血圧(最高/最低)：<span className="text-foreground tabular-nums">
+                                                        {healthCheck.blood_pressure_systolic != null || healthCheck.blood_pressure_diastolic != null
+                                                            ? `${healthCheck.blood_pressure_systolic ?? "-"} / ${healthCheck.blood_pressure_diastolic ?? "-"} mmHg`
+                                                            : "-"}
+                                                    </span>
+                                                </span>
                                             </div>
                                             <p className="text-sm text-muted-foreground mt-2 bg-muted/30 p-2 rounded">{healthCheck.notes || "特記事項なし"}</p>
                                         </div>

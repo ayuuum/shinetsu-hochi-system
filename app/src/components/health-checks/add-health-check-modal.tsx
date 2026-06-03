@@ -57,6 +57,8 @@ export function AddHealthCheckModal({ employees }: { employees: Employee[] }) {
             is_normal: "true",
             height: "",
             weight: "",
+            blood_pressure_systolic: "",
+            blood_pressure_diastolic: "",
             notes: "",
         },
     });
@@ -87,6 +89,8 @@ export function AddHealthCheckModal({ employees }: { employees: Employee[] }) {
             is_normal: "true",
             height: "",
             weight: "",
+            blood_pressure_systolic: "",
+            blood_pressure_diastolic: "",
             notes: "",
         });
         router.refresh();
@@ -186,6 +190,23 @@ export function AddHealthCheckModal({ employees }: { employees: Employee[] }) {
                                 <FormItem>
                                     <FormLabel>体重(kg)</FormLabel>
                                     <FormControl><Input type="number" step="0.1" placeholder="65.0" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField control={form.control} name="blood_pressure_systolic" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>最高血圧(mmHg)</FormLabel>
+                                    <FormControl><Input type="number" step="1" inputMode="numeric" placeholder="120" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                            <FormField control={form.control} name="blood_pressure_diastolic" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>最低血圧(mmHg)</FormLabel>
+                                    <FormControl><Input type="number" step="1" inputMode="numeric" placeholder="80" {...field} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />

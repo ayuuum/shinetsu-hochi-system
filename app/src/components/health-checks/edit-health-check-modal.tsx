@@ -181,6 +181,23 @@ export function EditHealthCheckModal({ healthCheck, employees, open, onOpenChang
                             )} />
                         </div>
 
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField control={form.control} name="blood_pressure_systolic" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>最高血圧(mmHg)</FormLabel>
+                                    <FormControl><Input type="number" step="1" inputMode="numeric" placeholder="120" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                            <FormField control={form.control} name="blood_pressure_diastolic" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>最低血圧(mmHg)</FormLabel>
+                                    <FormControl><Input type="number" step="1" inputMode="numeric" placeholder="80" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                        </div>
+
                         <FormField control={form.control} name="notes" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>備考</FormLabel>
