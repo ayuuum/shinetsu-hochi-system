@@ -402,28 +402,28 @@ export function EmployeeDetailClient({
                 return (
             <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as EmployeeDetailTab)} className="w-full">
                 <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
-                    <TabsList className="inline-flex h-auto min-w-max gap-0.5 rounded-xl bg-muted p-1.5">
-                        <TabsTrigger value="qualifications" className="flex-shrink-0 h-auto rounded-lg px-4 py-3 text-sm gap-2">
-                            <Award className="h-4 w-4" />保有資格
+                    <TabsList className="inline-flex h-auto min-w-max gap-1 rounded-2xl bg-muted p-2">
+                        <TabsTrigger value="qualifications" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5">
+                            <Award className="h-5 w-5" />保有資格
                             {urgentQualCount > 0 && (
                                 <span className="ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-100 px-1 text-[10px] font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
                                     {urgentQualCount}
                                 </span>
                             )}
                         </TabsTrigger>
-                        <TabsTrigger value="basic" className="flex-shrink-0 h-auto rounded-lg px-4 py-3 text-sm gap-2"><User className="h-4 w-4" />基本情報</TabsTrigger>
-                        <TabsTrigger value="construction" className="flex-shrink-0 h-auto rounded-lg px-4 py-3 text-sm gap-2"><HardHat className="h-4 w-4" />施工実績</TabsTrigger>
-                        <TabsTrigger value="seminars" className="flex-shrink-0 h-auto rounded-lg px-4 py-3 text-sm gap-2"><BookOpen className="h-4 w-4" />受験・セミナー</TabsTrigger>
-                        <TabsTrigger value="health" className="flex-shrink-0 h-auto rounded-lg px-4 py-3 text-sm gap-2"><Heart className="h-4 w-4" />健康診断</TabsTrigger>
-                        <TabsTrigger value="family" className="flex-shrink-0 h-auto rounded-lg px-4 py-3 text-sm gap-2"><Users className="h-4 w-4" />家族</TabsTrigger>
+                        <TabsTrigger value="basic" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5"><User className="h-5 w-5" />基本情報</TabsTrigger>
+                        <TabsTrigger value="construction" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5"><HardHat className="h-5 w-5" />施工実績</TabsTrigger>
+                        <TabsTrigger value="seminars" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5"><BookOpen className="h-5 w-5" />受験・セミナー</TabsTrigger>
+                        <TabsTrigger value="health" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5"><Heart className="h-5 w-5" />健康診断</TabsTrigger>
+                        <TabsTrigger value="family" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5"><Users className="h-5 w-5" />家族</TabsTrigger>
                         {isAdminOrHr && (
-                            <TabsTrigger value="it" className="flex-shrink-0 h-auto rounded-lg px-4 py-3 text-sm gap-2">
-                                <Laptop className="h-4 w-4" />
+                            <TabsTrigger value="it" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5">
+                                <Laptop className="h-5 w-5" />
                                 IT・ライセンス
                             </TabsTrigger>
                         )}
                         {isAdmin && (
-                            <TabsTrigger value="insurance" className="flex-shrink-0 h-auto rounded-lg px-4 py-3 text-sm gap-2"><Shield className="h-4 w-4" />保険情報</TabsTrigger>
+                            <TabsTrigger value="insurance" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5"><Shield className="h-5 w-5" />保険情報</TabsTrigger>
                         )}
                     </TabsList>
                 </div>
