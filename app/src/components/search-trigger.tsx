@@ -22,12 +22,12 @@ export function SearchTrigger({ className }: { className?: string }) {
         >
             <div className="flex min-w-0 items-center gap-2">
                 <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
-                <span className="truncate text-[15px] text-muted-foreground transition-colors group-hover:text-foreground">
-                    社員・資格・工事・車両・画面を検索…
+                <span className="text-[15px] text-muted-foreground transition-colors group-hover:text-foreground">
+                    検索
                 </span>
             </div>
-            <div className="ml-3 hidden shrink-0 items-center gap-1 rounded bg-muted/50 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground md:flex border border-border/50">
-                <span>Ctrl K</span>
+            <div className="ml-3 shrink-0 flex items-center gap-1 rounded border border-border/50 bg-muted/50 px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                <span>Ctrl+K</span>
             </div>
         </button>
     );
