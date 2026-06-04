@@ -73,7 +73,7 @@ export function BottomNav() {
                                 isActive ? "font-semibold" : "font-medium"
                             )}>{item.title}</span>
                             {isActive && (
-                                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+                                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
                             )}
                         </Link>
                     );

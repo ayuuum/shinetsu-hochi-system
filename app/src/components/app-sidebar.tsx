@@ -90,8 +90,8 @@ export function AppSidebar() {
                                                     className={cn(
                                                         "relative rounded-lg px-2.5 py-2 transition-all duration-200",
                                                         isActive
-                                                            ? "bg-primary/10 text-primary font-medium before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-[3px] before:rounded-full before:bg-primary"
-                                                            : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                                                            ? "bg-primary/10 text-primary font-medium before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1 before:rounded-full before:bg-primary"
+                                                            : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                                                     )}
                                                 >
                                                     <item.icon className={cn("w-[18px] h-[18px]", isActive && "text-primary")} />
