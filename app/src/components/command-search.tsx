@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Command } from "cmdk";
-import { ArrowUpRight, Award, BriefcaseBusiness, HeartPulse, Search, Truck, User, Wine } from "lucide-react";
+import { AlertCircle, ArrowUpRight, Award, BriefcaseBusiness, Clock, Download, HeartPulse, Search, Truck, Upload, User, UserPlus, Wine } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { formatDateInTokyo, formatDisplayDate } from "@/lib/date";
 import { Tables } from "@/types/supabase";
@@ -12,6 +12,16 @@ import {
     findAppNavItemByUrl,
     getVisibleAppNavItems,
 } from "@/lib/app-navigation";
+
+type QuickActionItem = {
+    id: string;
+    title: string;
+    subtitle: string;
+    href: string;
+    Icon: React.ComponentType<{ className?: string }>;
+    keywords: string[];
+    onAction?: () => void;
+};
 
 type SearchResult = {
     id: string;
@@ -82,6 +92,63 @@ export function CommandSearch({
         [isAdminOrHr, linkedEmployeeId, pathname, role]
     );
 
+    const quickActionItems = useMemo<QuickActionItem[]>(() => {
+        const today = formatDateInTokyo(new Date());
+        return [
+            {
+                id: "quick-today-alcohol",
+                title: "今日のアルコールチェック",
+                subtitle: `${today} の記録を確認・追加`,
+                href: `/alcohol-checks?date=${today}`,
+                Icon: Wine,
+                keywords: ["アルコール", "今日", "酒気帯び", "記録"],
+            },
+            {
+                id: "quick-expired",
+                title: "期限切れ資格を確認",
+                subtitle: "対応が必要な期限切れ資格",
+                href: "/qualifications?level=danger",
+                Icon: AlertCircle,
+                keywords: ["資格", "期限切れ", "危険", "超過"],
+            },
+            {
+                id: "quick-urgent",
+                title: "14日以内に期限が切れる資格",
+                subtitle: "早めの更新が必要な資格",
+                href: "/qualifications?level=urgent",
+                Icon: Clock,
+                keywords: ["資格", "期限", "急ぎ", "14日", "更新"],
+            },
+            ...(isAdminOrHr ? [
+                {
+                    id: "quick-add-employee",
+                    title: "社員を登録する",
+                    subtitle: "社員一覧から新規追加できます",
+                    href: "/employees",
+                    Icon: UserPlus,
+                    keywords: ["社員", "追加", "登録", "新規"],
+                },
+                {
+                    id: "quick-export-qualifications",
+                    title: "資格一覧をCSVで出力",
+                    subtitle: "全資格データをダウンロード",
+                    href: "/api/export/qualifications",
+                    Icon: Download,
+                    keywords: ["資格", "CSV", "エクスポート", "ダウンロード", "出力"],
+                    onAction: () => window.open("/api/export/qualifications", "_blank"),
+                },
+                {
+                    id: "quick-import",
+                    title: "データをインポート",
+                    subtitle: "CSVから社員データを一括登録",
+                    href: "/import",
+                    Icon: Upload,
+                    keywords: ["インポート", "CSV", "一括", "取り込み", "登録"],
+                },
+            ] as QuickActionItem[] : []),
+        ];
+    }, [isAdminOrHr]);
+
     const visibleRecentItems = recentItems.filter((item) => {
         if (item.type !== "action") return true;
         const navItem = findAppNavItemByUrl(item.href);
@@ -91,6 +158,13 @@ export function CommandSearch({
         if (navItem.technicianOnly && role !== "technician") return false;
         return true;
     });
+
+    const filteredQuickActionItems = query.trim().length === 0
+        ? quickActionItems.slice(0, 3)
+        : quickActionItems.filter((item) => {
+            const haystack = [item.title, item.subtitle, ...item.keywords].join(" ").toLowerCase();
+            return haystack.includes(query.trim().toLowerCase());
+        });
 
     const filteredActionItems = query.trim().length === 0
         ? actionItems.slice(0, 6)
@@ -385,6 +459,32 @@ export function CommandSearch({
         return <ActionIcon className="h-4 w-4 text-muted-foreground shrink-0" />;
     };
 
+    const renderQuickAction = (item: QuickActionItem) => (
+        <Command.Item
+            key={item.id}
+            value={`quick-${item.id}-${item.title}`}
+            onSelect={() => {
+                onOpenChange(false);
+                setQuery("");
+                if (item.onAction) {
+                    item.onAction();
+                } else {
+                    router.push(item.href);
+                }
+            }}
+            className="flex items-center gap-3 rounded-[20px] border border-transparent px-3 py-3 text-sm transition-[background-color,border-color,color,transform] duration-150 hover:-translate-y-px hover:border-border/70 hover:bg-accent/80 data-[selected=true]:border-border/70 data-[selected=true]:bg-accent/80"
+        >
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-[16px] border border-primary/10 bg-primary/10">
+                <item.Icon className="h-4 w-4 text-primary shrink-0" />
+            </div>
+            <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">{item.title}</p>
+                <p className="truncate text-xs text-muted-foreground">{item.subtitle}</p>
+            </div>
+            <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />
+        </Command.Item>
+    );
+
     const renderItem = (item: SearchResult) => (
         <Command.Item
             key={`${item.type}-${item.id}`}
@@ -404,7 +504,7 @@ export function CommandSearch({
     );
 
     const showDefaultState = query.trim().length === 0;
-    const showEmptyState = !loading && !showDefaultState && results.length === 0 && filteredActionItems.length === 0;
+    const showEmptyState = !loading && !showDefaultState && results.length === 0 && filteredActionItems.length === 0 && filteredQuickActionItems.length === 0;
 
     if (!open) return null;
 
@@ -450,6 +550,19 @@ export function CommandSearch({
                                 </Command.Loading>
                             )}
 
+                            {showDefaultState && filteredQuickActionItems.length > 0 && (
+                                <Command.Group
+                                    heading="クイックアクション"
+                                    className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pb-2 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.16em] [&_[cmdk-group-heading]]:text-muted-foreground"
+                                >
+                                    {filteredQuickActionItems.map(renderQuickAction)}
+                                </Command.Group>
+                            )}
+
+                            {showDefaultState && filteredQuickActionItems.length > 0 && (visibleRecentItems.length > 0 || actionItems.length > 0) && (
+                                <Command.Separator className="my-2 h-px bg-border/70" />
+                            )}
+
                             {showDefaultState && visibleRecentItems.length > 0 && (
                                 <Command.Group
                                     heading="最近開いた項目"
@@ -470,6 +583,19 @@ export function CommandSearch({
                                 >
                                     {actionItems.map(renderItem)}
                                 </Command.Group>
+                            )}
+
+                            {!showDefaultState && filteredQuickActionItems.length > 0 && (
+                                <Command.Group
+                                    heading="クイックアクション"
+                                    className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pb-2 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.16em] [&_[cmdk-group-heading]]:text-muted-foreground"
+                                >
+                                    {filteredQuickActionItems.map(renderQuickAction)}
+                                </Command.Group>
+                            )}
+
+                            {!showDefaultState && filteredQuickActionItems.length > 0 && (filteredActionItems.length > 0 || results.length > 0) && (
+                                <Command.Separator className="my-2 h-px bg-border/70" />
                             )}
 
                             {!showDefaultState && filteredActionItems.length > 0 && (
