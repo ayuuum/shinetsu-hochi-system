@@ -6,15 +6,26 @@ import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { Tables } from "@/types/supabase";
 import {
     previewEmployeeImportAction,
     runEmployeeImportAction,
+    previewQualificationImportAction,
+    runQualificationImportAction,
 } from "@/app/actions/admin-ops-actions";
 import { type EmployeeImportPreviewRow, type EmployeeImportSourceRow } from "@/lib/imports/employee-import";
 import {
+    type QualificationImportPreviewRow,
+    type QualificationImportSourceRow,
+    QUALIFICATION_IMPORT_TEMPLATE_HEADERS,
+    QUALIFICATION_IMPORT_TEMPLATE_SAMPLE_ROW,
+    QUALIFICATION_IMPORT_COLUMN_MAP,
+} from "@/lib/imports/qualification-import";
+import {
+    Award,
     CheckCircle,
     Download,
     FileSpreadsheet,
@@ -22,6 +33,7 @@ import {
     Loader2,
     RefreshCcw,
     Upload,
+    Users,
     XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -113,7 +125,7 @@ const TEMPLATE_SAMPLE_ROW = [
 ];
 
 function cleanCSVValue(value: string) {
-    return value.trim().replace(/\ufeff/g, "");
+    return value.trim().replace(/﻿/g, "");
 }
 
 function parseCSV(text: string): EmployeeImportSourceRow[] {
@@ -219,6 +231,16 @@ export default function ImportPage() {
     const [loadingRuns, setLoadingRuns] = useState(false);
     const [importResult, setImportResult] = useState<{ inserted: number; failed: number; skipped: number } | null>(null);
     const { isAdminOrHr, loading } = useAuth();
+
+    // Qualification import state
+    const [qualFile, setQualFile] = useState<File | null>(null);
+    const [qualSourceRows, setQualSourceRows] = useState<QualificationImportSourceRow[]>([]);
+    const [qualPreviewRows, setQualPreviewRows] = useState<QualificationImportPreviewRow[]>([]);
+    const [qualPreviewSummary, setQualPreviewSummary] = useState<ImportPreviewSummary | null>(null);
+    const [qualImporting, setQualImporting] = useState(false);
+    const [qualValidating, setQualValidating] = useState(false);
+    const [qualImportResult, setQualImportResult] = useState<{ inserted: number; failed: number; skipped: number } | null>(null);
+    const qualFileInputRef = useRef<HTMLInputElement>(null);
 
     const loadRecentRuns = useCallback(async () => {
         setLoadingRuns(true);
@@ -347,7 +369,7 @@ export default function ImportPage() {
             TEMPLATE_HEADERS.map(escapeCsvValue).join(","),
             TEMPLATE_SAMPLE_ROW.map(escapeCsvValue).join(","),
         ].join("\n");
-        const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+        const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement("a");
         anchor.href = url;
@@ -372,7 +394,7 @@ export default function ImportPage() {
             ].join(",")),
         ].join("\n");
 
-        const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+        const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement("a");
         anchor.href = url;
@@ -380,6 +402,129 @@ export default function ImportPage() {
         anchor.click();
         URL.revokeObjectURL(url);
     }, [previewRows]);
+
+    // Qualification import functions
+    const resetQualImport = useCallback(() => {
+        setQualFile(null);
+        setQualSourceRows([]);
+        setQualPreviewRows([]);
+        setQualPreviewSummary(null);
+        setQualImportResult(null);
+        if (qualFileInputRef.current) {
+            qualFileInputRef.current.value = "";
+        }
+    }, []);
+
+    const processQualFile = useCallback(async (nextFile: File) => {
+        setQualValidating(true);
+        setQualImportResult(null);
+        setQualPreviewRows([]);
+        setQualPreviewSummary(null);
+        setQualSourceRows([]);
+
+        try {
+            const text = await nextFile.text();
+            // Parse CSV with qualification column map
+            const records: string[][] = [];
+            let currentValue = "";
+            let currentRecord: string[] = [];
+            let inQuotes = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                if (char === "\"") {
+                    if (inQuotes && text[i + 1] === "\"") { currentValue += "\""; i++; }
+                    else inQuotes = !inQuotes;
+                    continue;
+                }
+                if (char === "," && !inQuotes) {
+                    currentRecord.push(currentValue.trim().replace(/﻿/g, ""));
+                    currentValue = "";
+                    continue;
+                }
+                if ((char === "\n" || char === "\r") && !inQuotes) {
+                    if (char === "\r" && text[i + 1] === "\n") i++;
+                    currentRecord.push(currentValue.trim().replace(/﻿/g, ""));
+                    currentValue = "";
+                    if (currentRecord.some((c) => c.length > 0)) records.push(currentRecord);
+                    currentRecord = [];
+                    continue;
+                }
+                currentValue += char;
+            }
+            if (currentValue.length > 0 || currentRecord.length > 0) {
+                currentRecord.push(currentValue.trim().replace(/﻿/g, ""));
+                if (currentRecord.some((c) => c.length > 0)) records.push(currentRecord);
+            }
+
+            if (records.length === 0) {
+                toast.error("データが見つかりません。ヘッダー行とデータ行を確認してください。");
+                return;
+            }
+
+            const [headers, ...dataRows] = records;
+            const rows: QualificationImportSourceRow[] = dataRows.map((values) => {
+                const row: QualificationImportSourceRow = {};
+                headers.forEach((header, idx) => {
+                    const clean = header.trim().replace(/﻿/g, "");
+                    const mapped = QUALIFICATION_IMPORT_COLUMN_MAP[clean] || clean;
+                    row[mapped] = values[idx] || "";
+                });
+                return row;
+            });
+
+            if (rows.length === 0) {
+                toast.error("データが見つかりません。ヘッダー行とデータ行を確認してください。");
+                return;
+            }
+
+            const result = await previewQualificationImportAction(rows);
+            if (!result.success) {
+                toast.error(result.error);
+                return;
+            }
+
+            setQualSourceRows(rows);
+            setQualPreviewRows(result.rows);
+            setQualPreviewSummary(result.summary);
+        } catch (error) {
+            console.error("Failed to parse qualification import file:", error);
+            toast.error("CSVの解析に失敗しました。ファイル形式を確認してください。");
+        } finally {
+            setQualValidating(false);
+        }
+    }, []);
+
+    const handleQualImport = async () => {
+        if (qualSourceRows.length === 0) return;
+        setQualImporting(true);
+        const result = await runQualificationImportAction({
+            sourceRows: qualSourceRows,
+            fileName: qualFile?.name,
+        });
+        setQualImporting(false);
+        if (!result.success) {
+            toast.error(result.error);
+            return;
+        }
+        setQualImportResult({ inserted: result.inserted, failed: result.failed, skipped: result.skipped });
+        toast.success(`${result.inserted}件の資格データを登録しました。`);
+        router.refresh();
+    };
+
+    const downloadQualTemplateCsv = useCallback(() => {
+        const csv = [
+            QUALIFICATION_IMPORT_TEMPLATE_HEADERS.map(escapeCsvValue).join(","),
+            QUALIFICATION_IMPORT_TEMPLATE_SAMPLE_ROW.map(escapeCsvValue).join(","),
+        ].join("\n");
+        const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "qualification-import-template.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+    }, []);
 
     if (loading) {
         return (
@@ -416,7 +561,7 @@ export default function ImportPage() {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">データインポート</h1>
                     <p className="mt-2 text-muted-foreground">
-                        1) CSVをアップロード → 2) 自動チェック（必須項目・日付形式・社員番号重複）→ 3) 問題なければ一括登録、の流れで進みます。
+                        CSVファイルから社員・資格データを一括登録します。
                     </p>
                 </div>
                 <Button variant="outline" render={<Link href="/operations-log" />}>
@@ -425,211 +570,388 @@ export default function ImportPage() {
                 </Button>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <FileSpreadsheet className="h-5 w-5" />
-                        ファイルアップロード
-                    </CardTitle>
-                    <CardDescription>
-                        ExcelからCSV形式で保存したファイルを取り込みます。UTF-8 のCSVを選択すると、サーバー側で「必須項目」「日付形式」「社員番号の重複」を自動チェックします。
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex flex-col gap-3 rounded-2xl border border-blue-200 bg-blue-50/80 p-4 text-sm text-blue-950 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                            <p className="font-semibold">社員CSVテンプレートを使って移行してください</p>
-                            <p className="mt-1 text-blue-900/80">
-                                Excelファイルを直接取り込むのではなく、必要な列をそろえてCSVとして保存してからアップロードします。
-                            </p>
-                        </div>
-                        <Button type="button" variant="outline" onClick={downloadTemplateCsv} className="shrink-0 bg-white">
-                            <Download className="mr-2 h-4 w-4" />
-                            テンプレートCSV
-                        </Button>
-                    </div>
+            <Tabs defaultValue="employees">
+                <TabsList>
+                    <TabsTrigger value="employees">
+                        <Users className="mr-1.5 h-4 w-4" />
+                        社員インポート
+                    </TabsTrigger>
+                    <TabsTrigger value="qualifications">
+                        <Award className="mr-1.5 h-4 w-4" />
+                        資格インポート
+                    </TabsTrigger>
+                </TabsList>
 
-                    <div
-                        onDrop={handleDrop}
-                        onDragOver={(event) => event.preventDefault()}
-                        className="cursor-pointer rounded-2xl border-2 border-dashed border-border/70 px-6 py-12 text-center transition-colors hover:border-primary/50"
-                        onClick={() => fileInputRef.current?.click()}
-                    >
-                        {validating ? (
-                            <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-muted-foreground" />
-                        ) : (
-                            <Upload className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
-                        )}
-                        <p className="text-sm text-muted-foreground">
-                            {validating ? "CSVを検証中..." : "ドラッグ&ドロップ または クリックしてファイルを選択"}
-                        </p>
-                        <p className="mt-2 text-xs text-muted-foreground">
-                            一度に処理できるのは 1,500 行までです
-                        </p>
-                        {file && <p className="mt-3 text-sm font-medium">{file.name}</p>}
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept=".csv,.txt"
-                            onChange={handleFileSelect}
-                            className="hidden"
-                        />
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                        <Badge variant="outline">必須: 社員番号 / 氏名 / フリガナ / 生年月日 / 入社日 / 拠点</Badge>
-                        <Badge variant="outline">重複チェック: 社員番号（既存・CSV内）</Badge>
-                        <Badge variant="outline">日付形式: YYYY-MM-DD または YYYY/M/D</Badge>
-                        <Badge variant="outline">最大: 1,500行 / 回</Badge>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {previewSummary && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>事前チェック結果</CardTitle>
-                        <CardDescription>
-                            {previewSummary.total}行中 {previewSummary.valid}行が登録OK、{previewSummary.invalid}行にエラーがあります。
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid gap-3 sm:grid-cols-4">
-                            <div className="rounded-2xl border border-border/60 bg-background/75 p-4">
-                                <p className="text-xs text-muted-foreground">登録OK</p>
-                                <p className="mt-2 text-2xl font-semibold">{previewSummary.valid}</p>
-                            </div>
-                            <div className="rounded-2xl border border-border/60 bg-background/75 p-4">
-                                <p className="text-xs text-muted-foreground">エラー</p>
-                                <p className="mt-2 text-2xl font-semibold">{previewSummary.invalid}</p>
-                            </div>
-                            <div className="rounded-2xl border border-border/60 bg-background/75 p-4">
-                                <p className="text-xs text-muted-foreground">ファイル内で重複</p>
-                                <p className="mt-2 text-2xl font-semibold">{previewSummary.duplicateInFile}</p>
-                            </div>
-                            <div className="rounded-2xl border border-border/60 bg-background/75 p-4">
-                                <p className="text-xs text-muted-foreground">既に登録済み</p>
-                                <p className="mt-2 text-2xl font-semibold">{previewSummary.duplicateInDb}</p>
-                            </div>
-                        </div>
-
-                        <div className="max-h-[420px] space-y-2 overflow-y-auto">
-                            {previewRows.map((row) => (
-                                <div
-                                    key={row.row}
-                                    className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${
-                                        row.valid
-                                            ? "border-emerald-200 bg-emerald-50/80"
-                                            : "border-rose-200 bg-rose-50/80"
-                                    }`}
-                                >
-                                    {row.valid ? (
-                                        <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                                    ) : (
-                                        <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
-                                    )}
-                                    <div className="min-w-0 flex-1">
-                                        <p className="font-medium">
-                                            {row.row}行目: {row.name || "(氏名未入力)"} {row.employeeNumber ? `(${row.employeeNumber})` : ""}
-                                        </p>
-                                        {!row.valid && (
-                                            <div className="mt-2 flex flex-wrap gap-1.5">
-                                                {row.errors.map((errorMessage) => (
-                                                    <Badge key={`${row.row}-${errorMessage}`} variant="destructive" className="text-[10px]">
-                                                        {errorMessage}
-                                                    </Badge>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="flex flex-col gap-3 sm:flex-row">
-                            <Button
-                                onClick={handleImport}
-                                disabled={importing || validating || previewSummary.valid === 0}
-                                className="flex-1"
-                            >
-                                {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {previewSummary.invalid > 0
-                                    ? `エラーなし行のみ登録（${previewSummary.valid}件）`
-                                    : `${previewSummary.valid}件をインポート`}
-                            </Button>
-                            {previewSummary.invalid > 0 && (
-                                <Button variant="outline" onClick={downloadErrorCsv}>
-                                    <Download className="mr-2 h-4 w-4" />
-                                    エラーCSVを出力
-                                </Button>
-                            )}
-                            <Button variant="outline" onClick={resetImport}>
-                                <RefreshCcw className="mr-2 h-4 w-4" />
-                                別ファイルを選ぶ
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            {importResult && (
-                <Card>
-                    <CardContent className="space-y-4 pt-6 text-center">
-                        <CheckCircle className="mx-auto h-12 w-12 text-emerald-600" />
-                        <div>
-                            <p className="text-xl font-semibold">{importResult.inserted}件の社員データを登録しました</p>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                失敗 {importResult.failed}件 / スキップ {importResult.skipped}件
-                            </p>
-                        </div>
-                        <div className="flex flex-col justify-center gap-3 sm:flex-row">
-                            <Button variant="outline" onClick={resetImport}>
-                                別のファイルをインポート
-                            </Button>
-                            <Button render={<Link href="/employees" />}>
-                                社員一覧を確認
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>直近のインポート履歴</CardTitle>
-                        <CardDescription>
-                            実行結果と失敗件数をこの画面でも確認できます。
-                        </CardDescription>
-                    </div>
-                    {loadingRuns && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                </CardHeader>
-                <CardContent className="space-y-3">
-                    {recentRuns.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-border/70 px-4 py-6 text-sm text-muted-foreground">
-                            まだインポート履歴はありません。
-                        </div>
-                    ) : (
-                        recentRuns.map((run) => (
-                            <div
-                                key={run.id}
-                                className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background/70 px-4 py-3 md:flex-row md:items-center md:justify-between"
-                            >
-                                <div className="space-y-1">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <p className="font-medium">{run.source_file_name || "ファイル名なし"}</p>
-                                        {getRunBadge(run.status)}
-                                    </div>
-                                    <p className="text-sm text-muted-foreground">
-                                        {run.summary || `${run.inserted_rows}件登録 / ${run.failed_rows}件失敗 / ${run.skipped_rows}件スキップ`}
+                <TabsContent value="employees" className="mt-6 space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <FileSpreadsheet className="h-5 w-5" />
+                                ファイルアップロード
+                            </CardTitle>
+                            <CardDescription>
+                                ExcelからCSV形式で保存したファイルを取り込みます。UTF-8 のCSVを選択すると、サーバー側で「必須項目」「日付形式」「社員番号の重複」を自動チェックします。
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex flex-col gap-3 rounded-2xl border border-blue-200 bg-blue-50/80 p-4 text-sm text-blue-950 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p className="font-semibold">社員CSVテンプレートを使って移行してください</p>
+                                    <p className="mt-1 text-blue-900/80">
+                                        Excelファイルを直接取り込むのではなく、必要な列をそろえてCSVとして保存してからアップロードします。
                                     </p>
                                 </div>
-                                <p className="text-xs text-muted-foreground">{formatDateTime(run.created_at)}</p>
+                                <Button type="button" variant="outline" onClick={downloadTemplateCsv} className="shrink-0 bg-white">
+                                    <Download className="mr-2 h-4 w-4" />
+                                    テンプレートCSV
+                                </Button>
                             </div>
-                        ))
+
+                            <div
+                                onDrop={handleDrop}
+                                onDragOver={(event) => event.preventDefault()}
+                                className="cursor-pointer rounded-2xl border-2 border-dashed border-border/70 px-6 py-12 text-center transition-colors hover:border-primary/50"
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                {validating ? (
+                                    <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-muted-foreground" />
+                                ) : (
+                                    <Upload className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+                                )}
+                                <p className="text-sm text-muted-foreground">
+                                    {validating ? "CSVを検証中..." : "ドラッグ&ドロップ または クリックしてファイルを選択"}
+                                </p>
+                                <p className="mt-2 text-xs text-muted-foreground">
+                                    一度に処理できるのは 1,500 行までです
+                                </p>
+                                {file && <p className="mt-3 text-sm font-medium">{file.name}</p>}
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept=".csv,.txt"
+                                    onChange={handleFileSelect}
+                                    className="hidden"
+                                />
+                            </div>
+
+                            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                <Badge variant="outline">必須: 社員番号 / 氏名 / フリガナ / 生年月日 / 入社日 / 拠点</Badge>
+                                <Badge variant="outline">重複チェック: 社員番号（既存・CSV内）</Badge>
+                                <Badge variant="outline">日付形式: YYYY-MM-DD または YYYY/M/D</Badge>
+                                <Badge variant="outline">最大: 1,500行 / 回</Badge>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {previewSummary && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>事前チェック結果</CardTitle>
+                                <CardDescription>
+                                    {previewSummary.total}行中 {previewSummary.valid}行が登録OK、{previewSummary.invalid}行にエラーがあります。
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid gap-3 sm:grid-cols-4">
+                                    <div className="rounded-2xl border border-border/60 bg-background/75 p-4">
+                                        <p className="text-xs text-muted-foreground">登録OK</p>
+                                        <p className="mt-2 text-2xl font-semibold">{previewSummary.valid}</p>
+                                    </div>
+                                    <div className="rounded-2xl border border-border/60 bg-background/75 p-4">
+                                        <p className="text-xs text-muted-foreground">エラー</p>
+                                        <p className="mt-2 text-2xl font-semibold">{previewSummary.invalid}</p>
+                                    </div>
+                                    <div className="rounded-2xl border border-border/60 bg-background/75 p-4">
+                                        <p className="text-xs text-muted-foreground">ファイル内で重複</p>
+                                        <p className="mt-2 text-2xl font-semibold">{previewSummary.duplicateInFile}</p>
+                                    </div>
+                                    <div className="rounded-2xl border border-border/60 bg-background/75 p-4">
+                                        <p className="text-xs text-muted-foreground">既に登録済み</p>
+                                        <p className="mt-2 text-2xl font-semibold">{previewSummary.duplicateInDb}</p>
+                                    </div>
+                                </div>
+
+                                <div className="max-h-[420px] space-y-2 overflow-y-auto">
+                                    {previewRows.map((row) => (
+                                        <div
+                                            key={row.row}
+                                            className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${
+                                                row.valid
+                                                    ? "border-emerald-200 bg-emerald-50/80"
+                                                    : "border-rose-200 bg-rose-50/80"
+                                            }`}
+                                        >
+                                            {row.valid ? (
+                                                <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                                            ) : (
+                                                <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+                                            )}
+                                            <div className="min-w-0 flex-1">
+                                                <p className="font-medium">
+                                                    {row.row}行目: {row.name || "(氏名未入力)"} {row.employeeNumber ? `(${row.employeeNumber})` : ""}
+                                                </p>
+                                                {!row.valid && (
+                                                    <div className="mt-2 flex flex-wrap gap-1.5">
+                                                        {row.errors.map((errorMessage) => (
+                                                            <Badge key={`${row.row}-${errorMessage}`} variant="destructive" className="text-[10px]">
+                                                                {errorMessage}
+                                                            </Badge>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="flex flex-col gap-3 sm:flex-row">
+                                    <Button
+                                        onClick={handleImport}
+                                        disabled={importing || validating || previewSummary.valid === 0}
+                                        className="flex-1"
+                                    >
+                                        {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        {previewSummary.invalid > 0
+                                            ? `エラーなし行のみ登録（${previewSummary.valid}件）`
+                                            : `${previewSummary.valid}件をインポート`}
+                                    </Button>
+                                    {previewSummary.invalid > 0 && (
+                                        <Button variant="outline" onClick={downloadErrorCsv}>
+                                            <Download className="mr-2 h-4 w-4" />
+                                            エラーCSVを出力
+                                        </Button>
+                                    )}
+                                    <Button variant="outline" onClick={resetImport}>
+                                        <RefreshCcw className="mr-2 h-4 w-4" />
+                                        別ファイルを選ぶ
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
                     )}
-                </CardContent>
-            </Card>
+
+                    {importResult && (
+                        <Card>
+                            <CardContent className="space-y-4 pt-6 text-center">
+                                <CheckCircle className="mx-auto h-12 w-12 text-emerald-600" />
+                                <div>
+                                    <p className="text-xl font-semibold">{importResult.inserted}件の社員データを登録しました</p>
+                                    <p className="mt-1 text-sm text-muted-foreground">
+                                        失敗 {importResult.failed}件 / スキップ {importResult.skipped}件
+                                    </p>
+                                </div>
+                                <div className="flex flex-col justify-center gap-3 sm:flex-row">
+                                    <Button variant="outline" onClick={resetImport}>
+                                        別のファイルをインポート
+                                    </Button>
+                                    <Button render={<Link href="/employees" />}>
+                                        社員一覧を確認
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle>直近のインポート履歴</CardTitle>
+                                <CardDescription>
+                                    実行結果と失敗件数をこの画面でも確認できます。
+                                </CardDescription>
+                            </div>
+                            {loadingRuns && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {recentRuns.length === 0 ? (
+                                <div className="rounded-2xl border border-dashed border-border/70 px-4 py-6 text-sm text-muted-foreground">
+                                    まだインポート履歴はありません。
+                                </div>
+                            ) : (
+                                recentRuns.map((run) => (
+                                    <div
+                                        key={run.id}
+                                        className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background/70 px-4 py-3 md:flex-row md:items-center md:justify-between"
+                                    >
+                                        <div className="space-y-1">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <p className="font-medium">{run.source_file_name || "ファイル名なし"}</p>
+                                                {getRunBadge(run.status)}
+                                            </div>
+                                            <p className="text-sm text-muted-foreground">
+                                                {run.summary || `${run.inserted_rows}件登録 / ${run.failed_rows}件失敗 / ${run.skipped_rows}件スキップ`}
+                                            </p>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">{formatDateTime(run.created_at)}</p>
+                                    </div>
+                                ))
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="qualifications" className="mt-6 space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <FileSpreadsheet className="h-5 w-5" />
+                                資格CSVファイルをアップロード
+                            </CardTitle>
+                            <CardDescription>
+                                社員番号と資格名（マスタに登録済み）を含むCSVを取り込みます。資格名が資格マスタに存在しない場合はスキップされます。
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex flex-col gap-3 rounded-2xl border border-blue-200 bg-blue-50/80 p-4 text-sm text-blue-950 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p className="font-semibold">資格CSVテンプレートを使って移行してください</p>
+                                    <p className="mt-1 text-blue-900/80">
+                                        社員番号と資格名は必須です。資格名は資格マスタに登録済みの名称と完全一致が必要です。
+                                    </p>
+                                </div>
+                                <Button type="button" variant="outline" onClick={downloadQualTemplateCsv} className="shrink-0 bg-white">
+                                    <Download className="mr-2 h-4 w-4" />
+                                    テンプレートCSV
+                                </Button>
+                            </div>
+
+                            <div
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    const f = e.dataTransfer.files[0];
+                                    if (!f || (!f.name.endsWith(".csv") && !f.name.endsWith(".txt"))) {
+                                        resetQualImport();
+                                        toast.error("CSVファイルを選択してください。");
+                                        return;
+                                    }
+                                    setQualFile(f);
+                                    void processQualFile(f);
+                                }}
+                                onDragOver={(e) => e.preventDefault()}
+                                className="cursor-pointer rounded-2xl border-2 border-dashed border-border/70 px-6 py-12 text-center transition-colors hover:border-primary/50"
+                                onClick={() => qualFileInputRef.current?.click()}
+                            >
+                                {qualValidating ? (
+                                    <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-muted-foreground" />
+                                ) : (
+                                    <Upload className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+                                )}
+                                <p className="text-sm text-muted-foreground">
+                                    {qualValidating ? "CSVを検証中..." : "ドラッグ&ドロップ または クリックしてファイルを選択"}
+                                </p>
+                                <p className="mt-2 text-xs text-muted-foreground">一度に処理できるのは 1,500 行までです</p>
+                                {qualFile && <p className="mt-3 text-sm font-medium">{qualFile.name}</p>}
+                                <input
+                                    ref={qualFileInputRef}
+                                    type="file"
+                                    accept=".csv,.txt"
+                                    onChange={(e) => {
+                                        const f = e.target.files?.[0];
+                                        if (!f) return;
+                                        setQualFile(f);
+                                        void processQualFile(f);
+                                    }}
+                                    className="hidden"
+                                />
+                            </div>
+
+                            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                <Badge variant="outline">必須: 社員番号 / 資格名</Badge>
+                                <Badge variant="outline">資格名は資格マスタと完全一致</Badge>
+                                <Badge variant="outline">日付形式: YYYY-MM-DD または YYYY/M/D</Badge>
+                                <Badge variant="outline">最大: 1,500行 / 回</Badge>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {qualPreviewSummary && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>事前チェック結果</CardTitle>
+                                <CardDescription>
+                                    {qualPreviewSummary.total}行中 {qualPreviewSummary.valid}行が登録OK、{qualPreviewSummary.invalid}行にエラーがあります。
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="rounded-2xl border border-border/60 bg-background/75 p-4">
+                                        <p className="text-xs text-muted-foreground">登録OK</p>
+                                        <p className="mt-2 text-2xl font-semibold">{qualPreviewSummary.valid}</p>
+                                    </div>
+                                    <div className="rounded-2xl border border-border/60 bg-background/75 p-4">
+                                        <p className="text-xs text-muted-foreground">エラー</p>
+                                        <p className="mt-2 text-2xl font-semibold">{qualPreviewSummary.invalid}</p>
+                                    </div>
+                                </div>
+                                <div className="max-h-[420px] space-y-2 overflow-y-auto">
+                                    {qualPreviewRows.map((row) => (
+                                        <div
+                                            key={row.row}
+                                            className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${
+                                                row.valid ? "border-emerald-200 bg-emerald-50/80" : "border-rose-200 bg-rose-50/80"
+                                            }`}
+                                        >
+                                            {row.valid ? (
+                                                <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                                            ) : (
+                                                <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+                                            )}
+                                            <div className="min-w-0 flex-1">
+                                                <p className="font-medium">
+                                                    {row.row}行目: {row.employeeName || row.employeeNumber || "(社員番号未入力)"} / {row.qualificationName || "(資格名未入力)"}
+                                                </p>
+                                                {!row.valid && (
+                                                    <div className="mt-2 flex flex-wrap gap-1.5">
+                                                        {row.errors.map((errorMessage) => (
+                                                            <Badge key={`${row.row}-${errorMessage}`} variant="destructive" className="text-[10px]">
+                                                                {errorMessage}
+                                                            </Badge>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="flex flex-col gap-3 sm:flex-row">
+                                    <Button
+                                        onClick={handleQualImport}
+                                        disabled={qualImporting || qualValidating || qualPreviewSummary.valid === 0}
+                                        className="flex-1"
+                                    >
+                                        {qualImporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        {qualPreviewSummary.invalid > 0
+                                            ? `エラーなし行のみ登録（${qualPreviewSummary.valid}件）`
+                                            : `${qualPreviewSummary.valid}件をインポート`}
+                                    </Button>
+                                    <Button variant="outline" onClick={resetQualImport}>
+                                        <RefreshCcw className="mr-2 h-4 w-4" />
+                                        別ファイルを選ぶ
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {qualImportResult && (
+                        <Card>
+                            <CardContent className="space-y-4 pt-6 text-center">
+                                <CheckCircle className="mx-auto h-12 w-12 text-emerald-600" />
+                                <div>
+                                    <p className="text-xl font-semibold">{qualImportResult.inserted}件の資格データを登録しました</p>
+                                    <p className="mt-1 text-sm text-muted-foreground">
+                                        失敗 {qualImportResult.failed}件 / スキップ {qualImportResult.skipped}件
+                                    </p>
+                                </div>
+                                <div className="flex flex-col justify-center gap-3 sm:flex-row">
+                                    <Button variant="outline" onClick={resetQualImport}>別のファイルをインポート</Button>
+                                    <Button render={<Link href="/qualifications" />}>資格一覧を確認</Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }
