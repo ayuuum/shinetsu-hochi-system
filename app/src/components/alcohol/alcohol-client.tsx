@@ -41,6 +41,19 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useIntentPrefetch } from "@/hooks/use-intent-prefetch";
 
+const ALCOHOL_LOCATION_OPTIONS = [
+    { value: "all", label: "全拠点" },
+    { value: "本社", label: "本社" },
+    { value: "塩尻", label: "塩尻営業所" },
+    { value: "白馬", label: "白馬営業所" },
+] as const;
+
+const ALCOHOL_STATUS_OPTIONS = [
+    { value: "all", label: "全判定" },
+    { value: "abnormal", label: "不適正" },
+    { value: "normal", label: "適正" },
+] as const;
+
 export type AlcoholCheckRow = {
     id: string;
     employee_id: string | null;
@@ -389,6 +402,7 @@ export function AlcoholClient({
                         <div className="space-y-2">
                             <p className="text-sm font-medium">拠点</p>
                             <Select
+                                items={ALCOHOL_LOCATION_OPTIONS}
                                 value={mobileLocation || undefined}
                                 onValueChange={(value) => setMobileLocation(value && value !== "all" ? value : "")}
                             >
@@ -406,6 +420,7 @@ export function AlcoholClient({
                         <div className="space-y-2">
                             <p className="text-sm font-medium">判定</p>
                             <Select
+                                items={ALCOHOL_STATUS_OPTIONS}
                                 value={mobileStatus || undefined}
                                 onValueChange={(value) => setMobileStatus(value && value !== "all" ? value : "")}
                             >
@@ -450,6 +465,7 @@ export function AlcoholClient({
                     className="w-[180px]"
                 />
                 <Select
+                    items={ALCOHOL_LOCATION_OPTIONS}
                     value={currentLocation || undefined}
                     onValueChange={(value) => updateFilters({ location: value && value !== "all" ? value : "", page: 1 })}
                 >
@@ -464,6 +480,7 @@ export function AlcoholClient({
                     </SelectContent>
                 </Select>
                 <Select
+                    items={ALCOHOL_STATUS_OPTIONS}
                     value={currentStatus || undefined}
                     onValueChange={(value) => updateFilters({ status: value && value !== "all" ? value : "", page: 1 })}
                 >

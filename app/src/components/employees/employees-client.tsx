@@ -34,6 +34,26 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useIntentPrefetch } from "@/hooks/use-intent-prefetch";
 
+const PERSON_TYPE_OPTIONS = [
+    { value: "employee", label: "弊社従業員" },
+    { value: "partner", label: "協力会社" },
+    { value: "all", label: "すべて" },
+] as const;
+
+const BRANCH_OPTIONS = [
+    { value: "all", label: "すべての拠点" },
+    { value: "本社", label: "本社" },
+    { value: "塩尻", label: "塩尻営業所" },
+    { value: "白馬", label: "白馬営業所" },
+] as const;
+
+const SORT_OPTIONS = [
+    { value: "default", label: "社員番号順" },
+    { value: "hire_date_desc", label: "入社日（新しい順）" },
+    { value: "hire_date_asc", label: "入社日（古い順）" },
+    { value: "name_asc", label: "氏名（五十音順）" },
+] as const;
+
 export type EmployeeWithQualCount = Tables<"employees"> & {
     qualification_count: number;
     expiring_count: number;
@@ -307,6 +327,7 @@ export function EmployeesClient({
                     <div className="space-y-2">
                         <p className="text-sm font-medium">区分</p>
                         <Select
+                            items={PERSON_TYPE_OPTIONS}
                             value={mobilePersonType}
                             onValueChange={(value) => setMobilePersonType((value || "employee") as "employee" | "partner" | "all")}
                         >
@@ -325,6 +346,7 @@ export function EmployeesClient({
                     <div className="space-y-2">
                         <p className="text-sm font-medium">拠点</p>
                         <Select
+                            items={BRANCH_OPTIONS}
                             value={mobileBranch || undefined}
                             onValueChange={(value) => setMobileBranch(value && value !== "all" ? value : "")}
                         >
@@ -385,6 +407,7 @@ export function EmployeesClient({
                     )}
                 </div>
                 <Select
+                    items={PERSON_TYPE_OPTIONS}
                     value={currentPersonType}
                     onValueChange={(value) => updateFilters({ personType: (value || "employee") as "employee" | "partner" | "all", page: 1 })}
                 >
@@ -399,6 +422,7 @@ export function EmployeesClient({
                     </SelectContent>
                 </Select>
                 <Select
+                    items={BRANCH_OPTIONS}
                     value={currentBranch || undefined}
                     onValueChange={(value) => updateFilters({ branch: value && value !== "all" ? value : "", page: 1 })}
                 >
@@ -432,6 +456,7 @@ export function EmployeesClient({
                     </SelectContent>
                 </Select>
                 <Select
+                    items={SORT_OPTIONS}
                     value={currentSort || undefined}
                     onValueChange={(value) => updateFilters({ sort: value && value !== "default" ? value : "", page: 1 })}
                 >
