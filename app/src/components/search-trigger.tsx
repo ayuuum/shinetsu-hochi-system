@@ -26,7 +26,7 @@ export function SearchTrigger({ className }: { className?: string }) {
                     検索
                 </span>
             </div>
-            <div className="ml-3 shrink-0 flex items-center gap-1 rounded border border-border/50 bg-muted/50 px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+            <div className="ml-3 shrink-0 hidden md:flex items-center gap-1 rounded border border-border/50 bg-muted/50 px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
                 <span>Ctrl+K</span>
             </div>
         </button>

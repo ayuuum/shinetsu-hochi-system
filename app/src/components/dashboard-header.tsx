@@ -23,7 +23,7 @@ export function DashboardHeader() {
     const sidebarActionLabel = isMobile ? "メニュー" : state === "expanded" ? "サイドバーを閉じる" : "サイドバーを開く";
 
     return (
-        <header className="sticky top-0 z-20 border-b border-border/30 bg-background/95 backdrop-blur-sm print:hidden">
+        <header className="sticky top-0 z-20 border-b border-border/40 bg-background/95 backdrop-blur-sm print:hidden">
             <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 md:px-6">
                 <div className="flex min-w-0 flex-1 items-center gap-3 md:gap-4">
                     <Button
@@ -44,11 +44,11 @@ export function DashboardHeader() {
                         <span className="min-w-0 truncate text-muted-foreground/70 text-xs font-medium tracking-wide">
                             {section.title}
                         </span>
-                        <span aria-hidden="true" className="text-border/60 shrink-0">/</span>
+                        <span aria-hidden="true" className="text-muted-foreground/40 shrink-0">/</span>
                         <span className="min-w-0 truncate font-semibold text-foreground">
                             {activeItem.title}
                         </span>
-                        <span aria-hidden="true" className="text-border/40 shrink-0 hidden lg:inline">|</span>
+                        <span aria-hidden="true" className="text-muted-foreground/30 shrink-0 hidden lg:inline">|</span>
                         <span className="hidden whitespace-nowrap text-muted-foreground/60 text-xs lg:inline">
                             {headerDateFormatter.format(new Date())}
                         </span>

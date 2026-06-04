@@ -378,6 +378,207 @@ export async function runEmployeeImportAction({
     }
 }
 
+// ========== Qualification Import ==========
+
+type QualificationImportPreviewResult =
+    | {
+        success: true;
+        rows: import("@/lib/imports/qualification-import").QualificationImportPreviewRow[];
+        summary: ImportPreviewSummary;
+    }
+    | ErrorResult;
+
+type QualificationImportCommitResult =
+    | {
+        success: true;
+        inserted: number;
+        failed: number;
+        skipped: number;
+    }
+    | ErrorResult;
+
+export async function previewQualificationImportAction(
+    sourceRows: import("@/lib/imports/qualification-import").QualificationImportSourceRow[]
+): Promise<QualificationImportPreviewResult> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) return { success: false, error: auth.error };
+
+    const {
+        buildQualificationImportValues,
+        validateQualificationImportValues,
+    } = await import("@/lib/imports/qualification-import");
+
+    const supabase = await createSupabaseServer();
+
+    const cappedRows = sourceRows.slice(0, 1500);
+    const preparedRows = cappedRows.map((sourceRow, index) => ({
+        row: index + 2,
+        sourceRow,
+        values: buildQualificationImportValues(sourceRow),
+    }));
+
+    // Fetch all employees and qualification masters for lookup
+    const employeeNumbers = [...new Set(
+        preparedRows.map((r) => r.values.employee_number).filter(Boolean)
+    )];
+    const qualificationNames = [...new Set(
+        preparedRows.map((r) => r.values.qualification_name).filter(Boolean)
+    )];
+
+    const [{ data: employees }, { data: qualMasters }] = await Promise.all([
+        employeeNumbers.length > 0
+            ? supabase
+                .from("employees")
+                .select("id, employee_number, name")
+                .in("employee_number", employeeNumbers)
+                .is("deleted_at", null)
+            : Promise.resolve({ data: [] }),
+        qualificationNames.length > 0
+            ? supabase
+                .from("qualification_master")
+                .select("id, name")
+                .in("name", qualificationNames)
+            : Promise.resolve({ data: [] }),
+    ]);
+
+    const employeeMap = new Map(
+        (employees || []).map((e: { id: string; employee_number: string; name: string }) => [e.employee_number, e])
+    );
+    const qualMasterMap = new Map(
+        (qualMasters || []).map((q: { id: string; name: string }) => [q.name, q])
+    );
+
+    let valid = 0;
+    let invalid = 0;
+    const previewRows: import("@/lib/imports/qualification-import").QualificationImportPreviewRow[] = [];
+
+    for (const { row, values } of preparedRows) {
+        const errors = validateQualificationImportValues(values);
+
+        const employee = employeeMap.get(values.employee_number);
+        if (values.employee_number && !employee) {
+            errors.push(`社員番号 "${values.employee_number}" が見つかりません`);
+        }
+
+        const qualMaster = qualMasterMap.get(values.qualification_name);
+        if (values.qualification_name && !qualMaster) {
+            errors.push(`資格名 "${values.qualification_name}" が資格マスタに存在しません`);
+        }
+
+        if (errors.length === 0) {
+            valid++;
+        } else {
+            invalid++;
+        }
+
+        previewRows.push({
+            row,
+            employeeNumber: values.employee_number,
+            employeeName: employee ? (employee as { id: string; employee_number: string; name: string }).name : "",
+            qualificationName: values.qualification_name,
+            acquiredDate: values.acquired_date,
+            expiryDate: values.expiry_date,
+            valid: errors.length === 0,
+            errors,
+            values: errors.length === 0 ? values : null,
+        });
+    }
+
+    return {
+        success: true,
+        rows: previewRows,
+        summary: { total: cappedRows.length, valid, invalid, duplicateInFile: 0, duplicateInDb: 0 },
+    };
+}
+
+export async function runQualificationImportAction({
+    sourceRows,
+    fileName,
+}: {
+    sourceRows: import("@/lib/imports/qualification-import").QualificationImportSourceRow[];
+    fileName?: string;
+}): Promise<QualificationImportCommitResult> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) return { success: false, error: auth.error };
+
+    const {
+        buildQualificationImportValues,
+        validateQualificationImportValues,
+    } = await import("@/lib/imports/qualification-import");
+
+    const supabase = await createSupabaseServer();
+
+    const cappedRows = sourceRows.slice(0, 1500);
+    const values = cappedRows.map((r) => buildQualificationImportValues(r));
+
+    const employeeNumbers = [...new Set(values.map((v) => v.employee_number).filter(Boolean))];
+    const qualificationNames = [...new Set(values.map((v) => v.qualification_name).filter(Boolean))];
+
+    const [{ data: employees }, { data: qualMasters }] = await Promise.all([
+        employeeNumbers.length > 0
+            ? supabase
+                .from("employees")
+                .select("id, employee_number")
+                .in("employee_number", employeeNumbers)
+                .is("deleted_at", null)
+            : Promise.resolve({ data: [] }),
+        qualificationNames.length > 0
+            ? supabase
+                .from("qualification_master")
+                .select("id, name")
+                .in("name", qualificationNames)
+            : Promise.resolve({ data: [] }),
+    ]);
+
+    const employeeMap = new Map(
+        (employees || []).map((e: { id: string; employee_number: string }) => [e.employee_number, e.id])
+    );
+    const qualMasterMap = new Map(
+        (qualMasters || []).map((q: { id: string; name: string }) => [q.name, q.id])
+    );
+
+    let inserted = 0;
+    let failed = 0;
+    let skipped = 0;
+
+    for (const v of values) {
+        const errors = validateQualificationImportValues(v);
+        const employeeId = employeeMap.get(v.employee_number);
+        const qualId = qualMasterMap.get(v.qualification_name);
+
+        if (errors.length > 0 || !employeeId || !qualId) {
+            skipped++;
+            continue;
+        }
+
+        const { error } = await supabase
+            .from("employee_qualifications")
+            .insert({
+                employee_id: employeeId,
+                qualification_id: qualId,
+                acquired_date: v.acquired_date || null,
+                expiry_date: v.expiry_date || null,
+                status: v.status || null,
+                issuing_authority: v.issuing_authority || null,
+                certificate_number: v.certificate_number || null,
+            });
+
+        if (error) {
+            failed++;
+        } else {
+            inserted++;
+        }
+    }
+
+    if (inserted > 0) {
+        revalidatePath("/qualifications");
+    }
+
+    void fileName; // unused but keep for consistency
+
+    return { success: true, inserted, failed, skipped };
+}
+
 export async function runDailyAlertJobAction(): Promise<DailyAlertRunResult> {
     const auth = await requireAdminOrHr();
     if (!auth.ok) {

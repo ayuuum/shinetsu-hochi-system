@@ -304,44 +304,71 @@ export function EmployeeDetailClient({
     return (
         <div className="space-y-6 animate-in fade-in duration-200 pb-10">
             <div className="flex flex-col gap-4">
-                <Button variant="ghost" onClick={handleBack} className="w-fit -ml-2 text-muted-foreground">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    {isTechnicianSelf ? "マイページへ戻る" : "一覧へ戻る"}
-                </Button>
+                <div className="flex items-center justify-between">
+                    <Button variant="ghost" onClick={handleBack} className="w-fit -ml-2 text-muted-foreground">
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        {isTechnicianSelf ? "マイページへ戻る" : "一覧へ戻る"}
+                    </Button>
+                    {isAdminOrHr && (
+                        <div className="flex items-center gap-1 sm:hidden">
+                            <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)} className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground">
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => setDeleteOpen(true)} className="h-9 w-9 p-0 text-destructive/70 hover:text-destructive hover:bg-destructive/10">
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    )}
+                </div>
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-inner">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-inner">
                             {photoUrl ? (
                                 <Image
                                     src={photoUrl}
                                     alt={`${employee.name} の顔写真`}
                                     width={80}
                                     height={80}
-                                    className="h-20 w-20 rounded-2xl object-cover"
+                                    className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl object-cover"
                                 />
                             ) : (
-                                <User className="h-10 w-10" />
+                                <User className="h-8 w-8 sm:h-10 sm:w-10" />
                             )}
                         </div>
-                        <div>
-                            <div className="flex items-center gap-3">
-                                <h1 className="text-3xl font-bold tracking-tight">{isPartner ? employee.partner_company || employee.name : employee.name}</h1>
+                        <div className="min-w-0">
+                            <h1 className="text-xl sm:text-3xl font-bold tracking-tight">{isPartner ? employee.partner_company || employee.name : employee.name}</h1>
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
                                 <Badge variant={isPartner ? "outline" : "secondary"}>{isPartner ? "協力会社" : "弊社従業員"}</Badge>
                                 <Badge variant="secondary">{employee.branch || "支店未設定"}</Badge>
                                 {employee.termination_date && <Badge variant="destructive">退職済</Badge>}
                                 {isAdminOrHr && hasFamilyAllowance && <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">家族手当あり</Badge>}
+                                {isAdminOrHr && housingAlertActive && (
+                                    <Badge
+                                        variant="outline"
+                                        className={housingDaysLeft! <= 0
+                                            ? "gap-1 border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+                                            : "gap-1 border-amber-200 bg-amber-50/60 text-amber-700 dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-400"
+                                        }
+                                        title={housingDaysLeft! <= 0
+                                            ? "家賃補助の支給期間（入社5年）が終了しました。"
+                                            : `家賃補助の支給期間が残り${housingDaysLeft}日で終了します（${formatDisplayDate(housingAllowanceEnd!.toISOString().split("T")[0])}まで）。`}
+                                    >
+                                        <AlertTriangle className="h-3 w-3" />
+                                        {housingDaysLeft! <= 0 ? "家賃補助 終了" : `家賃補助 残${housingDaysLeft}日`}
+                                    </Badge>
+                                )}
                             </div>
-                            <p className="text-muted-foreground font-medium">
+                            <p className="text-muted-foreground text-sm font-medium mt-1">
                                 {isPartner ? employee.partner_contact_name || employee.name : employee.name_kana} | {employee.employee_number}
                             </p>
-                            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{employee.address || "住所未登録"}</span>
-                                <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{employee.hire_date ? `${isPartner ? "取引開始" : "入社"}: ${formatDisplayDate(employee.hire_date)}` : `${isPartner ? "取引開始日" : "入社日"}未登録`}</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-1.5 text-xs sm:text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1 min-w-0"><MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" /><span className="truncate">{employee.address || "住所未登録"}</span></span>
+                                <span className="flex items-center gap-1 shrink-0"><Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />{employee.hire_date ? `${isPartner ? "取引開始" : "入社"}: ${formatDisplayDate(employee.hire_date)}` : `${isPartner ? "取引開始日" : "入社日"}未登録`}</span>
                             </div>
                         </div>
                     </div>
                     {isAdminOrHr && (
-                        <div className="flex shrink-0 gap-2">
+                        <div className="hidden sm:flex shrink-0 gap-2">
                             <Button variant="outline" onClick={() => setEditOpen(true)}>
                                 <Pencil className="mr-2 h-4 w-4" />
                                 編集する
@@ -354,17 +381,6 @@ export function EmployeeDetailClient({
                     )}
                 </div>
             </div>
-
-            {isAdminOrHr && housingAlertActive && (
-                <div className="mx-6 mt-3 flex items-start gap-2 rounded-md border border-amber-300/80 bg-amber-50 px-3 py-2.5 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                    <span>
-                        {housingDaysLeft! <= 0
-                            ? `家賃補助の支給期間（入社5年）が終了しました。`
-                            : `家賃補助の支給期間が残り${housingDaysLeft}日で終了します（${formatDisplayDate(housingAllowanceEnd!.toISOString().split("T")[0])}まで）。`}
-                    </span>
-                </div>
-            )}
 
             {isAdminOrHr && (
                 <EditEmployeeModal
@@ -402,28 +418,28 @@ export function EmployeeDetailClient({
                 return (
             <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as EmployeeDetailTab)} className="w-full">
                 <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
-                    <TabsList className="inline-flex h-auto min-w-max gap-0.5 rounded-xl bg-muted p-1">
-                        <TabsTrigger value="qualifications" className="flex-shrink-0 h-auto rounded-lg px-3.5 py-2.5 text-sm gap-1.5">
-                            <Award className="h-3.5 w-3.5" />保有資格
+                    <TabsList className="inline-flex h-auto min-w-max gap-1 rounded-2xl bg-muted p-2">
+                        <TabsTrigger value="qualifications" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5">
+                            <Award className="h-5 w-5" />保有資格
                             {urgentQualCount > 0 && (
                                 <span className="ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-100 px-1 text-[10px] font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
                                     {urgentQualCount}
                                 </span>
                             )}
                         </TabsTrigger>
-                        <TabsTrigger value="basic" className="flex-shrink-0 h-auto rounded-lg px-3.5 py-2.5 text-sm gap-1.5"><User className="h-3.5 w-3.5" />基本情報</TabsTrigger>
-                        <TabsTrigger value="construction" className="flex-shrink-0 h-auto rounded-lg px-3.5 py-2.5 text-sm gap-1.5"><HardHat className="h-3.5 w-3.5" />施工実績</TabsTrigger>
-                        <TabsTrigger value="seminars" className="flex-shrink-0 h-auto rounded-lg px-3.5 py-2.5 text-sm gap-1.5"><BookOpen className="h-3.5 w-3.5" />受験・セミナー</TabsTrigger>
-                        <TabsTrigger value="health" className="flex-shrink-0 h-auto rounded-lg px-3.5 py-2.5 text-sm gap-1.5"><Heart className="h-3.5 w-3.5" />健康診断</TabsTrigger>
-                        <TabsTrigger value="family" className="flex-shrink-0 h-auto rounded-lg px-3.5 py-2.5 text-sm gap-1.5"><Users className="h-3.5 w-3.5" />家族</TabsTrigger>
+                        <TabsTrigger value="basic" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5"><User className="h-5 w-5" />基本情報</TabsTrigger>
+                        <TabsTrigger value="construction" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5"><HardHat className="h-5 w-5" />施工実績</TabsTrigger>
+                        <TabsTrigger value="seminars" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5"><BookOpen className="h-5 w-5" />受験・セミナー</TabsTrigger>
+                        <TabsTrigger value="health" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5"><Heart className="h-5 w-5" />健康診断</TabsTrigger>
+                        <TabsTrigger value="family" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5"><Users className="h-5 w-5" />家族</TabsTrigger>
                         {isAdminOrHr && (
-                            <TabsTrigger value="it" className="flex-shrink-0 h-auto rounded-lg px-3.5 py-2.5 text-sm gap-1.5">
-                                <Laptop className="h-3.5 w-3.5" />
+                            <TabsTrigger value="it" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5">
+                                <Laptop className="h-5 w-5" />
                                 IT・ライセンス
                             </TabsTrigger>
                         )}
                         {isAdmin && (
-                            <TabsTrigger value="insurance" className="flex-shrink-0 h-auto rounded-lg px-3.5 py-2.5 text-sm gap-1.5"><Shield className="h-3.5 w-3.5" />保険情報</TabsTrigger>
+                            <TabsTrigger value="insurance" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5"><Shield className="h-5 w-5" />保険情報</TabsTrigger>
                         )}
                     </TabsList>
                 </div>

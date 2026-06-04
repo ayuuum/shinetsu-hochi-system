@@ -5,6 +5,7 @@ import { DashboardHeader } from "@/components/dashboard-header";
 import { BottomNav } from "@/components/shared/bottom-nav";
 import { AuthProvider } from "@/hooks/use-auth";
 import { getFastAuthSnapshot } from "@/lib/auth-server";
+import { QualificationAlerts } from "@/components/qualification-alerts";
 
 export default async function DashboardLayout({
     children,
@@ -31,6 +32,7 @@ export default async function DashboardLayout({
                     </div>
                 </main>
                 <LazyCommandSearch />
+                <QualificationAlerts />
                 <BottomNav />
             </SidebarProvider>
         </AuthProvider>
