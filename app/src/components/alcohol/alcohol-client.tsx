@@ -618,7 +618,7 @@ export function AlcoholClient({
 
             <div className="hidden overflow-x-auto rounded-[24px] border border-border/60 bg-card shadow-[0_1px_2px_rgba(38,42,46,0.04),0_12px_28px_rgba(38,42,46,0.05)] md:block" aria-busy={isPending}>
                 <Table>
-                    <TableHeader>
+                    <TableHeader className="sticky top-0 z-10 bg-card">
                         <TableRow className="bg-muted/50">
                             <TableHead className="sticky left-0 z-20 min-w-[100px] bg-muted/50 shadow-[inset_-1px_0_0_hsl(var(--border))]">社員名</TableHead>
                             <TableHead className="min-w-[80px]">種別</TableHead>

@@ -22,7 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, MapPin, Award, Download, Users, X, ArrowUpDown, ArrowRight } from "lucide-react";
+import { Search, MapPin, Award, Download, Users, X, ArrowUpDown, ArrowRight, Loader2 } from "lucide-react";
 import { AddEmployeeModal } from "@/components/employees/add-employee-modal";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -475,6 +475,13 @@ export function EmployeesClient({
 
             <ActiveFilters items={activeFilters} onClearAll={clearFilters} />
 
+            {isPending ? (
+                <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-primary">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    表示条件を更新しています...
+                </div>
+            ) : null}
+
             <div className="space-y-3 md:hidden" aria-busy={isPending}>
                 {initialEmployees.length === 0 ? (
                     <Card size="sm" className="border-border/60">
@@ -537,7 +544,7 @@ export function EmployeesClient({
 
             <div className="hidden overflow-x-auto rounded-2xl border border-border/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.03),0_4px_16px_rgba(0,0,0,0.04)] md:block" aria-busy={isPending}>
                 <Table>
-                    <TableHeader>
+                    <TableHeader className="sticky top-0 z-10 bg-card">
                         <TableRow className="bg-muted/30 hover:bg-muted/30">
                             <TableHead className="sticky left-0 z-20 w-[120px] bg-muted/30 shadow-[inset_-1px_0_0_hsl(var(--border)/0.3)]">{isPartnerMode ? "管理番号" : "社員番号"}</TableHead>
                             <TableHead>{isPartnerMode ? "会社名 / 表示名" : "氏名"}</TableHead>
