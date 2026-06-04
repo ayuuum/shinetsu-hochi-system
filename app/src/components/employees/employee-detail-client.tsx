@@ -356,8 +356,8 @@ export function EmployeeDetailClient({
             </div>
 
             {isAdminOrHr && housingAlertActive && (
-                <div className="mx-6 mt-3 flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <div className="mx-6 mt-3 flex items-start gap-2 rounded-md border border-amber-300/80 bg-amber-50 px-3 py-2.5 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
                     <span>
                         {housingDaysLeft! <= 0
                             ? `家賃補助の支給期間（入社5年）が終了しました。`
