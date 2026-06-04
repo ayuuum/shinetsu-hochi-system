@@ -402,7 +402,7 @@ export function EmployeeDetailClient({
                 return (
             <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as EmployeeDetailTab)} className="w-full">
                 <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
-                    <TabsList className="inline-flex h-auto min-w-max gap-1 rounded-xl bg-muted/70 p-1">
+                    <TabsList className="inline-flex h-auto min-w-max gap-0.5 rounded-xl bg-muted p-1">
                         <TabsTrigger value="qualifications" className="flex-shrink-0 h-auto rounded-lg px-3.5 py-2.5 text-sm gap-1.5">
                             <Award className="h-3.5 w-3.5" />保有資格
                             {urgentQualCount > 0 && (
