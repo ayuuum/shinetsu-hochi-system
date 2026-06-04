@@ -100,7 +100,8 @@ export default async function AlcoholChecksPage({
             .select("employee_id, check_datetime, employees!alcohol_checks_employee_id_fkey(name, branch)")
             .is("deleted_at", null)
             .gte("check_datetime", `${monthBounds.start}T00:00:00`)
-            .lte("check_datetime", `${monthBounds.end}T23:59:59`);
+            .lte("check_datetime", `${monthBounds.end}T23:59:59`)
+            .limit(5000);
 
         const [checksResult, empResult, monthlyResult] = await Promise.all([
             checksQuery,

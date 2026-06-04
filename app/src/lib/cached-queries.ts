@@ -144,7 +144,8 @@ export const getCachedQualificationCounts = unstable_cache(
             .from("employee_qualifications")
             .select("expiry_date, employees!inner(id)")
             .is("employees.deleted_at", null)
-            .is("deleted_at", null);
+            .is("deleted_at", null)
+            .limit(10000);
         const counts = { ...empty };
         for (const row of data || []) {
             counts[getAlertLevel((row as { expiry_date: string | null }).expiry_date)] += 1;
@@ -163,7 +164,8 @@ export const getCachedQualCountsByEmployee = unstable_cache(
         const { data } = await supabase
             .from("employee_qualifications")
             .select("employee_id, expiry_date")
-            .is("deleted_at", null);
+            .is("deleted_at", null)
+            .limit(10000);
         const now = new Date();
         const result: Record<string, { total: number; expiring: number }> = {};
         for (const q of data || []) {
@@ -216,11 +218,12 @@ export const getCachedDashboardQualifications = unstable_cache(
             .is("employees.deleted_at", null)
             .is("deleted_at", null)
             .not("expiry_date", "is", null)
-            .order("expiry_date", { ascending: true });
+            .order("expiry_date", { ascending: true })
+            .limit(10000);
         return (data || []) as unknown as DashboardQualification[];
     },
     ["dashboard-qualifications"],
-    { revalidate: 120, tags: ["qualifications", "employees"] }
+    { revalidate: 300, tags: ["qualifications", "employees"] }
 );
 
 // 車両（全件）
