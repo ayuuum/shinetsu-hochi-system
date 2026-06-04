@@ -23,7 +23,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Pencil, Search, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Search, Trash2, ClipboardList } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { AddHealthCheckModal } from "./add-health-check-modal";
 import { EditHealthCheckModal } from "./edit-health-check-modal";
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
@@ -348,8 +349,13 @@ export function HealthChecksClient({
             <div className="space-y-3 md:hidden" aria-busy={isPending}>
                 {initialChecks.length === 0 ? (
                     <Card size="sm" className="border-border/60">
-                        <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                            健康診断記録がありません。
+                        <CardContent className="p-0">
+                            <EmptyState
+                                icon={ClipboardList}
+                                title={activeFilters.length > 0 ? "条件に一致する記録がありません" : "健康診断記録がまだ登録されていません"}
+                                description={activeFilters.length > 0 ? "検索条件を変更してください" : isAdminOrHr ? "登録ボタンから追加できます" : "管理者に登録を依頼してください"}
+                                action={activeFilters.length > 0 ? { label: "条件を解除", onClick: clearFilters, variant: "outline" } : undefined}
+                            />
                         </CardContent>
                     </Card>
                 ) : (
@@ -435,7 +441,7 @@ export function HealthChecksClient({
 
             <div className="hidden overflow-x-auto rounded-xl border bg-card md:block" aria-busy={isPending}>
                 <Table>
-                    <TableHeader>
+                    <TableHeader className="sticky top-0 z-10 bg-card">
                         <TableRow className="bg-muted/50">
                             <TableHead className="sticky left-0 z-20 min-w-[100px] bg-muted/50 shadow-[inset_-1px_0_0_hsl(var(--border))]">社員名</TableHead>
                             <TableHead className="min-w-[80px]">拠点</TableHead>
@@ -451,8 +457,13 @@ export function HealthChecksClient({
                     <TableBody>
                         {initialChecks.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={columnCount} className="h-24 text-center text-muted-foreground">
-                                    健康診断記録がありません。
+                                <TableCell colSpan={columnCount}>
+                                    <EmptyState
+                                        icon={ClipboardList}
+                                        title={activeFilters.length > 0 ? "条件に一致する記録がありません" : "健康診断記録がまだ登録されていません"}
+                                        description={activeFilters.length > 0 ? "検索条件を変更してください" : isAdminOrHr ? "登録ボタンから追加できます" : "管理者に登録を依頼してください"}
+                                        action={activeFilters.length > 0 ? { label: "条件を解除", onClick: clearFilters, variant: "outline" } : undefined}
+                                    />
                                 </TableCell>
                             </TableRow>
                         ) : (
@@ -461,8 +472,8 @@ export function HealthChecksClient({
                                 const employeePrefetchProps = employeeHref ? getIntentPrefetchProps(employeeHref) : {};
 
                                 return (
-                                <TableRow key={check.id} className="hover:bg-transparent">
-                                    <TableCell className="sticky left-0 z-10 bg-card font-medium shadow-[inset_-1px_0_0_hsl(var(--border))]">
+                                <TableRow key={check.id} className="group even:bg-muted/[0.04] hover:bg-muted/50 transition-colors">
+                                    <TableCell className="sticky left-0 z-10 bg-card font-medium shadow-[inset_-1px_0_0_hsl(var(--border))] group-even:bg-muted/[0.04] group-hover:bg-muted/50 transition-colors">
                                         {check.employees?.id ? (
                                             <TableCellLink href={employeeHref} className="font-medium hover:underline" {...employeePrefetchProps}>
                                                 {check.employees.name}

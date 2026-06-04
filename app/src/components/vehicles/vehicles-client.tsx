@@ -16,7 +16,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Truck, AlertTriangle, Pencil, Search, Trash2, ArrowUpDown, ArrowRight } from "lucide-react";
+import { Truck, AlertTriangle, Pencil, Search, Trash2, ArrowUpDown, ArrowRight, Loader2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
     Select,
@@ -257,6 +257,13 @@ export function VehiclesClient({
 
             <ActiveFilters items={activeFilters} onClearAll={clearFilters} />
 
+            {isPending ? (
+                <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-primary">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    表示条件を更新しています...
+                </div>
+            ) : null}
+
             <div className="space-y-3 md:hidden" aria-busy={isPending}>
                 {initialVehicles.length === 0 ? (
                     <Card size="sm" className="border-border/60">
@@ -351,7 +358,7 @@ export function VehiclesClient({
 
             <div className="hidden overflow-x-auto rounded-[24px] border border-border/60 bg-card shadow-[0_1px_2px_rgba(38,42,46,0.04),0_12px_28px_rgba(38,42,46,0.05)] md:block" aria-busy={isPending}>
                 <Table>
-                    <TableHeader>
+                    <TableHeader className="sticky top-0 z-10 bg-card">
                         <TableRow className="bg-muted/50">
                             <TableHead className="sticky left-0 z-20 min-w-[160px] bg-muted/50 shadow-[inset_-1px_0_0_hsl(var(--border))]">ナンバー</TableHead>
                             <TableHead className="min-w-[120px]">車両名</TableHead>
@@ -381,8 +388,8 @@ export function VehiclesClient({
                                 const employeePrefetchProps = employeeHref ? getIntentPrefetchProps(employeeHref) : {};
 
                                 return (
-                                <TableRow key={vehicle.id} className="group hover:bg-muted/30 transition-colors">
-                                    <TableCell className="sticky left-0 z-10 bg-card font-bold shadow-[inset_-1px_0_0_hsl(var(--border))] group-hover:bg-muted/30">
+                                <TableRow key={vehicle.id} className="group hover:bg-muted/50 transition-colors">
+                                    <TableCell className={`sticky left-0 z-10 bg-card font-bold shadow-[inset_-1px_0_0_hsl(var(--border))] group-hover:bg-muted/50 transition-colors ${getWorstStatus(vehicle) === 1 ? "border-l-[3px] border-l-blue-700" : getWorstStatus(vehicle) === 2 ? "border-l-[3px] border-l-blue-400" : "border-l-[3px] border-l-transparent"}`}>
                                         <div className="flex items-center gap-2">
                                             <Truck className="h-4 w-4 text-muted-foreground shrink-0" />
                                             {vehicle.plate_number}
