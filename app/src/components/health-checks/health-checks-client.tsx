@@ -44,6 +44,12 @@ import {
 import { PageHeader } from "@/components/shared/page-header";
 import { useIntentPrefetch } from "@/hooks/use-intent-prefetch";
 
+const HEALTH_RESULT_OPTIONS = [
+    { value: "all", label: "全て" },
+    { value: "normal", label: "異常なし" },
+    { value: "abnormal", label: "要再検査" },
+] as const;
+
 export type HealthCheckWithEmployee = Tables<"health_checks"> & {
     employees: { id: string; name: string; branch: string | null } | null;
 };
@@ -279,6 +285,7 @@ export function HealthChecksClient({
                     <div className="space-y-2">
                         <p className="text-sm font-medium">結果</p>
                         <Select
+                            items={HEALTH_RESULT_OPTIONS}
                             value={mobileResult || undefined}
                             onValueChange={(value) => setMobileResult(value && value !== "all" ? value : "")}
                         >
@@ -321,6 +328,7 @@ export function HealthChecksClient({
                     </SelectContent>
                 </Select>
                     <Select
+                        items={HEALTH_RESULT_OPTIONS}
                         value={normalizedCurrentResult || undefined}
                         onValueChange={(value) => updateFilters({ result: value && value !== "all" ? value : "", page: 1 })}
                     >

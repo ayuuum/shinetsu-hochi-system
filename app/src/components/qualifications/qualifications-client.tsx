@@ -42,6 +42,15 @@ import { getQualificationLevelLabel } from "@/lib/display-labels";
 import { useIntentPrefetch } from "@/hooks/use-intent-prefetch";
 import { type LicenseGroupInfo } from "@/lib/license-groups";
 
+const LEVEL_OPTIONS = [
+    { value: "all", label: "すべて" },
+    { value: "danger", label: "期限切れ" },
+    { value: "urgent", label: "14日以内" },
+    { value: "warning", label: "30日以内" },
+    { value: "info", label: "60日以内" },
+    { value: "ok", label: "正常" },
+] as const;
+
 export type QualificationRow = Tables<"employee_qualifications"> & {
     employees: { id: string; name: string; branch: string | null } | null;
     qualification_master: { name: string; category: string | null } | null;
@@ -391,6 +400,7 @@ export function QualificationsClient({
                     <div className="space-y-2">
                         <p className="text-sm font-medium">期限状態</p>
                         <Select
+                            items={LEVEL_OPTIONS}
                             value={mobileLevel || undefined}
                             onValueChange={(value) => setMobileLevel(value && value !== "all" ? value : "")}
                         >
@@ -436,6 +446,7 @@ export function QualificationsClient({
                     </SelectContent>
                 </Select>
                 <Select
+                    items={LEVEL_OPTIONS}
                     value={currentLevel || undefined}
                     onValueChange={(value) => updateFilters({ level: value && value !== "all" ? value : "", page: 1 })}
                 >
