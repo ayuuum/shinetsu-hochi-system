@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Tables } from "@/types/supabase";
 import {
@@ -23,7 +23,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, FileImage, Tags, ScrollText, Download, Loader2, ArrowRight } from "lucide-react";
+import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, FileImage, Tags, ScrollText, Download, Loader2, ArrowRight, X } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { differenceInDays } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
@@ -35,6 +35,7 @@ import { MobileFiltersSheet } from "@/components/shared/mobile-filters-sheet";
 import { formatDisplayDate } from "@/lib/date";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AddQualificationFromListModal } from "./add-qualification-from-list-modal";
 import { BulkUpdateQualificationModal } from "./bulk-update-qualification-modal";
 import { PageHeader } from "@/components/shared/page-header";
@@ -136,6 +137,7 @@ export function QualificationsClient({
 }: QualificationsClientProps) {
     const [search, setSearch] = useState(currentSearch);
     const [editingItem, setEditingItem] = useState<QualificationRow | null>(null);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
     const [mobileCategory, setMobileCategory] = useState(currentCategory);
     const [mobileLevel, setMobileLevel] = useState(currentLevel);
@@ -145,7 +147,7 @@ export function QualificationsClient({
     const { isAdminOrHr } = useAuth();
     const { getIntentPrefetchProps } = useIntentPrefetch();
     const showActions = isAdminOrHr;
-    const columnCount = showActions ? 11 : 10;
+    const columnCount = showActions ? 12 : 11;
     const activeFilters = [
         currentSearch
             ? {
@@ -246,6 +248,55 @@ export function QualificationsClient({
             }), { scroll: false });
         });
     };
+
+    const allCurrentIds = initialQualifications.map((q) => q.id);
+    const allSelected = allCurrentIds.length > 0 && allCurrentIds.every((id) => selectedIds.has(id));
+    const someSelected = selectedIds.size > 0;
+
+    const toggleSelectAll = useCallback(() => {
+        if (allSelected) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(allCurrentIds));
+        }
+    }, [allSelected, allCurrentIds]);
+
+    const toggleSelectOne = useCallback((id: string) => {
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    }, []);
+
+    const exportSelectedToCsv = useCallback(() => {
+        const selected = initialQualifications.filter((q) => selectedIds.has(q.id));
+        if (selected.length === 0) return;
+
+        const headers = ["社員名", "拠点", "資格名", "カテゴリ", "取得日", "有効期限", "申込状況"];
+        const rows = selected.map((q) => [
+            q.employees?.name || "",
+            q.employees?.branch || "",
+            q.qualification_master?.name || "",
+            q.qualification_master?.category || "",
+            q.acquired_date || "",
+            q.expiry_date || "",
+            q.status || "",
+        ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","));
+
+        const csv = "﻿" + [headers.join(","), ...rows].join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `qualifications-selected-${new Date().toISOString().split("T")[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }, [initialQualifications, selectedIds]);
 
     return (
         <div className="space-y-6 animate-in fade-in duration-200">
@@ -571,7 +622,15 @@ export function QualificationsClient({
                 <Table>
                     <TableHeader className="sticky top-0 z-10 bg-card">
                         <TableRow className="bg-muted/50">
-                            <TableHead className="sticky left-0 z-20 bg-muted/50 shadow-[inset_-1px_0_0_hsl(var(--border))]">社員名</TableHead>
+                            <TableHead className="sticky left-0 z-20 w-10 bg-muted/50">
+                                <Checkbox
+                                    checked={allSelected}
+                                    onCheckedChange={toggleSelectAll}
+                                    aria-label="全選択"
+                                    className="translate-y-[2px]"
+                                />
+                            </TableHead>
+                            <TableHead className="sticky left-10 z-20 bg-muted/50 shadow-[inset_-1px_0_0_hsl(var(--border))]">社員名</TableHead>
                             <TableHead>拠点</TableHead>
                             <TableHead>資格名</TableHead>
                             <TableHead>カテゴリ</TableHead>
@@ -607,7 +666,15 @@ export function QualificationsClient({
                                 const employeePrefetchProps = employeeHref ? getIntentPrefetchProps(employeeHref) : {};
                                 return (
                                     <TableRow key={q.id} className="group hover:bg-muted/50">
-                                        <TableCell className={`sticky left-0 z-10 bg-card py-4 font-bold shadow-[inset_-1px_0_0_hsl(var(--border))] group-hover:bg-muted/50 transition-colors ${levelBorderClass[level]}`}>
+                                        <TableCell className="w-10">
+                                            <Checkbox
+                                                checked={selectedIds.has(q.id)}
+                                                onCheckedChange={() => toggleSelectOne(q.id)}
+                                                aria-label={`${q.employees?.name || ""}を選択`}
+                                                className="translate-y-[2px]"
+                                            />
+                                        </TableCell>
+                                        <TableCell className={`sticky left-10 z-10 bg-card py-4 font-bold shadow-[inset_-1px_0_0_hsl(var(--border))] group-hover:bg-muted/50 transition-colors ${levelBorderClass[level]}`}>
                                             {q.employees?.id ? (
                                                 <TableCellLink href={employeeHref} className="font-bold hover:underline" {...employeePrefetchProps}>
                                                     {q.employees.name}
@@ -713,6 +780,34 @@ export function QualificationsClient({
                         if (!open) setEditingItem(null);
                     }}
                 />
+            )}
+
+            {someSelected && (
+                <div className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 md:bottom-8">
+                    <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card px-4 py-3 shadow-[0_8px_32px_rgba(15,23,42,0.16)] backdrop-blur">
+                        <span className="text-sm font-medium text-foreground">
+                            {selectedIds.size}件選択中
+                        </span>
+                        <div className="h-4 w-px bg-border/60" />
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={exportSelectedToCsv}
+                        >
+                            <Download className="mr-1.5 h-3.5 w-3.5" />
+                            CSVで出力
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setSelectedIds(new Set())}
+                            className="h-8 w-8 p-0"
+                            aria-label="選択を解除"
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
             )}
         </div>
     );
