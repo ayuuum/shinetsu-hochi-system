@@ -330,6 +330,21 @@ export function EmployeeDetailClient({
                                 <Badge variant="secondary">{employee.branch || "支店未設定"}</Badge>
                                 {employee.termination_date && <Badge variant="destructive">退職済</Badge>}
                                 {isAdminOrHr && hasFamilyAllowance && <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">家族手当あり</Badge>}
+                                {isAdminOrHr && housingAlertActive && (
+                                    <Badge
+                                        variant="outline"
+                                        className={housingDaysLeft! <= 0
+                                            ? "gap-1 border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+                                            : "gap-1 border-amber-200 bg-amber-50/60 text-amber-700 dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-400"
+                                        }
+                                        title={housingDaysLeft! <= 0
+                                            ? "家賃補助の支給期間（入社5年）が終了しました。"
+                                            : `家賃補助の支給期間が残り${housingDaysLeft}日で終了します（${formatDisplayDate(housingAllowanceEnd!.toISOString().split("T")[0])}まで）。`}
+                                    >
+                                        <AlertTriangle className="h-3 w-3" />
+                                        {housingDaysLeft! <= 0 ? "家賃補助 終了" : `家賃補助 残${housingDaysLeft}日`}
+                                    </Badge>
+                                )}
                             </div>
                             <p className="text-muted-foreground font-medium">
                                 {isPartner ? employee.partner_contact_name || employee.name : employee.name_kana} | {employee.employee_number}
@@ -354,17 +369,6 @@ export function EmployeeDetailClient({
                     )}
                 </div>
             </div>
-
-            {isAdminOrHr && housingAlertActive && (
-                <div className="mx-6 mt-3 flex items-start gap-2 rounded-md border border-amber-300/80 bg-amber-50 px-3 py-2.5 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                    <span>
-                        {housingDaysLeft! <= 0
-                            ? `家賃補助の支給期間（入社5年）が終了しました。`
-                            : `家賃補助の支給期間が残り${housingDaysLeft}日で終了します（${formatDisplayDate(housingAllowanceEnd!.toISOString().split("T")[0])}まで）。`}
-                    </span>
-                </div>
-            )}
 
             {isAdminOrHr && (
                 <EditEmployeeModal
