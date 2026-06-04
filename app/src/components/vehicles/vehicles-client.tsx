@@ -388,8 +388,8 @@ export function VehiclesClient({
                                 const employeePrefetchProps = employeeHref ? getIntentPrefetchProps(employeeHref) : {};
 
                                 return (
-                                <TableRow key={vehicle.id} className="group hover:bg-muted/30 transition-colors">
-                                    <TableCell className="sticky left-0 z-10 bg-card font-bold shadow-[inset_-1px_0_0_hsl(var(--border))] group-hover:bg-muted/30">
+                                <TableRow key={vehicle.id} className="group hover:bg-muted/50 transition-colors">
+                                    <TableCell className={`sticky left-0 z-10 bg-card font-bold shadow-[inset_-1px_0_0_hsl(var(--border))] group-hover:bg-muted/50 transition-colors ${getWorstStatus(vehicle) === 1 ? "border-l-[3px] border-l-blue-700" : getWorstStatus(vehicle) === 2 ? "border-l-[3px] border-l-blue-400" : "border-l-[3px] border-l-transparent"}`}>
                                         <div className="flex items-center gap-2">
                                             <Truck className="h-4 w-4 text-muted-foreground shrink-0" />
                                             {vehicle.plate_number}

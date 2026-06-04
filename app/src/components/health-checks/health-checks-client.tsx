@@ -472,8 +472,8 @@ export function HealthChecksClient({
                                 const employeePrefetchProps = employeeHref ? getIntentPrefetchProps(employeeHref) : {};
 
                                 return (
-                                <TableRow key={check.id} className="hover:bg-transparent">
-                                    <TableCell className="sticky left-0 z-10 bg-card font-medium shadow-[inset_-1px_0_0_hsl(var(--border))]">
+                                <TableRow key={check.id} className="group even:bg-muted/[0.04] hover:bg-muted/50 transition-colors">
+                                    <TableCell className="sticky left-0 z-10 bg-card font-medium shadow-[inset_-1px_0_0_hsl(var(--border))] group-even:bg-muted/[0.04] group-hover:bg-muted/50 transition-colors">
                                         {check.employees?.id ? (
                                             <TableCellLink href={employeeHref} className="font-medium hover:underline" {...employeePrefetchProps}>
                                                 {check.employees.name}

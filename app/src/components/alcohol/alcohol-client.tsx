@@ -651,8 +651,8 @@ export function AlcoholClient({
                                 const checkerPrefetchProps = checkerHref ? getIntentPrefetchProps(checkerHref) : {};
 
                                 return (
-                                <TableRow key={check.id} className={check.is_abnormal ? "group bg-blue-600/5 hover:bg-blue-600/10" : "group hover:bg-muted/30 transition-colors"}>
-                                    <TableCell className={`sticky left-0 z-10 font-medium shadow-[inset_-1px_0_0_hsl(var(--border))] ${check.is_abnormal ? "bg-background group-hover:bg-blue-600/10" : "bg-card group-hover:bg-muted/30"}`}>
+                                <TableRow key={check.id} className={check.is_abnormal ? "group bg-blue-600/5 hover:bg-blue-600/10" : "group hover:bg-muted/50 transition-colors"}>
+                                    <TableCell className={`sticky left-0 z-10 font-medium shadow-[inset_-1px_0_0_hsl(var(--border))] ${check.is_abnormal ? "bg-background group-hover:bg-blue-600/10" : "bg-card group-hover:bg-muted/50"}`}>
                                         {check.employee?.id ? (
                                             <TableCellLink href={employeeHref} className="font-medium hover:underline" {...employeePrefetchProps}>
                                                 {check.employee.name}

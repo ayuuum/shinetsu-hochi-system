@@ -503,7 +503,7 @@ export function EmployeesClient({
                         <Link key={emp.id} href={employeeHref} className="block" {...employeePrefetchProps}>
                             <Card
                                 size="sm"
-                                className="transition-all duration-200 active:scale-[0.99] hover:shadow-md"
+                                className="transition-all duration-200 active:scale-[0.99] hover:shadow-lg"
                             >
                                 <CardContent className="space-y-3.5">
                                     <div className="flex items-start justify-between gap-3">
@@ -574,8 +574,8 @@ export function EmployeesClient({
                                 const employeePrefetchProps = getIntentPrefetchProps(employeeHref);
 
                                 return (
-                                <TableRow key={emp.id} className="group transition-all duration-200">
-                                    <TableCell className="sticky left-0 z-10 bg-card font-mono text-muted-foreground shadow-[inset_-1px_0_0_hsl(var(--border)/0.3)] group-hover:bg-muted/40 transition-colors">
+                                <TableRow key={emp.id} className="group transition-all duration-200 even:bg-muted/[0.04]">
+                                    <TableCell className="sticky left-0 z-10 bg-card font-mono text-muted-foreground shadow-[inset_-1px_0_0_hsl(var(--border)/0.3)] group-even:bg-muted/[0.04] group-hover:bg-muted/50 transition-colors">
                                         <TableCellLink href={employeeHref} className="font-mono text-muted-foreground hover:text-foreground transition-colors" {...employeePrefetchProps}>
                                             {emp.employee_number}
                                         </TableCellLink>

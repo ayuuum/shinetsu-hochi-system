@@ -58,6 +58,14 @@ export type QualificationRow = Tables<"employee_qualifications"> & {
 
 const levelConfig = alertStyles;
 
+const levelBorderClass: Record<string, string> = {
+    danger: "border-l-[3px] border-l-blue-700",
+    urgent: "border-l-[3px] border-l-blue-600",
+    warning: "border-l-[3px] border-l-blue-400",
+    info:   "border-l-[3px] border-l-border",
+    ok:     "border-l-[3px] border-l-transparent",
+};
+
 type Employee = { id: string; name: string; branch: string | null };
 
 interface QualificationsClientProps {
@@ -489,7 +497,7 @@ export function QualificationsClient({
                         const employeePrefetchProps = employeeHref ? getIntentPrefetchProps(employeeHref) : {};
 
                         return (
-                            <Card key={q.id} size="sm" className="border-border/60">
+                            <Card key={q.id} size="sm" className={`border-border/60 ${levelBorderClass[level]}`}>
                                 <CardContent className="space-y-3">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0 space-y-1">
@@ -598,8 +606,8 @@ export function QualificationsClient({
                                 const employeeHref = q.employees?.id ? `/employees/${q.employees.id}?tab=basic` : "";
                                 const employeePrefetchProps = employeeHref ? getIntentPrefetchProps(employeeHref) : {};
                                 return (
-                                    <TableRow key={q.id} className="hover:bg-muted/30">
-                                        <TableCell className="sticky left-0 z-10 bg-card py-4 font-bold shadow-[inset_-1px_0_0_hsl(var(--border))]">
+                                    <TableRow key={q.id} className="group hover:bg-muted/50">
+                                        <TableCell className={`sticky left-0 z-10 bg-card py-4 font-bold shadow-[inset_-1px_0_0_hsl(var(--border))] group-hover:bg-muted/50 transition-colors ${levelBorderClass[level]}`}>
                                             {q.employees?.id ? (
                                                 <TableCellLink href={employeeHref} className="font-bold hover:underline" {...employeePrefetchProps}>
                                                     {q.employees.name}
