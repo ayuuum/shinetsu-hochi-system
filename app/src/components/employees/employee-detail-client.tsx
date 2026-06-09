@@ -155,6 +155,9 @@ export function EmployeeDetailClient({
     const [showDeletedQuals, setShowDeletedQuals] = useState(false);
     const { isAdmin, isAdminOrHr, role, linkedEmployeeId } = useAuth();
     const isTechnicianSelf = role === "technician" && linkedEmployeeId === employee.id;
+    // 健康診断・家族・血圧などの機微情報は、管理者/人事、または本人のみ閲覧可
+    const canViewSensitive = isAdminOrHr || isTechnicianSelf;
+    const latestHealthCheck = employee.health_checks[0] ?? null;
     const isPartner = employee.person_type === "partner";
     const licenseGroups = useMemo(
         () => computeLicenseGroups(employee.employee_qualifications),
@@ -430,8 +433,12 @@ export function EmployeeDetailClient({
                         <TabsTrigger value="basic" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5"><User className="h-5 w-5" />基本情報</TabsTrigger>
                         <TabsTrigger value="construction" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5"><HardHat className="h-5 w-5" />施工実績</TabsTrigger>
                         <TabsTrigger value="seminars" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5"><BookOpen className="h-5 w-5" />受験・セミナー</TabsTrigger>
-                        <TabsTrigger value="health" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5"><Heart className="h-5 w-5" />健康診断</TabsTrigger>
-                        <TabsTrigger value="family" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5"><Users className="h-5 w-5" />家族</TabsTrigger>
+                        {canViewSensitive && (
+                            <TabsTrigger value="health" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5"><Heart className="h-5 w-5" />健康診断</TabsTrigger>
+                        )}
+                        {canViewSensitive && (
+                            <TabsTrigger value="family" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5"><Users className="h-5 w-5" />家族</TabsTrigger>
+                        )}
                         {isAdminOrHr && (
                             <TabsTrigger value="it" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5">
                                 <Laptop className="h-5 w-5" />
@@ -464,6 +471,22 @@ export function EmployeeDetailClient({
                                 <DetailItem label="メール" value={employee.email} />
                                 <DetailItem label="住所" value={employee.address} />
                                 <DetailItem label="血液型" value={employee.blood_type} />
+                                {canViewSensitive && (
+                                    <>
+                                        <DetailItem
+                                            label="血圧(最高/最低)"
+                                            value={
+                                                latestHealthCheck && (latestHealthCheck.blood_pressure_systolic != null || latestHealthCheck.blood_pressure_diastolic != null)
+                                                    ? `${latestHealthCheck.blood_pressure_systolic ?? "-"} / ${latestHealthCheck.blood_pressure_diastolic ?? "-"} mmHg`
+                                                    : "-"
+                                            }
+                                        />
+                                        <DetailItem
+                                            label="健診日"
+                                            value={latestHealthCheck ? formatDisplayDate(latestHealthCheck.check_date) : "-"}
+                                        />
+                                    </>
+                                )}
                             </CardContent>
                         </Card>
                         <Card className="shadow-sm border-border/50">
@@ -822,6 +845,7 @@ export function EmployeeDetailClient({
                     </Card>
                 </TabsContent>
 
+                {canViewSensitive && (
                 <TabsContent value="family" className="mt-6">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-bold">家族・緊急連絡先</h3>
@@ -862,7 +886,9 @@ export function EmployeeDetailClient({
                         </div>
                     )}
                 </TabsContent>
+                )}
 
+                {canViewSensitive && (
                 <TabsContent value="health" className="mt-6">
                     <Card className="shadow-sm border-border/50">
                         <CardHeader className="flex flex-row items-center justify-between">
@@ -926,6 +952,7 @@ export function EmployeeDetailClient({
                         </CardContent>
                     </Card>
                 </TabsContent>
+                )}
                 <TabsContent value="seminars" className="mt-6 space-y-6">
                     {/* Exam history */}
                     <Card className="shadow-sm border-border/50">

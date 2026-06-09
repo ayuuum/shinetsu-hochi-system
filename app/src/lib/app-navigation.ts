@@ -101,7 +101,6 @@ export const appNavItems: AppNavItem[] = [
         icon: Users,
         section: "people",
         keywords: ["employee", "member", "staff", "person"],
-        hideForTechnician: true,
     },
     {
         title: "協力会社台帳",
@@ -110,7 +109,6 @@ export const appNavItems: AppNavItem[] = [
         icon: Users,
         section: "people",
         keywords: ["partner", "vendor", "company", "協力会社"],
-        hideForTechnician: true,
     },
     {
         title: "資格・講習管理",
@@ -119,7 +117,6 @@ export const appNavItems: AppNavItem[] = [
         icon: ScrollText,
         section: "people",
         keywords: ["license", "training", "certificate", "expiry"],
-        hideForTechnician: true,
     },
     {
         title: "資格マスタ",
@@ -137,7 +134,6 @@ export const appNavItems: AppNavItem[] = [
         icon: BriefcaseBusiness,
         section: "operations",
         keywords: ["project", "construction", "history", "career"],
-        hideForTechnician: true,
     },
     {
         title: "車両・備品",
@@ -146,7 +142,6 @@ export const appNavItems: AppNavItem[] = [
         icon: Truck,
         section: "operations",
         keywords: ["vehicle", "car", "equipment", "insurance"],
-        hideForTechnician: true,
     },
     {
         title: "健康診断",
@@ -172,7 +167,6 @@ export const appNavItems: AppNavItem[] = [
         icon: CalendarDays,
         section: "operations",
         keywords: ["schedule", "annual", "goal", "plan"],
-        hideForTechnician: true,
     },
     {
         title: "データインポート",
@@ -257,7 +251,7 @@ export function getGroupedAppNavigation(
     const order: AppNavSectionId[] = isAdminOrHr
         ? ["overview", "people", "operations", "safety", "admin"]
         : role === "technician"
-            ? ["overview", "people", "safety"]
+            ? ["overview", "people", "operations", "safety"]
             : ["overview", "operations", "people", "safety"];
 
     return order

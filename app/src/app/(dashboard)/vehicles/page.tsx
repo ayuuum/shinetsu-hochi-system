@@ -1,8 +1,6 @@
 import { Suspense } from "react";
-import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { getCachedEmployeeList } from "@/lib/cached-queries";
-import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { VehiclesClient, type VehicleWithUser } from "@/components/vehicles/vehicles-client";
 import { VehiclesEquipmentShell } from "@/components/vehicles/vehicles-equipment-shell";
 import { EquipmentClient, type EquipmentRow } from "@/components/equipment/equipment-client";
@@ -24,12 +22,7 @@ export default async function VehiclesPage({
 }: {
     searchParams: Promise<{ page?: string; q?: string; eq?: string; eqPage?: string; sort?: string; expiry?: string }>;
 }) {
-    const authPromise = getFastAuthSnapshot();
-    const paramsPromise = searchParams;
-    const [auth, params] = await Promise.all([authPromise, paramsPromise]);
-    if (auth.role === "technician") {
-        redirect("/me");
-    }
+    const params = await searchParams;
 
     const currentPage = parsePageParam(params.page);
     const from = (currentPage - 1) * PAGE_SIZE;

@@ -1,6 +1,6 @@
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { getFastAuthSnapshot } from "@/lib/auth-server";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,13 +50,6 @@ export default async function QualificationDetailPage({ params }: PageProps) {
 
     if (error || !qualification) {
         notFound();
-    }
-
-    const qualEmployeeId = qualification.employee_id as string | null;
-    if (auth.role === "technician") {
-        if (!auth.linkedEmployeeId || qualEmployeeId !== auth.linkedEmployeeId) {
-            redirect(auth.linkedEmployeeId ? `/employees/${auth.linkedEmployeeId}` : "/me");
-        }
     }
 
     const { data: certificateImageRows } = await supabase

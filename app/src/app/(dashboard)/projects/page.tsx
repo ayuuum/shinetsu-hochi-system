@@ -1,6 +1,4 @@
-import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
-import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { ProjectsClient, type ConstructionWithEmployee } from "@/components/projects/projects-client";
 import { getCachedEmployeeList, getCachedProjectsPage } from "@/lib/cached-queries";
 
@@ -20,12 +18,7 @@ export default async function ProjectsPage({
 }: {
     searchParams: Promise<{ page?: string; q?: string; category?: string }>;
 }) {
-    const authPromise = getFastAuthSnapshot();
-    const paramsPromise = searchParams;
-    const [auth, params] = await Promise.all([authPromise, paramsPromise]);
-    if (auth.role === "technician") {
-        redirect("/me");
-    }
+    const params = await searchParams;
 
     const currentPage = parsePageParam(params.page);
     const from = (currentPage - 1) * PAGE_SIZE;
