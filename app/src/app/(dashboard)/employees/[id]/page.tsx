@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { EmployeeDetailClient, type EmployeeDetail, type EmployeeDetailTab } from "@/components/employees/employee-detail-client";
@@ -38,11 +38,10 @@ export default async function EmployeeDetailPage({
     const { id } = await params;
     const { tab } = await searchParams;
     const auth = await getFastAuthSnapshot();
-    if (auth.role === "technician") {
-        if (!auth.linkedEmployeeId || auth.linkedEmployeeId !== id) {
-            redirect(auth.linkedEmployeeId ? `/employees/${auth.linkedEmployeeId}` : "/me");
-        }
-    }
+
+    const isAdminOrHr = auth.role === "admin" || auth.role === "hr";
+    // 健康診断・家族・血圧などの機微情報は、管理者/人事、または本人のみ閲覧可
+    const canViewSensitive = isAdminOrHr || (auth.role === "technician" && auth.linkedEmployeeId === id);
 
     const supabase = await createSupabaseServer();
     let currentTab: EmployeeDetailTab = VALID_TABS.includes(tab as EmployeeDetailTab) ? (tab as EmployeeDetailTab) : "qualifications";
@@ -52,8 +51,10 @@ export default async function EmployeeDetailPage({
     if ((auth.role !== "admin" && auth.role !== "hr") && currentTab === "it") {
         currentTab = "basic";
     }
-
-    const isAdminOrHr = auth.role === "admin" || auth.role === "hr";
+    // 他人を閲覧する一般アカウントは健康診断・家族タブを開けない（URL直叩き対策）
+    if (!canViewSensitive && (currentTab === "health" || currentTab === "family")) {
+        currentTab = "basic";
+    }
     const loadStart = process.hrtime.bigint();
     const [employeeResult, constructionResult, healthResult, itResult, examHistoryResult, seminarResult, deletedQualsResult] = await Promise.all([
         supabase
@@ -70,7 +71,7 @@ export default async function EmployeeDetailPage({
                 .is("deleted_at", null)
                 .order("construction_date", { ascending: false })
             : Promise.resolve({ data: [] as Tables<"construction_records">[], error: null }),
-        shouldLoadHealthChecks(currentTab)
+        shouldLoadHealthChecks(currentTab) || (currentTab === "basic" && canViewSensitive)
             ? supabase
                 .from("health_checks")
                 .select("*")

@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { VehicleDetailClient } from "@/components/vehicles/vehicle-detail-client";
@@ -18,9 +18,6 @@ export default async function VehicleDetailPage({
 }) {
     const { id } = await params;
     const auth = await getFastAuthSnapshot();
-    if (auth.role === "technician") {
-        redirect("/me");
-    }
 
     const supabase = await createSupabaseServer();
 

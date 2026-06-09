@@ -1,7 +1,5 @@
-import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { EmployeesClient, type EmployeeWithQualCount } from "@/components/employees/employees-client";
-import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { getCachedQualCountsByEmployee, getCachedQualificationMasters } from "@/lib/cached-queries";
 import { Tables } from "@/types/supabase";
 
@@ -17,10 +15,7 @@ export default async function PartnersPage({
 }: {
     searchParams: Promise<{ page?: string; q?: string; branch?: string; qualification?: string; sort?: string }>;
 }) {
-    const [auth, params] = await Promise.all([getFastAuthSnapshot(), searchParams]);
-    if (auth.role === "technician") {
-        redirect(auth.linkedEmployeeId ? `/employees/${auth.linkedEmployeeId}` : "/me");
-    }
+    const params = await searchParams;
 
     const page = parsePageParam(params.page);
     const from = (page - 1) * PAGE_SIZE;
