@@ -21,7 +21,7 @@ export function getEmployeeDetailSelect(tab: EmployeeDetailTab, canViewSensitive
     ];
 
     if (canViewSensitive) {
-        relations.push("employee_family(id, birth_date, is_dependent, allowance_eligible, relationship)");
+        relations.push("employee_family(id, birth_date, is_dependent, relationship)");
         relations.push("employee_life_insurances(id)");
     }
 
