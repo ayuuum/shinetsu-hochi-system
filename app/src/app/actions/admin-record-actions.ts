@@ -873,6 +873,83 @@ export async function createHealthCheckAction(
     }
 }
 
+/**
+ * 基本情報タブから「直近の受診日・血圧」を手軽に記録するための簡易アクション。
+ * 同じ受診日の健康診断記録があれば血圧を更新し、なければ新規作成する。
+ */
+export async function recordEmployeeCheckupAction(
+    employeeId: string,
+    input: { check_date: string; blood_pressure_systolic?: string; blood_pressure_diastolic?: string }
+): Promise<{ success: boolean; error?: string }> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) {
+        return { success: false, error: auth.error };
+    }
+
+    const checkDate = (input.check_date || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(checkDate)) {
+        return { success: false, error: "受診日は YYYY-MM-DD 形式で入力してください。" };
+    }
+
+    const parseBp = (value?: string): number | null | "invalid" => {
+        const trimmed = (value || "").trim();
+        if (!trimmed) return null;
+        if (!/^\d{1,3}$/.test(trimmed)) return "invalid";
+        return Number(trimmed);
+    };
+    const systolic = parseBp(input.blood_pressure_systolic);
+    const diastolic = parseBp(input.blood_pressure_diastolic);
+    if (systolic === "invalid" || diastolic === "invalid") {
+        return { success: false, error: "血圧は3桁までの数値で入力してください。" };
+    }
+
+    try {
+        if (!(await employeeExists(employeeId))) {
+            return { success: false, error: "対象社員が見つかりません。" };
+        }
+
+        const supabase = await createSupabaseServer();
+        const { data: existing } = await supabase
+            .from("health_checks")
+            .select("id")
+            .eq("employee_id", employeeId)
+            .eq("check_date", checkDate)
+            .is("deleted_at", null)
+            .maybeSingle();
+
+        if (existing) {
+            const { error } = await supabase
+                .from("health_checks")
+                .update({ blood_pressure_systolic: systolic, blood_pressure_diastolic: diastolic })
+                .eq("id", existing.id);
+            if (error) {
+                console.error("Failed to update checkup:", error);
+                return { success: false, error: "受診日・血圧の保存に失敗しました。" };
+            }
+        } else {
+            const { error } = await supabase
+                .from("health_checks")
+                .insert([{
+                    employee_id: employeeId,
+                    check_date: checkDate,
+                    blood_pressure_systolic: systolic,
+                    blood_pressure_diastolic: diastolic,
+                }]);
+            if (error) {
+                console.error("Failed to insert checkup:", error);
+                return { success: false, error: "受診日・血圧の保存に失敗しました。" };
+            }
+        }
+
+        revalidateEmployeePaths(employeeId);
+        revalidateHealthCheckPaths(employeeId);
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while recording checkup:", error);
+        return { success: false, error: "受診日・血圧の保存に失敗しました。" };
+    }
+}
+
 export async function updateHealthCheckAction(
     healthCheckId: string,
     values: HealthCheckValues

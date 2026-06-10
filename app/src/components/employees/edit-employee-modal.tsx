@@ -33,7 +33,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Tables } from "@/types/supabase";
 import { UnsavedChangesDialog } from "@/components/shared/unsaved-changes-dialog";
-import { updateEmployeeAction } from "@/app/actions/admin-record-actions";
+import { updateEmployeeAction, recordEmployeeCheckupAction } from "@/app/actions/admin-record-actions";
 import {
     employeeUpdateSchema,
     toEmployeeUpdateFormValues,
@@ -41,17 +41,33 @@ import {
 } from "@/lib/validation/employee";
 import { supabase } from "@/lib/supabase";
 
+type LatestCheckup = {
+    check_date: string | null;
+    blood_pressure_systolic: number | null;
+    blood_pressure_diastolic: number | null;
+} | null;
+
 interface EditEmployeeModalProps {
     employee: Tables<"employees">;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSuccess?: () => void;
+    latestCheckup?: LatestCheckup;
 }
 
-export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: EditEmployeeModalProps) {
+function checkupFormValues(latestCheckup: LatestCheckup) {
+    return {
+        checkupDate: latestCheckup?.check_date ?? "",
+        bpSystolic: latestCheckup?.blood_pressure_systolic != null ? String(latestCheckup.blood_pressure_systolic) : "",
+        bpDiastolic: latestCheckup?.blood_pressure_diastolic != null ? String(latestCheckup.blood_pressure_diastolic) : "",
+    };
+}
+
+export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess, latestCheckup = null }: EditEmployeeModalProps) {
     const [discardOpen, setDiscardOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [photoFile, setPhotoFile] = useState<File | null>(null);
+    const [checkup, setCheckup] = useState(() => checkupFormValues(latestCheckup));
     const isPartner = employee.person_type === "partner";
 
     const form = useForm<EmployeeUpdateValues>({
@@ -66,6 +82,22 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
         }
     }, [open, employee, form]);
 
+    // モーダルが開いた瞬間に、直近の健診値でローカル state を初期化する
+    // （描画中に調整する React 推奨パターン: 不要な再レンダリングを避ける）
+    const [wasOpen, setWasOpen] = useState(open);
+    if (open && !wasOpen) {
+        setWasOpen(true);
+        setCheckup(checkupFormValues(latestCheckup));
+    } else if (!open && wasOpen) {
+        setWasOpen(false);
+    }
+
+    const initialCheckup = checkupFormValues(latestCheckup);
+    const checkupDirty =
+        checkup.checkupDate !== initialCheckup.checkupDate ||
+        checkup.bpSystolic !== initialCheckup.bpSystolic ||
+        checkup.bpDiastolic !== initialCheckup.bpDiastolic;
+
     const handleOpenChange = (nextOpen: boolean) => {
         if (nextOpen) {
             onOpenChange(true);
@@ -74,7 +106,7 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
 
         if (isSubmitting) return;
 
-        if (isDirty) {
+        if (isDirty || checkupDirty) {
             setDiscardOpen(true);
             return;
         }
@@ -86,6 +118,7 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
     const handleDiscard = () => {
         form.reset(toEmployeeUpdateFormValues(employee));
         setPhotoFile(null);
+        setCheckup(checkupFormValues(latestCheckup));
         setDiscardOpen(false);
         onOpenChange(false);
     };
@@ -126,6 +159,23 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
             }
             toast.error(result.error);
             return;
+        }
+
+        // 直近の受診日・血圧が入力・変更されていれば健康診断記録として保存する（社員のみ）
+        const initialCheckup = checkupFormValues(latestCheckup);
+        const checkupChanged =
+            checkup.checkupDate !== initialCheckup.checkupDate ||
+            checkup.bpSystolic !== initialCheckup.bpSystolic ||
+            checkup.bpDiastolic !== initialCheckup.bpDiastolic;
+        if (!isPartner && checkup.checkupDate.trim() && checkupChanged) {
+            const checkupResult = await recordEmployeeCheckupAction(employee.id, {
+                check_date: checkup.checkupDate.trim(),
+                blood_pressure_systolic: checkup.bpSystolic,
+                blood_pressure_diastolic: checkup.bpDiastolic,
+            });
+            if (!checkupResult.success) {
+                toast.error(checkupResult.error || "受診日・血圧の保存に失敗しました");
+            }
         }
 
         toast.success(isPartner ? "協力会社情報を更新しました" : "社員情報を更新しました");
@@ -244,6 +294,54 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess }: E
                                 <FormMessage />
                             </FormItem>
                         )} />
+
+                        {!isPartner ? (
+                        <div className="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-2">
+                            <p className="text-sm font-medium">直近の健康診断（任意）</p>
+                            <p className="text-xs text-muted-foreground">
+                                受診日を入力すると健康診断記録として保存され、基本情報の「個人・連絡先」に表示されます。
+                            </p>
+                            <div className="grid grid-cols-3 gap-4">
+                                <FormItem>
+                                    <FormLabel>受診日</FormLabel>
+                                    <FormControl>
+                                        <DatePickerField
+                                            value={checkup.checkupDate}
+                                            onChange={(value) => setCheckup((prev) => ({ ...prev, checkupDate: value ?? "" }))}
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                                <FormItem>
+                                    <FormLabel>血圧（最高）</FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            type="number"
+                                            min="0"
+                                            max="300"
+                                            inputMode="numeric"
+                                            placeholder="120"
+                                            value={checkup.bpSystolic}
+                                            onChange={(e) => setCheckup((prev) => ({ ...prev, bpSystolic: e.target.value }))}
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                                <FormItem>
+                                    <FormLabel>血圧（最低）</FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            type="number"
+                                            min="0"
+                                            max="300"
+                                            inputMode="numeric"
+                                            placeholder="80"
+                                            value={checkup.bpDiastolic}
+                                            onChange={(e) => setCheckup((prev) => ({ ...prev, bpDiastolic: e.target.value }))}
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            </div>
+                        </div>
+                        ) : null}
 
                         <FormItem>
                             <FormLabel>顔写真</FormLabel>

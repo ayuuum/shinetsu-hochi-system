@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { createSupabaseServer } from "@/lib/supabase-server";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { getCachedEmployeeList } from "@/lib/cached-queries";
 import { VehiclesClient, type VehicleWithUser } from "@/components/vehicles/vehicles-client";
 import { VehiclesEquipmentShell } from "@/components/vehicles/vehicles-equipment-shell";
@@ -44,7 +44,10 @@ export default async function VehiclesPage({
     let equipmentHasNextPage = false;
 
     try {
-        const supabase = await createSupabaseServer();
+        // 車両・備品は一般アカウントも閲覧可能（会社資産情報・個人機微情報なし）。
+        // RLS は admin/hr のみ参照のため、サービスロールで全件取得する。
+        const supabase = createSupabaseAdmin();
+        if (!supabase) throw new Error("Service role client is unavailable");
         const searchPattern = currentSearch ? `%${currentSearch.replace(/,/g, " ").trim()}%` : null;
         const eqPattern = eqSearch ? `%${eqSearch.replace(/,/g, " ").trim()}%` : null;
 

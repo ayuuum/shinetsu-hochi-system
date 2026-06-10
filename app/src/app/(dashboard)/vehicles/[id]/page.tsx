@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createSupabaseServer } from "@/lib/supabase-server";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { VehicleDetailClient } from "@/components/vehicles/vehicle-detail-client";
 import { Tables } from "@/types/supabase";
@@ -19,7 +19,11 @@ export default async function VehicleDetailPage({
     const { id } = await params;
     const auth = await getFastAuthSnapshot();
 
-    const supabase = await createSupabaseServer();
+    // 車両詳細は一般アカウントも閲覧可能（会社資産情報）。サービスロールで取得し、編集は isAdminOrHr に限定。
+    const supabase = createSupabaseAdmin();
+    if (!supabase) {
+        notFound();
+    }
 
     const [vehicleResult, tiresResult, repairsResult, accidentsResult] = await Promise.all([
         supabase

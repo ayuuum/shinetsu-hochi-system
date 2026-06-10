@@ -1,8 +1,6 @@
-import { redirect } from "next/navigation";
-import { createSupabaseServer } from "@/lib/supabase-server";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { ProjectsClient, type ConstructionWithEmployee } from "@/components/projects/projects-client";
 import { getCachedEmployeeList, getCachedProjectsPage } from "@/lib/cached-queries";
-import { getFastAuthSnapshot } from "@/lib/auth-server";
 
 const PAGE_SIZE = 50;
 
@@ -20,10 +18,7 @@ export default async function ProjectsPage({
 }: {
     searchParams: Promise<{ page?: string; q?: string; category?: string }>;
 }) {
-    const [auth, params] = await Promise.all([getFastAuthSnapshot(), searchParams]);
-    if (auth.role === "technician") {
-        redirect(auth.linkedEmployeeId ? `/employees/${auth.linkedEmployeeId}?tab=construction` : "/me");
-    }
+    const params = await searchParams;
 
     const currentPage = parsePageParam(params.page);
     const from = (currentPage - 1) * PAGE_SIZE;
@@ -48,7 +43,9 @@ export default async function ProjectsPage({
             hasNextPage = cachedPage.hasNextPage;
             empData = empResult;
         } else {
-            const supabase = await createSupabaseServer();
+            // 工事経歴は一般アカウントも閲覧可能。サービスロールで全件取得（社員カラムは id/氏名/拠点のみ）。
+            const supabase = createSupabaseAdmin();
+            if (!supabase) throw new Error("Service role client is unavailable");
             const searchPattern = currentSearch ? `%${currentSearch.replace(/,/g, " ").trim()}%` : null;
 
             const [employeeSearchResult, empResult] = await Promise.all([

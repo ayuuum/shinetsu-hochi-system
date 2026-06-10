@@ -1,7 +1,5 @@
-import { redirect } from "next/navigation";
 import { addDays } from "date-fns";
-import { createSupabaseServer } from "@/lib/supabase-server";
-import { getFastAuthSnapshot } from "@/lib/auth-server";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { QualificationsClient, type QualificationRow } from "@/components/qualifications/qualifications-client";
 import { formatDateInTokyo, getTodayInTokyo } from "@/lib/date";
 import { getAlertLevel, type AlertLevel } from "@/lib/alert-utils";
@@ -32,10 +30,7 @@ export default async function QualificationsPage({
 }: {
     searchParams: Promise<{ page?: string; q?: string; category?: string; level?: AlertLevel | "all" }>;
 }) {
-    const [auth, params] = await Promise.all([getFastAuthSnapshot(), searchParams]);
-    if (auth.role === "technician") {
-        redirect(auth.linkedEmployeeId ? `/employees/${auth.linkedEmployeeId}?tab=qualifications` : "/me");
-    }
+    const params = await searchParams;
 
     const currentPage = parsePageParam(params.page);
     const from = (currentPage - 1) * PAGE_SIZE;
@@ -59,7 +54,10 @@ export default async function QualificationsPage({
     let licenseGroups: Record<string, LicenseGroupInfo> = {};
 
     try {
-        const supabase = await createSupabaseServer();
+        // 資格・講習管理は一般アカウントも閲覧可能。RLS では本人分しか見えないため
+        // サービスロールで全件取得する（結合する社員カラムは id/氏名/拠点のみ）。
+        const supabase = createSupabaseAdmin();
+        if (!supabase) throw new Error("Service role client is unavailable");
 
         // 同一免状（同じ社員×同じ免状番号）の最新版判定は全件を対象に算出する必要があるため、
         // 免状番号を持つ有効な資格を一覧取得しておく（ページネーションとは独立して並行実行）。

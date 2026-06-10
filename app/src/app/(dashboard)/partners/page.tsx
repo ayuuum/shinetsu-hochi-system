@@ -1,9 +1,12 @@
-import { createSupabaseServer } from "@/lib/supabase-server";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { EmployeesClient, type EmployeeWithQualCount } from "@/components/employees/employees-client";
 import { getCachedQualCountsByEmployee, getCachedQualificationMasters } from "@/lib/cached-queries";
 import { Tables } from "@/types/supabase";
 
 const PAGE_SIZE = 50;
+
+// 一覧で渡してよい安全なカラム（機微カラムは含めない）
+const PARTNER_LIST_COLUMNS: string = "id,employee_number,name,name_kana,branch,job_title,hire_date,person_type,partner_company,partner_contact_name";
 
 function parsePageParam(value?: string) {
     const parsed = Number.parseInt(value || "1", 10);
@@ -30,7 +33,9 @@ export default async function PartnersPage({
     let hasNextPage = false;
 
     try {
-        const supabase = await createSupabaseServer();
+        // 協力会社台帳も一般アカウントが閲覧可能。安全なカラムに限定してサービスロールで取得。
+        const supabase = createSupabaseAdmin();
+        if (!supabase) throw new Error("Service role client is unavailable");
         const searchPattern = currentSearch ? `%${currentSearch.replace(/,/g, " ").trim()}%` : null;
 
         const [masters, qualificationFilterResult, cachedQualCounts] = await Promise.all([
@@ -59,7 +64,7 @@ export default async function PartnersPage({
 
             let employeeQuery = supabase
                 .from("employees")
-                .select("*")
+                .select(PARTNER_LIST_COLUMNS)
                 .is("deleted_at", null)
                 .eq("person_type", "partner")
                 .order(sortColumn, { ascending: sortAscending, nullsFirst: false })
@@ -84,8 +89,9 @@ export default async function PartnersPage({
             }
 
             const { data: empData } = await employeeQuery;
-            const items = (empData || []).slice(0, PAGE_SIZE);
-            hasNextPage = (empData || []).length > PAGE_SIZE;
+            const empRows = (empData ?? []) as unknown as Tables<"employees">[];
+            const items = empRows.slice(0, PAGE_SIZE);
+            hasNextPage = empRows.length > PAGE_SIZE;
 
             employees = items.map((emp) => {
                 const counts = cachedQualCounts[emp.id];

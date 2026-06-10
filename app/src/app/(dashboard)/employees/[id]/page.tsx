@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createSupabaseServer } from "@/lib/supabase-server";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { EmployeeDetailClient, type EmployeeDetail, type EmployeeDetailTab } from "@/components/employees/employee-detail-client";
 import {
@@ -43,23 +43,27 @@ export default async function EmployeeDetailPage({
     // 健康診断・家族・血圧などの機微情報は、管理者/人事、または本人のみ閲覧可
     const canViewSensitive = isAdminOrHr || (auth.role === "technician" && auth.linkedEmployeeId === id);
 
-    const supabase = await createSupabaseServer();
+    // 一般アカウントが「他人」の基本情報・施工実績・受験/セミナーを閲覧できるようにするため、
+    // データ取得はサービスロールで行い、機微タブ・機微カラムはサーバー側で厳格にゲートする。
+    // （RLS は本人/管理者のみ許可のため、横断閲覧はここで明示制御する）
+    const supabase = createSupabaseAdmin();
+    if (!supabase) {
+        notFound();
+    }
     let currentTab: EmployeeDetailTab = VALID_TABS.includes(tab as EmployeeDetailTab) ? (tab as EmployeeDetailTab) : "qualifications";
-    if (auth.role === "technician" && currentTab === "insurance") {
+    // 保険情報は admin のみ（クライアント表示と一致させ、URL直叩きでも他ロールに渡さない）
+    if (auth.role !== "admin" && currentTab === "insurance") {
         currentTab = "basic";
     }
-    if ((auth.role !== "admin" && auth.role !== "hr") && currentTab === "it") {
-        currentTab = "basic";
-    }
-    // 他人を閲覧する一般アカウントは健康診断・家族タブを開けない（URL直叩き対策）
-    if (!canViewSensitive && (currentTab === "health" || currentTab === "family")) {
+    // 健康診断・家族・IT は管理者/人事、または本人のみ（他人を閲覧する一般アカウントはタブを開けない／URL直叩き対策）
+    if (!canViewSensitive && (currentTab === "health" || currentTab === "family" || currentTab === "it")) {
         currentTab = "basic";
     }
     const loadStart = process.hrtime.bigint();
     const [employeeResult, constructionResult, healthResult, itResult, examHistoryResult, seminarResult, deletedQualsResult] = await Promise.all([
         supabase
             .from("employees")
-            .select(getEmployeeDetailSelect(currentTab))
+            .select(getEmployeeDetailSelect(currentTab, canViewSensitive))
             .eq("id", id)
             .is("deleted_at", null)
             .maybeSingle(),
@@ -71,7 +75,7 @@ export default async function EmployeeDetailPage({
                 .is("deleted_at", null)
                 .order("construction_date", { ascending: false })
             : Promise.resolve({ data: [] as Tables<"construction_records">[], error: null }),
-        shouldLoadHealthChecks(currentTab) || (currentTab === "basic" && canViewSensitive)
+        shouldLoadHealthChecks(currentTab) || canViewSensitive
             ? supabase
                 .from("health_checks")
                 .select("*")
@@ -79,7 +83,7 @@ export default async function EmployeeDetailPage({
                 .is("deleted_at", null)
                 .order("check_date", { ascending: false })
             : Promise.resolve({ data: [] as Tables<"health_checks">[], error: null }),
-        shouldLoadEmployeeItAccounts(currentTab, isAdminOrHr)
+        shouldLoadEmployeeItAccounts(currentTab, canViewSensitive)
             ? supabase
                 .from("employee_it_accounts")
                 .select("*")

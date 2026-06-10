@@ -1,4 +1,4 @@
-import { createSupabaseServer } from "@/lib/supabase-server";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -35,7 +35,12 @@ function DetailField({ label, value, tone = "default" }: { label: string; value:
 export default async function QualificationDetailPage({ params }: PageProps) {
     const { id } = await params;
     const auth = await getFastAuthSnapshot();
-    const supabase = await createSupabaseServer();
+    // 資格詳細は一般アカウントも閲覧可能。RLS では本人分のみのため、サービスロールで取得する。
+    // ただし免状画像（証書スキャン）は機微情報のため、管理者/人事または本人のみに限定する。
+    const supabase = createSupabaseAdmin();
+    if (!supabase) {
+        notFound();
+    }
 
     const { data: qualification, error } = await supabase
         .from("employee_qualifications")
@@ -52,11 +57,17 @@ export default async function QualificationDetailPage({ params }: PageProps) {
         notFound();
     }
 
-    const { data: certificateImageRows } = await supabase
-        .from("certificate_images")
-        .select("id, storage_path, caption, sort_order")
-        .eq("qualification_id", id)
-        .order("sort_order", { ascending: true });
+    const isAdminOrHrViewer = auth.role === "admin" || auth.role === "hr";
+    const isOwnerViewer = auth.role === "technician" && !!auth.linkedEmployeeId && auth.linkedEmployeeId === qualification.employee_id;
+    const canViewCertificateImages = isAdminOrHrViewer || isOwnerViewer;
+
+    const { data: certificateImageRows } = canViewCertificateImages
+        ? await supabase
+            .from("certificate_images")
+            .select("id, storage_path, caption, sort_order")
+            .eq("qualification_id", id)
+            .order("sort_order", { ascending: true })
+        : { data: [] as { id: string; storage_path: string; caption: string | null; sort_order: number }[] };
 
     const certificateImages = (await Promise.all((certificateImageRows ?? []).map(async (row) => {
         const { data: signed } = await supabase.storage
@@ -73,7 +84,7 @@ export default async function QualificationDetailPage({ params }: PageProps) {
     }))).filter((row): row is { id: string; url: string; caption: string | null } => row !== null);
 
     // Fallback: legacy single certificate_url, only show if no certificate_images rows exist
-    if (certificateImages.length === 0 && qualification.certificate_url) {
+    if (canViewCertificateImages && certificateImages.length === 0 && qualification.certificate_url) {
         const { data: signed } = await supabase.storage
             .from("certificates")
             .createSignedUrl(qualification.certificate_url, 3600);

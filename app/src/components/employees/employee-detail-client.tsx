@@ -391,6 +391,11 @@ export function EmployeeDetailClient({
                     open={editOpen}
                     onOpenChange={setEditOpen}
                     onSuccess={() => router.refresh()}
+                    latestCheckup={latestHealthCheck ? {
+                        check_date: latestHealthCheck.check_date,
+                        blood_pressure_systolic: latestHealthCheck.blood_pressure_systolic,
+                        blood_pressure_diastolic: latestHealthCheck.blood_pressure_diastolic,
+                    } : null}
                 />
             )}
 
@@ -439,7 +444,7 @@ export function EmployeeDetailClient({
                         {canViewSensitive && (
                             <TabsTrigger value="family" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5"><Users className="h-5 w-5" />家族</TabsTrigger>
                         )}
-                        {isAdminOrHr && (
+                        {canViewSensitive && (
                             <TabsTrigger value="it" className="flex-shrink-0 h-auto rounded-xl px-5 py-4 text-base gap-2.5">
                                 <Laptop className="h-5 w-5" />
                                 IT・ライセンス
@@ -612,16 +617,16 @@ export function EmployeeDetailClient({
                 </TabsContent>
                 )}
 
-                {isAdminOrHr && (
+                {canViewSensitive && (
                     <TabsContent value="it" className="mt-6 space-y-4 animate-in fade-in duration-300">
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-4">
                             <div>
                                 <h3 className="text-lg font-bold">IT・ソフトウェア利用情報</h3>
                                 <p className="text-sm text-muted-foreground mt-1">
-                                    Microsoft 365 や Canon ImageWARE など、PC入替時に必要なログインID・契約メモを登録します（総務・管理者のみ表示）。
+                                    Microsoft 365 や Canon ImageWARE など、PC入替時に必要なログインID・契約メモを登録します。
                                 </p>
                             </div>
-                            <AddItAccountModal employeeId={employee.id} onSuccess={() => router.refresh()} />
+                            {isAdminOrHr && <AddItAccountModal employeeId={employee.id} onSuccess={() => router.refresh()} />}
                         </div>
                         {employee.employee_it_accounts.length === 0 ? (
                             <Card className="bg-muted/10 border-dashed">
@@ -639,6 +644,7 @@ export function EmployeeDetailClient({
                                                 <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 w-fit">
                                                     表示順 {row.sort_order}
                                                 </Badge>
+                                                {isAdminOrHr && (
                                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <AddItAccountModal
                                                         employeeId={employee.id}
@@ -654,6 +660,7 @@ export function EmployeeDetailClient({
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </div>
+                                                )}
                                             </div>
                                             <CardTitle className="text-xl mt-2">{row.service_name}</CardTitle>
                                         </CardHeader>
