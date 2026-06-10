@@ -1,6 +1,10 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
+import { createSupabaseServer } from "@/lib/supabase-server";
 import { getFastAuthSnapshot } from "@/lib/auth-server";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Lock } from "lucide-react";
 import { EmployeeDetailClient, type EmployeeDetail, type EmployeeDetailTab } from "@/components/employees/employee-detail-client";
 import {
     getEmployeeDetailSelect,
@@ -14,6 +18,26 @@ import {
     shouldLoadSeminarRecords,
 } from "@/lib/employee-detail";
 import { Tables } from "@/types/supabase";
+
+function AccessDeniedView() {
+    return (
+        <div className="space-y-5 animate-in fade-in duration-200">
+            <Button variant="ghost" size="sm" className="w-fit rounded-full px-2.5 text-muted-foreground" render={<Link href="/employees" />}>
+                <ArrowLeft className="mr-1.5 h-4 w-4" />
+                社員一覧へ戻る
+            </Button>
+            <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
+                <Lock className="h-10 w-10 text-muted-foreground/50" />
+                <div className="space-y-2">
+                    <h1 className="text-xl font-semibold tracking-tight">この社員情報は閲覧できません</h1>
+                    <p className="text-sm text-muted-foreground">
+                        この情報を閲覧するには管理者または人事担当者の権限が必要です。
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 type EmployeeQualification = Tables<"employee_qualifications"> & {
     qualification_master: Tables<"qualification_master"> | null;
@@ -43,13 +67,12 @@ export default async function EmployeeDetailPage({
     // 健康診断・家族・血圧などの機微情報は、管理者/人事、または本人のみ閲覧可
     const canViewSensitive = isAdminOrHr || (auth.role === "technician" && auth.linkedEmployeeId === id);
 
-    // 一般アカウントが「他人」の基本情報・施工実績・受験/セミナーを閲覧できるようにするため、
-    // データ取得はサービスロールで行い、機微タブ・機微カラムはサーバー側で厳格にゲートする。
-    // （RLS は本人/管理者のみ許可のため、横断閲覧はここで明示制御する）
-    const supabase = createSupabaseAdmin();
-    if (!supabase) {
-        notFound();
-    }
+    // サービスロールで全員の社員情報を取得する（RLS は本人/管理者のみ許可のため）。
+    // サービスロールキーが未設定の場合はユーザーJWTクライアントにフォールバックし、
+    // RLS でブロックされた場合は 404 ではなく「閲覧権限なし」ページを返す。
+    const adminClient = createSupabaseAdmin();
+    const supabase = adminClient ?? await createSupabaseServer();
+    const usingServiceRole = !!adminClient;
     let currentTab: EmployeeDetailTab = VALID_TABS.includes(tab as EmployeeDetailTab) ? (tab as EmployeeDetailTab) : "qualifications";
     // 保険情報は admin のみ（クライアント表示と一致させ、URL直叩きでも他ロールに渡さない）
     if (auth.role !== "admin" && currentTab === "insurance") {
@@ -118,12 +141,19 @@ export default async function EmployeeDetailPage({
 
     if (employeeResult.error) {
         console.error("Failed to load employee detail:", employeeResult.error);
+        if (!usingServiceRole && !isAdminOrHr) {
+            return <AccessDeniedView />;
+        }
         notFound();
     }
 
     const employeeRow = employeeResult.data as EmployeePageRow | null;
 
     if (!employeeRow) {
+        // サービスロールが利用できず RLS にブロックされた場合は権限エラーとして表示
+        if (!usingServiceRole && !isAdminOrHr) {
+            return <AccessDeniedView />;
+        }
         notFound();
     }
 
