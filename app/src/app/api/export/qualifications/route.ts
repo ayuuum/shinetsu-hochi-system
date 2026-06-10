@@ -5,6 +5,7 @@ import { differenceInDays } from "date-fns";
 import { getTodayInTokyo } from "@/lib/date";
 import { getSupabaseEnv } from "@/lib/supabase-env";
 import { getFastAuthSnapshot } from "@/lib/auth-server";
+import { escapeCsvCell } from "@/lib/csv-utils";
 
 function getStatus(expiryDate: string | null): string {
     if (!expiryDate) return "有効期限なし";
@@ -89,7 +90,7 @@ export async function GET(request: Request) {
             q_row.expiry_date || "",
             days !== null ? String(days) : "",
             getStatus(q_row.expiry_date),
-        ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(",");
+        ].map(escapeCsvCell).join(",");
     });
 
     const csv = "﻿" + [csvHeaders.join(","), ...csvRows].join("\n");

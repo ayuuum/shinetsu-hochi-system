@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { getTodayInTokyo } from "@/lib/date";
 import { getSupabaseEnv } from "@/lib/supabase-env";
 import { getFastAuthSnapshot } from "@/lib/auth-server";
+import { escapeCsvCell, escapeHtmlCell } from "@/lib/csv-utils";
 
 export async function GET(request: NextRequest) {
     const cookieStore = await cookies();
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
     }
 
     const headers = [
-        "社員名", "拠点", "工事名", "カテゴリ", "施工日", "役割", "場所", "備考",
+        "社員名", "社員番号", "拠点", "工事名", "カテゴリ", "施工日", "役割", "場所", "備考",
     ];
 
     type RecordWithEmployee = {
@@ -72,6 +73,7 @@ export async function GET(request: NextRequest) {
 
     const rows = ((records || []) as RecordWithEmployee[]).map(r => [
         r.employees?.name || "",
+        r.employees?.employee_number || "",
         r.employees?.branch || "",
         r.construction_name,
         r.category || "",
@@ -79,7 +81,7 @@ export async function GET(request: NextRequest) {
         r.role || "",
         r.location || "",
         r.notes || "",
-    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
+    ].map(escapeCsvCell).join(","));
 
     const csv = "\uFEFF" + [headers.join(","), ...rows].join("\n");
     const date = getTodayInTokyo();
@@ -87,15 +89,15 @@ export async function GET(request: NextRequest) {
     if (format === "excel") {
         const htmlRows = ((records || []) as RecordWithEmployee[]).map((r) => `
             <tr>
-                <td>${r.employees?.name || ""}</td>
-                <td>${r.employees?.employee_number || ""}</td>
-                <td>${r.employees?.branch || ""}</td>
-                <td>${r.construction_name}</td>
-                <td>${r.category || ""}</td>
-                <td>${r.construction_date}</td>
-                <td>${r.role || ""}</td>
-                <td>${r.location || ""}</td>
-                <td>${r.notes || ""}</td>
+                <td>${escapeHtmlCell(r.employees?.name)}</td>
+                <td>${escapeHtmlCell(r.employees?.employee_number)}</td>
+                <td>${escapeHtmlCell(r.employees?.branch)}</td>
+                <td>${escapeHtmlCell(r.construction_name)}</td>
+                <td>${escapeHtmlCell(r.category)}</td>
+                <td>${escapeHtmlCell(r.construction_date)}</td>
+                <td>${escapeHtmlCell(r.role)}</td>
+                <td>${escapeHtmlCell(r.location)}</td>
+                <td>${escapeHtmlCell(r.notes)}</td>
             </tr>
         `).join("");
 

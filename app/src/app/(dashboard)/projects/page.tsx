@@ -1,6 +1,8 @@
+import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { ProjectsClient, type ConstructionWithEmployee } from "@/components/projects/projects-client";
 import { getCachedEmployeeList, getCachedProjectsPage } from "@/lib/cached-queries";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
 
 const PAGE_SIZE = 50;
 
@@ -18,7 +20,10 @@ export default async function ProjectsPage({
 }: {
     searchParams: Promise<{ page?: string; q?: string; category?: string }>;
 }) {
-    const params = await searchParams;
+    const [auth, params] = await Promise.all([getFastAuthSnapshot(), searchParams]);
+    if (auth.role === "technician") {
+        redirect(auth.linkedEmployeeId ? `/employees/${auth.linkedEmployeeId}?tab=construction` : "/me");
+    }
 
     const currentPage = parsePageParam(params.page);
     const from = (currentPage - 1) * PAGE_SIZE;
@@ -67,7 +72,7 @@ export default async function ProjectsPage({
                 .range(from, toPlusOne);
 
             if (currentCategory) {
-                recordsQuery = recordsQuery.eq("category", currentCategory);
+                recordsQuery = recordsQuery.contains("equipment_types", [currentCategory]);
             }
 
             if (currentSearch) {

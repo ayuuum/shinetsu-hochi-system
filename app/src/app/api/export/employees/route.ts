@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { getTodayInTokyo } from "@/lib/date";
 import { getSupabaseEnv } from "@/lib/supabase-env";
 import { getFastAuthSnapshot } from "@/lib/auth-server";
+import { escapeCsvCell } from "@/lib/csv-utils";
 
 export async function GET(request: Request) {
     const cookieStore = await cookies();
@@ -80,7 +81,7 @@ export async function GET(request: Request) {
         emp.job_title || "",
         emp.position || "",
         emp.blood_type || "",
-    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
+    ].map(escapeCsvCell).join(","));
 
     const csv = "\uFEFF" + [headers.join(","), ...rows].join("\n");
 

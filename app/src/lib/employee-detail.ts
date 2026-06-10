@@ -1,18 +1,27 @@
 import type { EmployeeDetailTab } from "@/components/employees/employee-detail-client";
 
 export function getEmployeeDetailSelect(tab: EmployeeDetailTab) {
-    const relations: string[] = [];
+    // Always include lightweight versions for cross-tab UI:
+    // - urgency badge and license group detection (employee_qualifications)
+    // - family allowance indicator (employee_family)
+    // - insurance presence indicator (employee_life_insurances)
+    const relations: string[] = [
+        "employee_qualifications(id, employee_id, expiry_date, deleted_at, certificate_number, acquired_date, created_at, qualification_id)",
+        "employee_family(id, birth_date, is_dependent, allowance_eligible, relationship)",
+        "employee_life_insurances(id)",
+    ];
 
     if (tab === "qualifications") {
-        relations.push("employee_qualifications(*, qualification_master(*))");
+        // Override to full detail (includes certificate_url, notes, etc.)
+        relations[0] = "employee_qualifications(*, qualification_master(*))";
     }
 
     if (tab === "family") {
-        relations.push("employee_family(*)");
+        relations[1] = "employee_family(*)";
     }
 
     if (tab === "insurance") {
-        relations.push("employee_life_insurances(*)");
+        relations[2] = "employee_life_insurances(*)";
         relations.push("employee_damage_insurances(*)");
     }
 

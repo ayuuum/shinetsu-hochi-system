@@ -115,9 +115,9 @@ function DetailItem({ label, value }: { label: string; value: string | null | nu
     );
 }
 
-function maskedEmploymentValue(isTechnicianSelf: boolean, value: string | null | number) {
-    if (!isTechnicianSelf) return value;
-    return "—";
+function maskedEmploymentValue(canView: boolean, value: string | null | number) {
+    if (!canView) return "—";
+    return value;
 }
 
 // 加入の有無（＋任意で名称）を「加入（名称）」「未加入」「-」で表示する
@@ -496,16 +496,16 @@ export function EmployeeDetailClient({
                             <CardContent className="space-y-0">
                                 <DetailItem label="役職" value={employee.position} />
                                 <DetailItem label="職種" value={employee.job_title} />
-                                <DetailItem label="雇用形態" value={maskedEmploymentValue(isTechnicianSelf, employee.employment_type)} />
+                                <DetailItem label="雇用形態" value={maskedEmploymentValue(isAdminOrHr, employee.employment_type)} />
                                 <DetailItem label="入社年月日" value={formatDisplayDate(employee.hire_date)} />
                                 <DetailItem label="退職日" value={formatDisplayDate(employee.termination_date)} />
                                 <DetailItem label="経験年数" value={formatExperience(computeCurrentExperience(employee.experience_years, employee.experience_months, employee.experience_base_date))} />
-                                <DetailItem label="健康保険番号" value={maskedEmploymentValue(isTechnicianSelf, employee.health_insurance_no)} />
-                                <DetailItem label="健康保険（名称）" value={maskedEmploymentValue(isTechnicianSelf, employee.health_insurance_type)} />
-                                <DetailItem label="年金番号" value={maskedEmploymentValue(isTechnicianSelf, employee.pension_no)} />
-                                <DetailItem label="年金（加入状況）" value={isTechnicianSelf ? "—" : formatEnrollment(employee.pension_enrolled, employee.pension_type)} />
-                                <DetailItem label="雇用保険番号" value={maskedEmploymentValue(isTechnicianSelf, employee.emp_insurance_no)} />
-                                <DetailItem label="雇用保険（加入状況）" value={isTechnicianSelf ? "—" : formatEnrollment(employee.emp_insurance_enrolled)} />
+                                <DetailItem label="健康保険番号" value={maskedEmploymentValue(isAdminOrHr, employee.health_insurance_no)} />
+                                <DetailItem label="健康保険（名称）" value={maskedEmploymentValue(isAdminOrHr, employee.health_insurance_type)} />
+                                <DetailItem label="年金番号" value={maskedEmploymentValue(isAdminOrHr, employee.pension_no)} />
+                                <DetailItem label="年金（加入状況）" value={!isAdminOrHr ? "—" : formatEnrollment(employee.pension_enrolled, employee.pension_type)} />
+                                <DetailItem label="雇用保険番号" value={maskedEmploymentValue(isAdminOrHr, employee.emp_insurance_no)} />
+                                <DetailItem label="雇用保険（加入状況）" value={!isAdminOrHr ? "—" : formatEnrollment(employee.emp_insurance_enrolled)} />
                             </CardContent>
                         </Card>
                     </div>

@@ -1,18 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Beer, CheckCircle2, AlertTriangle, Pencil, Trash2 } from "lucide-react";
+import { Beer, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
 import { AddAlcoholCheckModal } from "./add-alcohol-check-modal";
-import { EditAlcoholCheckModal } from "./edit-alcohol-check-modal";
-import { deleteAlcoholCheckAction } from "@/app/actions/admin-record-actions";
-import { toast } from "sonner";
 import type { AlcoholCheckRow } from "./alcohol-client";
 
 type Employee = { id: string; name: string };
@@ -24,24 +17,9 @@ interface TechnicianAlcoholClientProps {
 }
 
 export function TechnicianAlcoholClient({ initialChecks, employee, currentDate }: TechnicianAlcoholClientProps) {
-    const router = useRouter();
-    const [deletingId, setDeletingId] = useState<string | null>(null);
-    const [editingItem, setEditingItem] = useState<AlcoholCheckRow | null>(null);
-
     const hasArrival = initialChecks.some((c) => c.check_type === "出勤時");
     const hasDeparture = initialChecks.some((c) => c.check_type === "退勤時");
     const hasAbnormal = initialChecks.some((c) => c.is_abnormal);
-
-    const handleDelete = async (id: string) => {
-        const result = await deleteAlcoholCheckAction(id);
-        if (!result.success) {
-            toast.error(result.error);
-        } else {
-            toast.success("記録を削除しました");
-            router.refresh();
-        }
-        setDeletingId(null);
-    };
 
     const displayDate = (() => {
         try {
@@ -128,46 +106,12 @@ export function TechnicianAlcoholClient({ initialChecks, employee, currentDate }
                                             {check.measured_value != null && ` | ${Number(check.measured_value).toFixed(2)} mg/L`}
                                         </p>
                                     </div>
-                                    <div className="flex items-center gap-1">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                                            onClick={() => setEditingItem(check)}
-                                        >
-                                            <Pencil className="h-3.5 w-3.5" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                            onClick={() => setDeletingId(check.id)}
-                                        >
-                                            <Trash2 className="h-3.5 w-3.5" />
-                                        </Button>
-                                    </div>
                                 </div>
                             ))}
                         </div>
                     )}
                 </CardContent>
             </Card>
-
-            {editingItem && (
-                <EditAlcoholCheckModal
-                    check={editingItem}
-                    employees={[employee]}
-                    open={!!editingItem}
-                    onOpenChange={(open) => { if (!open) { setEditingItem(null); router.refresh(); } }}
-                />
-            )}
-            <DeleteConfirmDialog
-                open={!!deletingId}
-                onOpenChange={(open) => !open && setDeletingId(null)}
-                title="記録の削除"
-                description="このアルコールチェック記録を完全に削除します。復元はできません。"
-                onConfirm={() => handleDelete(deletingId!)}
-            />
         </div>
     );
 }

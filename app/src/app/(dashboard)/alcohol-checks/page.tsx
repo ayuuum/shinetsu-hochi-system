@@ -103,18 +103,30 @@ export default async function AlcoholChecksPage({
             .lte("check_datetime", `${monthBounds.end}T23:59:59`)
             .limit(5000);
 
-        const [checksResult, empResult, monthlyResult] = await Promise.all([
+        // Query all of today's check employee IDs without any other filters
+        // (separate from the filtered/paginated query so unrecorded list is accurate)
+        const allTodayChecksQuery = supabase
+            .from("alcohol_checks")
+            .select("employee_id")
+            .is("deleted_at", null)
+            .gte("check_datetime", dateStart)
+            .lte("check_datetime", dateEnd);
+
+        const [checksResult, empResult, monthlyResult, allTodayResult] = await Promise.all([
             checksQuery,
             empPromise,
             monthlyQuery,
+            allTodayChecksQuery,
         ]);
         const checks = (checksResult.data as AlcoholCheckRow[]) || [];
         checksData = checks.slice(0, PAGE_SIZE);
         empData = empResult as { id: string; name: string }[];
         hasNextPage = checks.length > PAGE_SIZE;
 
-        // Compute unrecorded employees for the selected date
-        const recordedEmployeeIds = new Set(checksData.map((c) => c.employee_id).filter(Boolean));
+        // Compute unrecorded employees from all today's checks (not filtered subset)
+        const recordedEmployeeIds = new Set(
+            (allTodayResult.data || []).map((c) => c.employee_id).filter(Boolean)
+        );
         unrecordedEmployees = empData.filter((e) => !recordedEmployeeIds.has(e.id));
 
         const monthlyChecks = monthlyResult.data || [];

@@ -1,5 +1,7 @@
+import { redirect } from "next/navigation";
 import { addDays } from "date-fns";
 import { createSupabaseServer } from "@/lib/supabase-server";
+import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { QualificationsClient, type QualificationRow } from "@/components/qualifications/qualifications-client";
 import { formatDateInTokyo, getTodayInTokyo } from "@/lib/date";
 import { getAlertLevel, type AlertLevel } from "@/lib/alert-utils";
@@ -30,7 +32,10 @@ export default async function QualificationsPage({
 }: {
     searchParams: Promise<{ page?: string; q?: string; category?: string; level?: AlertLevel | "all" }>;
 }) {
-    const params = await searchParams;
+    const [auth, params] = await Promise.all([getFastAuthSnapshot(), searchParams]);
+    if (auth.role === "technician") {
+        redirect(auth.linkedEmployeeId ? `/employees/${auth.linkedEmployeeId}?tab=qualifications` : "/me");
+    }
 
     const currentPage = parsePageParam(params.page);
     const from = (currentPage - 1) * PAGE_SIZE;

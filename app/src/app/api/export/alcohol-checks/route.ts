@@ -5,6 +5,7 @@ import { getTodayInTokyo, getTokyoCalendarMonthBounds } from "@/lib/date";
 import { getSupabaseEnv } from "@/lib/supabase-env";
 import { getFastAuthSnapshot } from "@/lib/auth-server";
 import { Tables } from "@/types/supabase";
+import { escapeCsvCell, escapeHtmlCell } from "@/lib/csv-utils";
 
 type AlcoholCheckExportRow = Tables<"alcohol_checks"> & {
     employee: Pick<Tables<"employees">, "name"> | null;
@@ -133,21 +134,21 @@ export async function GET(request: NextRequest) {
         c.is_abnormal ? "不適正" : "適正",
         c.location || "",
         c.notes || "",
-    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
+    ].map(escapeCsvCell).join(","));
 
     const csv = "\uFEFF" + [headers.join(","), ...rows].join("\n");
 
     if (format === "excel") {
         const htmlRows = ((checks || []) as AlcoholCheckExportRow[]).map((c) => `
             <tr>
-                <td>${c.check_datetime || ""}</td>
-                <td>${c.employee?.name || ""}</td>
-                <td>${c.check_type || ""}</td>
-                <td>${c.checker?.name || ""}</td>
-                <td>${c.measured_value != null ? String(c.measured_value) : ""}</td>
+                <td>${escapeHtmlCell(c.check_datetime)}</td>
+                <td>${escapeHtmlCell(c.employee?.name)}</td>
+                <td>${escapeHtmlCell(c.check_type)}</td>
+                <td>${escapeHtmlCell(c.checker?.name)}</td>
+                <td>${escapeHtmlCell(c.measured_value != null ? String(c.measured_value) : "")}</td>
                 <td>${c.is_abnormal ? "不適正" : "適正"}</td>
-                <td>${c.location || ""}</td>
-                <td>${c.notes || ""}</td>
+                <td>${escapeHtmlCell(c.location)}</td>
+                <td>${escapeHtmlCell(c.notes)}</td>
             </tr>
         `).join("");
 

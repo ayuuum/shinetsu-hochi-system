@@ -11,7 +11,9 @@ import { addYears, setMonth, setDate, getYear, getMonth } from "date-fns";
  * @returns 次回講習期限日
  */
 export function calculateFireDefenseExpiry(baseDate: string | Date, isInitial: boolean = false): Date {
-    const date = new Date(baseDate);
+    // Parse string dates as local time (appending T00:00:00 without Z) so fiscal-year
+    // boundary is determined in the local timezone rather than UTC.
+    const date = typeof baseDate === "string" ? new Date(`${baseDate}T00:00:00`) : baseDate;
     const year = getYear(date);
     const month = getMonth(date); // 0-indexed (April is 3)
 

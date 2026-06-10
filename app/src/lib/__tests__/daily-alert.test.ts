@@ -11,6 +11,9 @@ function createQualificationRow(overrides: Partial<QualificationAlertRow> = {}):
         employees: {
             name: "山田 太郎",
             branch: "長野",
+            email: null,
+            person_type: "employee",
+            partner_company: null,
         },
         qualification_master: {
             name: "消防設備士甲種4類",
