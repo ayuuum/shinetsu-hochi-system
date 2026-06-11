@@ -42,6 +42,26 @@ export function getPasswordResetRequestErrorMessage(message: string) {
 export function getPasswordUpdateErrorMessage(message: string) {
     const normalized = message.toLowerCase();
 
+    // 以前と同じパスワード（Supabase: "New password should be different from the old password"）
+    if (
+        normalized.includes("different from the old")
+        || normalized.includes("same_password")
+        || normalized.includes("should be different")
+    ) {
+        return "以前と異なる新しいパスワードを設定してください。";
+    }
+
+    // 漏洩・脆弱なパスワード（Leaked password protection / HaveIBeenPwned）
+    if (
+        normalized.includes("pwned")
+        || normalized.includes("leaked")
+        || normalized.includes("compromised")
+        || normalized.includes("known to be")
+        || normalized.includes("weak_password")
+    ) {
+        return "このパスワードは安全ではないため使用できません。推測されにくい別のパスワードを設定してください。";
+    }
+
     if (
         normalized.includes("session")
         || normalized.includes("jwt")
