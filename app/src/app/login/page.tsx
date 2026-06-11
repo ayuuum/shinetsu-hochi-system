@@ -106,7 +106,7 @@ function LoginForm() {
 
         setResetLoading(true);
         const origin = window.location.origin;
-        const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent("/auth/update-password")}`;
+        const redirectTo = `${origin}/api/auth/callback?next=${encodeURIComponent("/auth/update-password")}`;
         const { error: resetErr } = await supabase.auth.resetPasswordForEmail(trimmed, {
             redirectTo,
         });
