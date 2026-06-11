@@ -49,13 +49,18 @@ export const getCachedUserRoleSnapshot = unstable_cache(
 
 export const getFastAuthSnapshot = cache(async (): Promise<AuthSnapshot> => {
     const supabase = await createSupabaseServer();
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    // getSession() は Cookie 内の JWT を署名検証しないため、権限判定には使わない。
+    // getUser() は Supabase Auth サーバーで JWT を検証するため、サービスロールで
+    // RLS を迂回するページの権限判定でも安全に使える（React cache でリクエスト毎に1回）。
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    if (sessionError) {
-        console.error("Failed to load auth session:", sessionError);
+    if (userError) {
+        // 未ログイン時も AuthSessionMissingError が返るため、通常運用ではログ不要
+        if (userError.name !== "AuthSessionMissingError") {
+            console.error("Failed to load authenticated user:", userError);
+        }
     }
 
-    const user = session?.user;
     if (!user) {
         return EMPTY_AUTH_SNAPSHOT;
     }
