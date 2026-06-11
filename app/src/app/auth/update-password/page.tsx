@@ -2,19 +2,21 @@
 
 import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BrandLogo } from "@/components/brand-logo";
 import { supabase } from "@/lib/supabase";
 import { getPasswordUpdateErrorMessage } from "@/lib/auth-error-messages";
-import { Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 
 function UpdatePasswordForm() {
     const [password, setPassword] = useState("");
     const [confirm, setConfirm] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
     const router = useRouter();
 
     async function handleSubmit(e: React.FormEvent) {
@@ -33,15 +35,33 @@ function UpdatePasswordForm() {
 
         setLoading(true);
         const { error: updateError } = await supabase.auth.updateUser({ password });
-        setLoading(false);
 
         if (updateError) {
+            setLoading(false);
             setError(getPasswordUpdateErrorMessage(updateError.message));
             return;
         }
 
-        router.push("/");
-        router.refresh();
+        setSuccess(true);
+        toast.success("パスワードを更新しました");
+        // 成功表示を見せてからダッシュボードへ
+        setTimeout(() => {
+            router.push("/");
+            router.refresh();
+        }, 1500);
+    }
+
+    if (success) {
+        return (
+            <div className="flex flex-col items-center justify-center gap-3 py-6 text-center">
+                <CheckCircle2 className="h-12 w-12 text-emerald-500" />
+                <p className="text-base font-semibold">パスワードを更新しました</p>
+                <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    ダッシュボードへ移動しています...
+                </p>
+            </div>
+        );
     }
 
     return (
