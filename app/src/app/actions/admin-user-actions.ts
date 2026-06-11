@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { getStrictAuthSnapshot } from "@/lib/auth-server";
 
@@ -22,7 +23,11 @@ async function requireAdmin(): Promise<
     { ok: true; userId: string } | { ok: false; error: string }
 > {
     const { user, role } = await getStrictAuthSnapshot();
-    if (!user || role !== "admin") {
+    if (!user) {
+        redirect("/login");
+        return { ok: false, error: "ログインが必要です。" };
+    }
+    if (role !== "admin") {
         return { ok: false, error: "権限がありません" };
     }
     return { ok: true, userId: user.id };

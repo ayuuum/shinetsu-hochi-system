@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Edit, Loader2, Plus, Trash2, Users } from "lucide-react";
+import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
 import { toast } from "sonner";
 import { Tables } from "@/types/supabase";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,7 @@ export function AddFamilyModal({ employeeId, existingRecord, onSuccess }: AddFam
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const isEdit = !!existingRecord;
 
     const form = useForm<EmployeeFamilyValues>({
@@ -112,9 +114,7 @@ export function AddFamilyModal({ employeeId, existingRecord, onSuccess }: AddFam
 
     const handleDelete = async () => {
         if (!existingRecord) return;
-        setIsDeleting(true);
         const result = await deleteEmployeeFamilyAction(existingRecord.id);
-        setIsDeleting(false);
 
         if (!result.success) {
             toast.error(result.error);
@@ -127,6 +127,7 @@ export function AddFamilyModal({ employeeId, existingRecord, onSuccess }: AddFam
     };
 
     return (
+        <>
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger render={
                 isEdit ? (
@@ -223,10 +224,10 @@ export function AddFamilyModal({ employeeId, existingRecord, onSuccess }: AddFam
                                     type="button"
                                     variant="outline"
                                     className="sm:mr-auto text-destructive"
-                                    onClick={handleDelete}
+                                    onClick={() => setDeleteConfirmOpen(true)}
                                     disabled={isSubmitting || isDeleting}
                                 >
-                                    {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                                    <Trash2 className="mr-2 h-4 w-4" />
                                     削除
                                 </Button>
                             ) : <div />}
@@ -244,5 +245,14 @@ export function AddFamilyModal({ employeeId, existingRecord, onSuccess }: AddFam
                 </Form>
             </DialogContent>
         </Dialog>
+
+        <DeleteConfirmDialog
+            open={deleteConfirmOpen}
+            onOpenChange={setDeleteConfirmOpen}
+            title="家族情報を削除"
+            description={existingRecord ? `${existingRecord.relationship ?? "家族"} の情報を削除します。` : ""}
+            onConfirm={handleDelete}
+        />
+        </>
     );
 }

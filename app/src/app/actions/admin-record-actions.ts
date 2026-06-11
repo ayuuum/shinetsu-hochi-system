@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getStrictAuthSnapshot } from "@/lib/auth-server";
 import { createSupabaseServer } from "@/lib/supabase-server";
@@ -107,6 +108,7 @@ async function requireAuthenticated() {
     const { user } = await getStrictAuthSnapshot();
 
     if (!user) {
+        redirect("/login");
         return { ok: false as const, error: "ログインが必要です。" };
     }
 
