@@ -20,9 +20,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { ShieldAlert, Trash2, UserPlus } from "lucide-react";
+import { KeyRound, ShieldAlert, Trash2, UserPlus } from "lucide-react";
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
 import { InviteUserModal } from "./invite-user-modal";
+import { ResetPasswordModal } from "./reset-password-modal";
 import {
     updateUserRoleAction,
     updateUserEmployeeLinkAction,
@@ -179,6 +180,7 @@ export function UsersClient({ users: initialUsers, currentUserId, employees }: U
     const [users, setUsers] = useState<UserRow[]>(initialUsers);
     const [inviteOpen, setInviteOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
+    const [resetTarget, setResetTarget] = useState<UserRow | null>(null);
 
     const handleDeleted = (userId: string) => {
         setUsers((prev) => prev.filter((u) => u.id !== userId));
@@ -214,7 +216,7 @@ export function UsersClient({ users: initialUsers, currentUserId, employees }: U
                 actions={(
                     <Button onClick={() => setInviteOpen(true)}>
                     <UserPlus className="mr-2 h-4 w-4" />
-                    招待する
+                    ユーザーを追加
                     </Button>
                 )}
             />
@@ -228,7 +230,7 @@ export function UsersClient({ users: initialUsers, currentUserId, employees }: U
                                 <TableHead>ロール</TableHead>
                                 <TableHead>社員紐づけ</TableHead>
                                 <TableHead>最終ログイン</TableHead>
-                                <TableHead className="w-[80px]" />
+                                <TableHead className="w-[110px]" />
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -278,16 +280,27 @@ export function UsersClient({ users: initialUsers, currentUserId, employees }: U
                                             {formatDisplayDate(user.lastSignInAt)}
                                         </TableCell>
                                         <TableCell>
-                                            {!isSelf && (
+                                            <div className="flex items-center justify-end gap-1">
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="text-destructive hover:text-destructive"
-                                                    onClick={() => setDeleteTarget(user)}
+                                                    title="パスワードを再設定"
+                                                    onClick={() => setResetTarget(user)}
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
+                                                    <KeyRound className="h-4 w-4" />
                                                 </Button>
-                                            )}
+                                                {!isSelf && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-destructive hover:text-destructive"
+                                                        title="ユーザーを削除"
+                                                        onClick={() => setDeleteTarget(user)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 );
@@ -298,6 +311,17 @@ export function UsersClient({ users: initialUsers, currentUserId, employees }: U
             </Card>
 
             <InviteUserModal open={inviteOpen} onOpenChange={setInviteOpen} employees={employees} />
+
+            {resetTarget && (
+                <ResetPasswordModal
+                    open={!!resetTarget}
+                    onOpenChange={(open) => {
+                        if (!open) setResetTarget(null);
+                    }}
+                    userId={resetTarget.id}
+                    userEmail={resetTarget.email}
+                />
+            )}
 
             {deleteTarget && (
                 <DeleteConfirmDialog

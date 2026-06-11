@@ -81,6 +81,101 @@ export async function inviteUserAction(
     }
 }
 
+// メール送信に依存せず、管理者が初期パスワードを直接設定してアカウントを作成する。
+// 作成したパスワードは管理者が本人に直接伝える運用。
+export async function createUserWithPasswordAction(
+    email: string,
+    password: string,
+    role: UserRole,
+    employeeId?: string | null
+): Promise<ActionResult> {
+    const auth = await requireAdmin();
+    if (!auth.ok) {
+        return { success: false, error: auth.error };
+    }
+
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail) {
+        return { success: false, error: "メールアドレスを入力してください。" };
+    }
+    if (password.length < 8) {
+        return { success: false, error: "パスワードは8文字以上にしてください。" };
+    }
+
+    try {
+        const adminClient = createAdminClient();
+        const { data, error: createError } = await adminClient.auth.admin.createUser({
+            email: trimmedEmail,
+            password,
+            email_confirm: true,
+        });
+
+        if (createError) {
+            console.error("Failed to create user:", createError);
+            if (createError.message.toLowerCase().includes("already")) {
+                return { success: false, error: "このメールアドレスは既に登録されています。" };
+            }
+            return { success: false, error: "ユーザーの作成に失敗しました。" };
+        }
+
+        const userId = data.user.id;
+        const { error: upsertError } = await adminClient
+            .from("user_roles")
+            .upsert(
+                {
+                    id: userId,
+                    role,
+                    employee_id: role === "technician" ? employeeId || null : null,
+                },
+                { onConflict: "id" },
+            );
+
+        if (upsertError) {
+            console.error("Failed to upsert user_roles after create:", upsertError);
+            return { success: false, error: "ロールの設定に失敗しました。" };
+        }
+
+        revalidatePath("/admin/users");
+        updateTag("user-roles");
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while creating user:", error);
+        return { success: false, error: "ユーザーの作成に失敗しました。" };
+    }
+}
+
+// メール送信に依存せず、管理者が対象ユーザーのパスワードを直接再設定する。
+export async function resetUserPasswordAction(
+    userId: string,
+    newPassword: string
+): Promise<ActionResult> {
+    const auth = await requireAdmin();
+    if (!auth.ok) {
+        return { success: false, error: auth.error };
+    }
+
+    if (newPassword.length < 8) {
+        return { success: false, error: "パスワードは8文字以上にしてください。" };
+    }
+
+    try {
+        const adminClient = createAdminClient();
+        const { error } = await adminClient.auth.admin.updateUserById(userId, {
+            password: newPassword,
+        });
+
+        if (error) {
+            console.error("Failed to reset user password:", error);
+            return { success: false, error: "パスワードの再設定に失敗しました。" };
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while resetting password:", error);
+        return { success: false, error: "パスワードの再設定に失敗しました。" };
+    }
+}
+
 export async function updateUserRoleAction(
     userId: string,
     role: UserRole

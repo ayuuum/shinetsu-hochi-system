@@ -156,7 +156,7 @@ toast.error("保存に失敗しました");
 
 `app/.env.local` に `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` を設定。ユーザー作成には `SUPABASE_SERVICE_ROLE_KEY` も必要。
 
-通常のユーザー追加は、管理者画面の `/admin/users` から招待メール方式で行う。CLI作成は、初期パスワードを管理者が直接指定する例外運用。
+通常のユーザー追加は、管理者画面の `/admin/users` から「ユーザーを追加」で行う。メール送信に依存せず、管理者が初期パスワードを直接設定してアカウントを作成し、表示されるログイン情報を本人に直接伝える運用（Supabase標準メールのレート制限を回避するため）。パスワードを忘れた社員は、同画面の「パスワードを再設定」（鍵アイコン）で管理者が直接再発行する。`inviteUserAction`（招待メール方式）はカスタムSMTP導入時のために残置。CLI作成も同様に初期パスワード指定の例外運用。
 
 ```bash
 cd app

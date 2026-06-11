@@ -52,7 +52,6 @@ function applyFieldErrors(
 export function AddFamilyModal({ employeeId, existingRecord, onSuccess }: AddFamilyModalProps) {
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const isEdit = !!existingRecord;
 
@@ -225,17 +224,17 @@ export function AddFamilyModal({ employeeId, existingRecord, onSuccess }: AddFam
                                     variant="outline"
                                     className="sm:mr-auto text-destructive"
                                     onClick={() => setDeleteConfirmOpen(true)}
-                                    disabled={isSubmitting || isDeleting}
+                                    disabled={isSubmitting}
                                 >
                                     <Trash2 className="mr-2 h-4 w-4" />
                                     削除
                                 </Button>
                             ) : <div />}
                             <div className="flex flex-col-reverse sm:flex-row gap-2">
-                                <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isSubmitting || isDeleting}>
+                                <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isSubmitting}>
                                     キャンセル
                                 </Button>
-                                <Button type="submit" disabled={isSubmitting || isDeleting}>
+                                <Button type="submit" disabled={isSubmitting}>
                                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     {isEdit ? "更新する" : "追加する"}
                                 </Button>
