@@ -133,11 +133,13 @@ export function EmployeeDetailClient({
     certUrls,
     initialTab,
     photoUrl,
+    listContext = "employees",
 }: {
     employee: EmployeeDetail;
     certUrls: Record<string, string>;
     initialTab: EmployeeDetailTab;
     photoUrl: string | null;
+    listContext?: "employees" | "partners";
 }) {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<EmployeeDetailTab>(initialTab);
@@ -180,6 +182,8 @@ export function EmployeeDetailClient({
         return differenceInDays(today, new Date(f.birth_date)) / 365.25 <= 18;
     });
 
+    const listHref = listContext === "partners" ? "/partners" : "/employees";
+
     const handleBack = () => {
         if (isTechnicianSelf) {
             router.push("/me");
@@ -191,7 +195,7 @@ export function EmployeeDetailClient({
             return;
         }
 
-        router.push("/employees");
+        router.push(listHref);
     };
 
     const handleTabChange = (tab: EmployeeDetailTab) => {
@@ -300,7 +304,7 @@ export function EmployeeDetailClient({
             return;
         }
 
-        router.push("/employees");
+        router.push(listHref);
         router.refresh();
     };
 
@@ -310,7 +314,7 @@ export function EmployeeDetailClient({
                 <div className="flex items-center justify-between">
                     <Button variant="ghost" onClick={handleBack} className="w-fit -ml-2 text-muted-foreground">
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        {isTechnicianSelf ? "マイページへ戻る" : "一覧へ戻る"}
+                        {isTechnicianSelf ? "マイページへ戻る" : listContext === "partners" ? "協力会社台帳へ戻る" : "一覧へ戻る"}
                     </Button>
                     {isAdminOrHr && (
                         <div className="flex items-center gap-1 sm:hidden">
