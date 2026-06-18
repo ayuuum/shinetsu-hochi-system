@@ -23,12 +23,15 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, FileImage, Tags, ScrollText, Download, Loader2, ArrowRight, X } from "lucide-react";
+import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, Trash2, FileImage, Tags, ScrollText, Download, Loader2, ArrowRight, X } from "lucide-react";
+import { toast } from "sonner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { differenceInDays } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { alertStyles, getAlertLevel, type AlertLevel } from "@/lib/alert-utils";
 import { EditQualificationModal } from "@/components/qualifications/edit-qualification-modal";
+import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
+import { deleteQualificationAction } from "@/app/actions/admin-record-actions";
 import { TableCellLink } from "@/components/shared/table-cell-link";
 import { ActiveFilters } from "@/components/shared/active-filters";
 import { MobileFiltersSheet } from "@/components/shared/mobile-filters-sheet";
@@ -137,6 +140,7 @@ export function QualificationsClient({
 }: QualificationsClientProps) {
     const [search, setSearch] = useState(currentSearch);
     const [editingItem, setEditingItem] = useState<QualificationRow | null>(null);
+    const [deletingItem, setDeletingItem] = useState<QualificationRow | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
     const [mobileCategory, setMobileCategory] = useState(currentCategory);
@@ -573,6 +577,10 @@ export function QualificationsClient({
                                                     <Pencil className="h-4 w-4" />
                                                     編集
                                                 </DropdownMenuItem>
+                                                <DropdownMenuItem variant="destructive" onClick={() => setDeletingItem(q)}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                    削除
+                                                </DropdownMenuItem>
                                             </RecordActionsMenu>
                                         ) : null}
                                     </div>
@@ -727,6 +735,10 @@ export function QualificationsClient({
                                                         <Pencil className="h-4 w-4" />
                                                         編集
                                                     </DropdownMenuItem>
+                                                    <DropdownMenuItem variant="destructive" onClick={() => setDeletingItem(q)}>
+                                                        <Trash2 className="h-4 w-4" />
+                                                        削除
+                                                    </DropdownMenuItem>
                                                 </RecordActionsMenu>
                                             </TableCell>
                                         )}
@@ -778,6 +790,26 @@ export function QualificationsClient({
                     open={!!editingItem}
                     onOpenChange={(open) => {
                         if (!open) setEditingItem(null);
+                    }}
+                />
+            )}
+
+            {isAdminOrHr && deletingItem && (
+                <DeleteConfirmDialog
+                    open={!!deletingItem}
+                    onOpenChange={(open) => {
+                        if (!open) setDeletingItem(null);
+                    }}
+                    title="資格情報を削除"
+                    description={`${deletingItem.employees?.name ?? ""} の「${deletingItem.qualification_master?.name ?? "資格"}」を削除します。`}
+                    onConfirm={async () => {
+                        const result = await deleteQualificationAction(deletingItem.id);
+                        if (result.success) {
+                            toast.success("資格情報を削除しました");
+                            router.refresh();
+                        } else {
+                            toast.error(result.error);
+                        }
                     }}
                 />
             )}

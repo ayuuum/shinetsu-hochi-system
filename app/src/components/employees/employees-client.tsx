@@ -496,7 +496,7 @@ export function EmployeesClient({
                     </Card>
                 ) : (
                     initialEmployees.map((emp) => {
-                        const employeeHref = `/employees/${emp.id}?tab=basic`;
+                        const employeeHref = `${isPartnerMode ? "/partners" : "/employees"}/${emp.id}?tab=basic`;
                         const employeePrefetchProps = getIntentPrefetchProps(employeeHref);
 
                         return (
@@ -570,7 +570,7 @@ export function EmployeesClient({
                             </TableRow>
                         ) : (
                             initialEmployees.map((emp) => {
-                                const employeeHref = `/employees/${emp.id}?tab=basic`;
+                                const employeeHref = `${isPartnerMode ? "/partners" : "/employees"}/${emp.id}?tab=basic`;
                                 const employeePrefetchProps = getIntentPrefetchProps(employeeHref);
 
                                 return (

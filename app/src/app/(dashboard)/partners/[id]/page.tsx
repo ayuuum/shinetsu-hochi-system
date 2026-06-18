@@ -1,6 +1,6 @@
 import { EmployeeDetailView } from "@/components/employees/employee-detail-view";
 
-export default async function EmployeeDetailPage({
+export default async function PartnerDetailPage({
     params,
     searchParams,
 }: {
@@ -10,5 +10,5 @@ export default async function EmployeeDetailPage({
     const { id } = await params;
     const { tab } = await searchParams;
 
-    return <EmployeeDetailView id={id} tab={tab} listContext="employees" />;
+    return <EmployeeDetailView id={id} tab={tab} listContext="partners" />;
 }

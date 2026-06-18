@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { ArrowLeft, FileImage } from "lucide-react";
 import { AddTrainingModal } from "@/components/qualifications/add-training-modal";
+import { DeleteQualificationButton } from "@/components/qualifications/delete-qualification-button";
 import { alertStyles } from "@/lib/alert-utils";
 
 interface PageProps {
@@ -145,15 +146,23 @@ export default async function QualificationDetailPage({ params }: PageProps) {
     return (
         <div className="space-y-5 animate-in fade-in duration-200">
             <div className="space-y-3">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-fit rounded-full px-2.5 text-muted-foreground"
-                    render={<Link href="/qualifications" />}
-                >
-                    <ArrowLeft className="mr-1.5 h-4 w-4" />
-                    資格一覧へ戻る
-                </Button>
+                <div className="flex items-center justify-between gap-2">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-fit rounded-full px-2.5 text-muted-foreground"
+                        render={<Link href="/qualifications" />}
+                    >
+                        <ArrowLeft className="mr-1.5 h-4 w-4" />
+                        資格一覧へ戻る
+                    </Button>
+                    {canManage && (
+                        <DeleteQualificationButton
+                            qualificationId={id}
+                            qualificationName={qualification.qualification_master?.name || "資格"}
+                        />
+                    )}
+                </div>
                 <div className="space-y-1.5">
                     <h1 className="text-[2rem] font-semibold tracking-[-0.04em] text-balance md:text-[2.5rem]">
                         {qualification.qualification_master?.name || "資格詳細"}
