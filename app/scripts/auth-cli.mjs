@@ -109,6 +109,43 @@ async function createDemo(email, password, role) {
 }
 
 /** ローカル用 test@gmail.com / test1234（admin）。既存ならパスワード更新 + user_roles upsert */
+async function setRole(email, role) {
+    const { url, serviceRoleKey } = getRuntimeEnv();
+    if (!url || !serviceRoleKey) {
+        console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+        process.exit(1);
+    }
+    if (!["admin", "hr", "technician"].includes(role)) {
+        console.error("role must be admin, hr, or technician");
+        process.exit(1);
+    }
+    const emailNorm = email.trim().toLowerCase();
+    if (!emailNorm) {
+        console.error("email is required");
+        process.exit(1);
+    }
+    const admin = createClient(url, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const user = await findUserByEmail(admin, emailNorm);
+    if (!user) {
+        console.error("User not found:", emailNorm);
+        process.exit(1);
+    }
+    const { error: roleErr } = await admin.from("user_roles").upsert(
+        { id: user.id, role },
+        { onConflict: "id" },
+    );
+    if (roleErr) {
+        console.error("user_roles upsert failed:", roleErr.message);
+        process.exit(1);
+    }
+    console.log("OK: role updated");
+    console.log("  email:", user.email);
+    console.log("  role:", role);
+    console.log("  user id:", user.id);
+}
+
 async function ensureTestUser(overrideEnv = null) {
     const env = overrideEnv ?? getRuntimeEnv();
     const { url, serviceRoleKey } = env;
@@ -213,6 +250,9 @@ function printUsage() {
   ensure-test: node scripts/auth-cli.mjs ensure-test
             test@gmail.com / test1234（admin）を作成または更新（本番・共有環境でも実行可）
 
+  set-role: node scripts/auth-cli.mjs set-role <email> <admin|hr|technician>
+            既存ユーザーの user_roles.role を更新
+
   setup-test: node scripts/auth-cli.mjs setup-test
             .env.local が無ければ対話入力で自動作成し、そのまま test ユーザーを用意`);
 }
@@ -242,6 +282,16 @@ function printUsage() {
         }
         if (cmd === "ensure-test") {
             await ensureTestUser();
+            return;
+        }
+        if (cmd === "set-role") {
+            const email = rest[0] ?? norm(process.env.SET_ROLE_EMAIL);
+            const role = rest[1] ?? norm(process.env.SET_ROLE);
+            if (!email || !role) {
+                printUsage();
+                process.exit(1);
+            }
+            await setRole(email, role);
             return;
         }
         if (cmd === "setup-test") {
