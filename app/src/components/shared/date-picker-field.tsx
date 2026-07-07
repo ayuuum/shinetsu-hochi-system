@@ -17,7 +17,32 @@ type DatePickerFieldProps = {
     disabled?: boolean;
     ariaLabel?: string;
     className?: string;
+    /** 今年から過去にさかのぼって選択できる年数（生年月日など） */
+    yearsPast?: number;
+    /** 今年から未来に進んで選択できる年数（資格期限・車検満了日など） */
+    yearsFuture?: number;
 };
+
+export function getCalendarMonthRange(
+    selectedDate: Date | undefined,
+    yearsPast: number,
+    yearsFuture: number,
+) {
+    const currentYear = new Date().getFullYear();
+    const startYear = Math.min(
+        currentYear - yearsPast,
+        selectedDate?.getFullYear() ?? currentYear - yearsPast,
+    );
+    const endYear = Math.max(
+        currentYear + yearsFuture,
+        selectedDate?.getFullYear() ?? currentYear + yearsFuture,
+    );
+
+    return {
+        startMonth: new Date(startYear, 0),
+        endMonth: new Date(endYear, 11),
+    };
+}
 
 function parseYmd(value?: string | null) {
     if (!value) return undefined;
@@ -38,9 +63,15 @@ export function DatePickerField({
     disabled = false,
     ariaLabel = "日付を選択",
     className,
+    yearsPast = 100,
+    yearsFuture = 10,
 }: DatePickerFieldProps) {
     const [open, setOpen] = useState(false);
     const selectedDate = useMemo(() => parseYmd(value), [value]);
+    const { startMonth, endMonth } = useMemo(
+        () => getCalendarMonthRange(selectedDate, yearsPast, yearsFuture),
+        [selectedDate, yearsPast, yearsFuture],
+    );
     const displayValue = selectedDate ? format(selectedDate, "yyyy年M月d日", { locale: ja }) : "";
 
     const handleSelect = (date: Date | undefined) => {
@@ -92,6 +123,9 @@ export function DatePickerField({
                             onSelect={handleSelect}
                             locale={ja}
                             captionLayout="dropdown"
+                            startMonth={startMonth}
+                            endMonth={endMonth}
+                            defaultMonth={selectedDate ?? new Date()}
                             className="mx-auto [--cell-size:--spacing(9)]"
                         />
                         <div className="mt-2 flex items-center justify-between border-t border-border/60 pt-2">
