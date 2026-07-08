@@ -78,6 +78,7 @@ export default async function QualificationsPage({
         const basePageQuery = () => supabase
             .from("employee_qualifications")
             .select(`*, employees!inner(id, name, branch), qualification_master(name, category)`)
+            .is("deleted_at", null)
             .is("employees.deleted_at", null)
             .order("expiry_date", { ascending: true })
             .range(from, toPlusOne);
@@ -156,6 +157,7 @@ export default async function QualificationsPage({
                 let sq = supabase
                     .from("employee_qualifications")
                     .select("expiry_date, employees!inner(id)")
+                    .is("deleted_at", null)
                     .is("employees.deleted_at", null);
 
                 if (currentCategory) {

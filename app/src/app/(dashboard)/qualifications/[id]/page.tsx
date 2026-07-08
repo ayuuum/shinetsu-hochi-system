@@ -51,6 +51,7 @@ export default async function QualificationDetailPage({ params }: PageProps) {
             qualification_master(name, category, has_expiry, renewal_rule)
         `)
         .eq("id", id)
+        .is("deleted_at", null)
         .is("employees.deleted_at", null)
         .single();
 
