@@ -291,7 +291,10 @@ export default async function QualificationDetailPage({ params }: PageProps) {
                         講習履歴
                     </CardTitle>
                     {canManage && trainingTableExists && !trainingHistoryError && (
-                        <AddTrainingModal employeeQualificationId={id} />
+                        <AddTrainingModal
+                            employeeQualificationId={id}
+                            qualificationName={qualification.qualification_master?.name || ""}
+                        />
                     )}
                 </CardHeader>
                 <CardContent className="pt-1">

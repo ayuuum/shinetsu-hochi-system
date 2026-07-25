@@ -1241,6 +1241,111 @@ export async function deleteQualificationAction(qualificationId: string): Promis
     }
 }
 
+type AddTrainingHistoryResult =
+    | { success: true; expiryUpdated: boolean }
+    | { success: false; error: string };
+
+export async function addTrainingHistoryAction(input: {
+    employeeQualificationId: string;
+    trainingDate: string;
+    trainingType: string;
+    provider?: string | null;
+    certificateNumber?: string | null;
+    nextDueDate?: string | null;
+    notes?: string | null;
+    photoUrl?: string | null;
+}): Promise<AddTrainingHistoryResult> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) {
+        return { success: false, error: auth.error };
+    }
+
+    const trainingDate = input.trainingDate.trim();
+    const trainingType = input.trainingType.trim();
+    if (!trainingDate || !trainingType) {
+        return { success: false, error: "受講日と種別は必須です。" };
+    }
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: qualification, error: fetchError } = await supabase
+            .from("employee_qualifications")
+            .select("id, employee_id, deleted_at")
+            .eq("id", input.employeeQualificationId)
+            .maybeSingle();
+
+        if (fetchError || !qualification || qualification.deleted_at) {
+            return { success: false, error: "資格情報が見つかりません。" };
+        }
+
+        const nextDueDate = input.nextDueDate?.trim() || null;
+
+        const { error: insertError } = await supabase
+            .from("training_history")
+            .insert([{
+                employee_qualification_id: input.employeeQualificationId,
+                training_date: trainingDate,
+                training_type: trainingType,
+                provider: input.provider?.trim() || null,
+                certificate_number: input.certificateNumber?.trim() || null,
+                next_due_date: nextDueDate,
+                notes: input.notes?.trim() || null,
+                photo_url: input.photoUrl?.trim() || null,
+            }]);
+
+        if (insertError) {
+            console.error("Failed to insert training history:", insertError);
+            if (insertError.message.includes("relation") && insertError.message.includes("does not exist")) {
+                return { success: false, error: "講習履歴テーブルが未作成です。マイグレーションを実行してください。" };
+            }
+            return { success: false, error: "講習履歴の登録に失敗しました。" };
+        }
+
+        let expiryUpdated = false;
+        if (nextDueDate) {
+            const { error: updateError } = await supabase
+                .from("employee_qualifications")
+                .update({
+                    expiry_date: nextDueDate,
+                    status: "更新済み",
+                })
+                .eq("id", input.employeeQualificationId)
+                .is("deleted_at", null);
+
+            if (updateError) {
+                console.error("Failed to sync qualification expiry from training:", updateError);
+                return {
+                    success: false,
+                    error: "講習履歴は登録しましたが、有効期限の自動更新に失敗しました。資格編集から有効期限を更新してください。",
+                };
+            }
+            expiryUpdated = true;
+        }
+
+        await recordAuditLog({
+            actorId: auth.user.id,
+            actorEmail: auth.user.email,
+            entityType: "training_history",
+            entityId: input.employeeQualificationId,
+            action: "create",
+            summary: `講習履歴を登録${expiryUpdated ? "（有効期限を自動更新）" : ""}`,
+            metadata: {
+                employee_id: qualification.employee_id,
+                training_date: trainingDate,
+                next_due_date: nextDueDate,
+                expiry_updated: expiryUpdated,
+            },
+        });
+
+        revalidateEmployeePaths(qualification.employee_id || undefined);
+        revalidatePath(`/qualifications/${input.employeeQualificationId}`);
+        return { success: true, expiryUpdated };
+    } catch (error) {
+        console.error("Unexpected error while adding training history:", error);
+        return { success: false, error: "講習履歴の登録に失敗しました。" };
+    }
+}
+
 export async function deleteVehicleAction(vehicleId: string): Promise<DeleteActionResult> {
     const auth = await requireAdminOrHr();
     if (!auth.ok) {

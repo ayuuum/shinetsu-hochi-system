@@ -2,21 +2,37 @@ import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { EmployeesClient, type EmployeeWithQualCount } from "@/components/employees/employees-client";
 import { getCachedQualCountsByEmployee, getCachedQualificationMasters } from "@/lib/cached-queries";
 import { Tables } from "@/types/supabase";
+import { getTodayInTokyo } from "@/lib/date";
+import { parseEmploymentStatus, type EmploymentStatus } from "@/lib/employment-status";
 
 const PAGE_SIZE = 50;
 
 // 一覧で渡してよい安全なカラム（機微カラムは含めない）
-const PARTNER_LIST_COLUMNS: string = "id,employee_number,name,name_kana,branch,job_title,hire_date,person_type,partner_company,partner_contact_name";
+const PARTNER_LIST_COLUMNS: string = "id,employee_number,name,name_kana,branch,job_title,hire_date,termination_date,person_type,partner_company,partner_contact_name";
 
 function parsePageParam(value?: string) {
     const parsed = Number.parseInt(value || "1", 10);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 }
 
+function applyEmploymentFilter<T extends { or: (filters: string) => T; not: (column: string, operator: string, value: null) => T; lt: (column: string, value: string) => T }>(
+    query: T,
+    status: EmploymentStatus,
+    today: string,
+): T {
+    if (status === "active") {
+        return query.or(`termination_date.is.null,termination_date.gte.${today}`);
+    }
+    if (status === "retired") {
+        return query.not("termination_date", "is", null).lt("termination_date", today);
+    }
+    return query;
+}
+
 export default async function PartnersPage({
     searchParams,
 }: {
-    searchParams: Promise<{ page?: string; q?: string; branch?: string; qualification?: string; sort?: string }>;
+    searchParams: Promise<{ page?: string; q?: string; branch?: string; qualification?: string; sort?: string; employment?: string }>;
 }) {
     const params = await searchParams;
 
@@ -27,6 +43,8 @@ export default async function PartnersPage({
     const currentBranch = (params.branch || "").trim();
     const currentQualification = (params.qualification || "").trim();
     const currentSort = (params.sort || "").trim();
+    const currentEmployment = parseEmploymentStatus(params.employment);
+    const today = getTodayInTokyo();
 
     let employees: EmployeeWithQualCount[] = [];
     let mastersData: Tables<"qualification_master">[] = [];
@@ -45,6 +63,7 @@ export default async function PartnersPage({
                     .from("employee_qualifications")
                     .select("employee_id")
                     .eq("qualification_id", currentQualification)
+                    .is("deleted_at", null)
                     .limit(5000)
                 : Promise.resolve({ data: [] as { employee_id: string | null }[], error: null }),
             getCachedQualCountsByEmployee(),
@@ -69,6 +88,8 @@ export default async function PartnersPage({
                 .eq("person_type", "partner")
                 .order(sortColumn, { ascending: sortAscending, nullsFirst: false })
                 .range(from, toPlusOne);
+
+            employeeQuery = applyEmploymentFilter(employeeQuery, currentEmployment, today);
 
             if (currentSearch) {
                 employeeQuery = employeeQuery.or([
@@ -114,6 +135,7 @@ export default async function PartnersPage({
             currentBranch={currentBranch}
             currentQualification={currentQualification}
             currentPersonType="partner"
+            currentEmployment={currentEmployment}
             currentSort={currentSort}
             currentPage={page}
             hasNextPage={hasNextPage}

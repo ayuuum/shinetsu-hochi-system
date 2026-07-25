@@ -22,7 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, MapPin, Award, Download, Users, X, ArrowUpDown, ArrowRight, Loader2 } from "lucide-react";
+import { Search, MapPin, Award, Download, Users, X, ArrowUpDown, ArrowRight, Loader2, UserCheck } from "lucide-react";
 import { AddEmployeeModal } from "@/components/employees/add-employee-modal";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,11 @@ import { formatDisplayDate } from "@/lib/date";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useIntentPrefetch } from "@/hooks/use-intent-prefetch";
+import {
+    EMPLOYMENT_STATUS_OPTIONS,
+    getEmploymentStatusLabel,
+    type EmploymentStatus,
+} from "@/lib/employment-status";
 
 const PERSON_TYPE_OPTIONS = [
     { value: "employee", label: "弊社従業員" },
@@ -66,6 +71,7 @@ interface EmployeesClientProps {
     currentBranch: string;
     currentQualification: string;
     currentPersonType?: "employee" | "partner" | "all";
+    currentEmployment?: EmploymentStatus;
     currentSort?: string;
     currentPage?: number;
     hasNextPage?: boolean;
@@ -77,6 +83,7 @@ function buildEmployeesHref(pathname: string, {
     branch,
     qualification,
     personType,
+    employment,
     sort,
     page,
 }: {
@@ -84,6 +91,7 @@ function buildEmployeesHref(pathname: string, {
     branch: string;
     qualification: string;
     personType?: "employee" | "partner" | "all";
+    employment: EmploymentStatus;
     sort: string;
     page: number;
 }) {
@@ -100,6 +108,9 @@ function buildEmployeesHref(pathname: string, {
     }
     if (personType && personType !== "employee") {
         params.set("type", personType);
+    }
+    if (employment !== "active") {
+        params.set("employment", employment);
     }
     if (sort) {
         params.set("sort", sort);
@@ -119,6 +130,7 @@ export function EmployeesClient({
     currentBranch,
     currentQualification,
     currentPersonType = "employee",
+    currentEmployment = "active",
     currentSort = "",
     currentPage = 1,
     hasNextPage = false,
@@ -129,6 +141,7 @@ export function EmployeesClient({
     const [mobileBranch, setMobileBranch] = useState(currentBranch);
     const [mobileQualification, setMobileQualification] = useState(currentQualification);
     const [mobilePersonType, setMobilePersonType] = useState(currentPersonType);
+    const [mobileEmployment, setMobileEmployment] = useState(currentEmployment);
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
     const pathname = usePathname();
@@ -153,6 +166,7 @@ export function EmployeesClient({
                             branch: currentBranch,
                             qualification: currentQualification,
                             personType: currentPersonType,
+                            employment: currentEmployment,
                             sort: currentSort,
                             page: 1,
                         }), { scroll: false });
@@ -181,6 +195,13 @@ export function EmployeesClient({
                 onRemove: () => updateFilters({ personType: "employee", page: 1 }),
             }
             : null,
+        currentEmployment !== "active"
+            ? {
+                key: "employment",
+                label: `在職状況: ${getEmploymentStatusLabel(currentEmployment)}`,
+                onRemove: () => updateFilters({ employment: "active", page: 1 }),
+            }
+            : null,
     ].filter((item): item is NonNullable<typeof item> => item !== null);
 
     useEffect(() => {
@@ -192,7 +213,8 @@ export function EmployeesClient({
         setMobileBranch(currentBranch);
         setMobileQualification(currentQualification);
         setMobilePersonType(currentPersonType);
-    }, [currentBranch, currentQualification, currentPersonType, isMobileFiltersOpen]);
+        setMobileEmployment(currentEmployment);
+    }, [currentBranch, currentEmployment, currentQualification, currentPersonType, isMobileFiltersOpen]);
 
     useEffect(() => {
         const timer = window.setTimeout(() => {
@@ -204,6 +226,7 @@ export function EmployeesClient({
                     branch: currentBranch,
                     qualification: currentQualification,
                     personType: currentPersonType,
+                    employment: currentEmployment,
                     sort: currentSort,
                     page: 1,
                 }), { scroll: false });
@@ -211,15 +234,23 @@ export function EmployeesClient({
         }, 250);
 
         return () => window.clearTimeout(timer);
-    }, [currentBranch, currentQualification, currentPersonType, currentSearch, currentSort, pathname, router, search]);
+    }, [currentBranch, currentEmployment, currentQualification, currentPersonType, currentSearch, currentSort, pathname, router, search]);
 
-    const updateFilters = (updates: Partial<{ branch: string; qualification: string; personType: "employee" | "partner" | "all"; sort: string; page: number }>) => {
+    const updateFilters = (updates: Partial<{
+        branch: string;
+        qualification: string;
+        personType: "employee" | "partner" | "all";
+        employment: EmploymentStatus;
+        sort: string;
+        page: number;
+    }>) => {
         startTransition(() => {
             router.replace(buildEmployeesHref(pathname, {
                 search,
                 branch: updates.branch ?? currentBranch,
                 qualification: updates.qualification ?? currentQualification,
                 personType: updates.personType ?? currentPersonType,
+                employment: updates.employment ?? currentEmployment,
                 sort: updates.sort ?? currentSort,
                 page: updates.page ?? 1,
             }), { scroll: false });
@@ -234,6 +265,7 @@ export function EmployeesClient({
                 branch: "",
                 qualification: "",
                 personType: isPartnerMode ? "partner" : "employee",
+                employment: "active",
                 sort: currentSort,
                 page: 1,
             }), { scroll: false });
@@ -245,6 +277,7 @@ export function EmployeesClient({
             setMobileBranch(currentBranch);
             setMobileQualification(currentQualification);
             setMobilePersonType(currentPersonType);
+            setMobileEmployment(currentEmployment);
         }
         setIsMobileFiltersOpen(open);
     };
@@ -257,6 +290,7 @@ export function EmployeesClient({
                 branch: mobileBranch,
                 qualification: mobileQualification,
                 personType: mobilePersonType,
+                employment: mobileEmployment,
                 sort: currentSort,
                 page: 1,
             }), { scroll: false });
@@ -275,6 +309,7 @@ export function EmployeesClient({
                             if (search.trim()) params.set("q", search.trim());
                             if (currentBranch) params.set("branch", currentBranch);
                             if (currentPersonType !== "employee") params.set("type", currentPersonType);
+                            if (currentEmployment !== "active") params.set("employment", currentEmployment);
                             const qs = params.toString();
                             window.open(qs ? `/api/export/employees?${qs}` : "/api/export/employees", "_blank");
                         }}>
@@ -308,8 +343,8 @@ export function EmployeesClient({
                 </div>
                 <MobileFiltersSheet
                     title={`${isPartnerMode ? "協力会社" : "社員"}を絞り込む`}
-                    description="区分・拠点・資格で対象者を絞り込みます。"
-                    summary="区分・拠点・資格"
+                    description="在職状況・区分・拠点・資格で対象者を絞り込みます。"
+                    summary="在職状況・区分・拠点・資格"
                     activeCount={activeFilters.length}
                     onClearAll={() => {
                         clearFilters();
@@ -323,6 +358,24 @@ export function EmployeesClient({
                         </Button>
                     )}
                 >
+                    <div className="space-y-2">
+                        <p className="text-sm font-medium">在職状況</p>
+                        <Select
+                            items={[...EMPLOYMENT_STATUS_OPTIONS]}
+                            value={mobileEmployment}
+                            onValueChange={(value) => setMobileEmployment((value || "active") as EmploymentStatus)}
+                        >
+                            <SelectTrigger className="w-full">
+                                <UserCheck className="mr-2 h-4 w-4 text-muted-foreground" />
+                                <SelectValue placeholder="在職状況" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="active">在職</SelectItem>
+                                <SelectItem value="retired">退職</SelectItem>
+                                <SelectItem value="all">すべて</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                     {!isPartnerMode ? (
                     <div className="space-y-2">
                         <p className="text-sm font-medium">区分</p>
@@ -407,6 +460,22 @@ export function EmployeesClient({
                     )}
                 </div>
                 <Select
+                    items={[...EMPLOYMENT_STATUS_OPTIONS]}
+                    value={currentEmployment}
+                    onValueChange={(value) => updateFilters({ employment: (value || "active") as EmploymentStatus, page: 1 })}
+                >
+                    <SelectTrigger className="w-full md:w-[140px]">
+                        <UserCheck className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <SelectValue placeholder="在職状況" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="active">在職</SelectItem>
+                        <SelectItem value="retired">退職</SelectItem>
+                        <SelectItem value="all">すべて</SelectItem>
+                    </SelectContent>
+                </Select>
+                {!isPartnerMode ? (
+                <Select
                     items={PERSON_TYPE_OPTIONS}
                     value={currentPersonType}
                     onValueChange={(value) => updateFilters({ personType: (value || "employee") as "employee" | "partner" | "all", page: 1 })}
@@ -421,6 +490,7 @@ export function EmployeesClient({
                         <SelectItem value="all">すべて</SelectItem>
                     </SelectContent>
                 </Select>
+                ) : null}
                 <Select
                     items={BRANCH_OPTIONS}
                     value={currentBranch || undefined}
@@ -644,6 +714,7 @@ export function EmployeesClient({
                             branch: currentBranch,
                             qualification: currentQualification,
                             personType: currentPersonType,
+                            employment: currentEmployment,
                             sort: currentSort,
                             page: currentPage - 1,
                         })} />}
@@ -663,6 +734,7 @@ export function EmployeesClient({
                             branch: currentBranch,
                             qualification: currentQualification,
                             personType: currentPersonType,
+                            employment: currentEmployment,
                             sort: currentSort,
                             page: currentPage + 1,
                         })} />}

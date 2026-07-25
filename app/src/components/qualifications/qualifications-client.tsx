@@ -23,7 +23,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, Trash2, FileImage, Tags, ScrollText, Download, Loader2, ArrowRight, X } from "lucide-react";
+import { Search, AlertCircle, ShieldCheck, Clock, ShieldAlert, Pencil, Trash2, FileImage, Tags, ScrollText, Download, Loader2, ArrowRight, X, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { differenceInDays } from "date-fns";
@@ -45,6 +45,11 @@ import { PageHeader } from "@/components/shared/page-header";
 import { getQualificationLevelLabel } from "@/lib/display-labels";
 import { useIntentPrefetch } from "@/hooks/use-intent-prefetch";
 import { type LicenseGroupInfo } from "@/lib/license-groups";
+import {
+    EMPLOYMENT_STATUS_OPTIONS,
+    getEmploymentStatusLabel,
+    type EmploymentStatus,
+} from "@/lib/employment-status";
 
 const LEVEL_OPTIONS = [
     { value: "all", label: "すべて" },
@@ -79,6 +84,7 @@ interface QualificationsClientProps {
     currentSearch: string;
     currentCategory: string;
     currentLevel: string;
+    currentEmployment?: EmploymentStatus;
     currentPage: number;
     hasNextPage: boolean;
     employees?: Employee[];
@@ -99,11 +105,13 @@ function buildQualificationsHref(pathname: string, {
     search,
     category,
     level,
+    employment,
     page,
 }: {
     search: string;
     category: string;
     level: string;
+    employment: EmploymentStatus;
     page: number;
 }) {
     const params = new URLSearchParams();
@@ -116,6 +124,9 @@ function buildQualificationsHref(pathname: string, {
     }
     if (level) {
         params.set("level", level);
+    }
+    if (employment !== "active") {
+        params.set("employment", employment);
     }
     if (page > 1) {
         params.set("page", String(page));
@@ -132,6 +143,7 @@ export function QualificationsClient({
     currentSearch,
     currentCategory,
     currentLevel,
+    currentEmployment = "active",
     currentPage,
     hasNextPage,
     employees = [],
@@ -145,6 +157,7 @@ export function QualificationsClient({
     const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
     const [mobileCategory, setMobileCategory] = useState(currentCategory);
     const [mobileLevel, setMobileLevel] = useState(currentLevel);
+    const [mobileEmployment, setMobileEmployment] = useState(currentEmployment);
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
     const pathname = usePathname();
@@ -160,7 +173,13 @@ export function QualificationsClient({
                 onRemove: () => {
                     setSearch("");
                     startTransition(() => {
-                        router.replace(buildQualificationsHref(pathname, { search: "", category: currentCategory, level: currentLevel, page: 1 }), { scroll: false });
+                        router.replace(buildQualificationsHref(pathname, {
+                            search: "",
+                            category: currentCategory,
+                            level: currentLevel,
+                            employment: currentEmployment,
+                            page: 1,
+                        }), { scroll: false });
                     });
                 },
             }
@@ -179,6 +198,13 @@ export function QualificationsClient({
                 onRemove: () => updateFilters({ level: "", page: 1 }),
             }
             : null,
+        currentEmployment !== "active"
+            ? {
+                key: "employment",
+                label: `在職状況: ${getEmploymentStatusLabel(currentEmployment)}`,
+                onRemove: () => updateFilters({ employment: "active", page: 1 }),
+            }
+            : null,
     ].filter((item): item is NonNullable<typeof item> => item !== null);
 
     useEffect(() => {
@@ -189,7 +215,8 @@ export function QualificationsClient({
         if (isMobileFiltersOpen) return;
         setMobileCategory(currentCategory);
         setMobileLevel(currentLevel);
-    }, [currentCategory, currentLevel, isMobileFiltersOpen]);
+        setMobileEmployment(currentEmployment);
+    }, [currentCategory, currentEmployment, currentLevel, isMobileFiltersOpen]);
 
     useEffect(() => {
         const timer = window.setTimeout(() => {
@@ -200,20 +227,28 @@ export function QualificationsClient({
                     search,
                     category: currentCategory,
                     level: currentLevel,
+                    employment: currentEmployment,
                     page: 1,
                 }), { scroll: false });
             });
         }, 250);
 
         return () => window.clearTimeout(timer);
-    }, [currentCategory, currentLevel, currentSearch, pathname, router, search]);
+    }, [currentCategory, currentEmployment, currentLevel, currentSearch, pathname, router, search]);
 
-    const updateFilters = (updates: Partial<{ search: string; category: string; level: string; page: number }>) => {
+    const updateFilters = (updates: Partial<{
+        search: string;
+        category: string;
+        level: string;
+        employment: EmploymentStatus;
+        page: number;
+    }>) => {
         startTransition(() => {
             router.replace(buildQualificationsHref(pathname, {
                 search,
                 category: updates.category ?? currentCategory,
                 level: updates.level ?? currentLevel,
+                employment: updates.employment ?? currentEmployment,
                 page: updates.page ?? 1,
             }), { scroll: false });
         });
@@ -229,7 +264,13 @@ export function QualificationsClient({
     const clearFilters = () => {
         setSearch("");
         startTransition(() => {
-            router.replace(buildQualificationsHref(pathname, { search: "", category: "", level: "", page: 1 }), { scroll: false });
+            router.replace(buildQualificationsHref(pathname, {
+                search: "",
+                category: "",
+                level: "",
+                employment: "active",
+                page: 1,
+            }), { scroll: false });
         });
     };
 
@@ -237,6 +278,7 @@ export function QualificationsClient({
         if (open) {
             setMobileCategory(currentCategory);
             setMobileLevel(currentLevel);
+            setMobileEmployment(currentEmployment);
         }
         setIsMobileFiltersOpen(open);
     };
@@ -248,6 +290,7 @@ export function QualificationsClient({
                 search,
                 category: mobileCategory,
                 level: mobileLevel,
+                employment: mobileEmployment,
                 page: 1,
             }), { scroll: false });
         });
@@ -428,8 +471,8 @@ export function QualificationsClient({
                 </div>
                 <MobileFiltersSheet
                     title="資格を絞り込む"
-                    description="カテゴリや期限状態で表示内容を絞り込みます。"
-                    summary="カテゴリ・期限状態"
+                    description="在職状況・カテゴリ・期限状態で表示内容を絞り込みます。"
+                    summary="在職状況・カテゴリ・期限状態"
                     activeCount={activeFilters.length}
                     onClearAll={() => {
                         clearFilters();
@@ -443,6 +486,24 @@ export function QualificationsClient({
                         </Button>
                     )}
                 >
+                    <div className="space-y-2">
+                        <p className="text-sm font-medium">在職状況</p>
+                        <Select
+                            items={[...EMPLOYMENT_STATUS_OPTIONS]}
+                            value={mobileEmployment}
+                            onValueChange={(value) => setMobileEmployment((value || "active") as EmploymentStatus)}
+                        >
+                            <SelectTrigger className="w-full">
+                                <UserCheck className="mr-2 h-4 w-4 text-muted-foreground" />
+                                <SelectValue placeholder="在職状況" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="active">在職</SelectItem>
+                                <SelectItem value="retired">退職</SelectItem>
+                                <SelectItem value="all">すべて</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <div className="space-y-2">
                         <p className="text-sm font-medium">カテゴリ</p>
                         <Select
@@ -494,6 +555,21 @@ export function QualificationsClient({
                         className="pl-9"
                     />
                 </div>
+                <Select
+                    items={[...EMPLOYMENT_STATUS_OPTIONS]}
+                    value={currentEmployment}
+                    onValueChange={(value) => updateFilters({ employment: (value || "active") as EmploymentStatus, page: 1 })}
+                >
+                    <SelectTrigger className="w-full md:w-[140px]">
+                        <UserCheck className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <SelectValue placeholder="在職状況" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="active">在職</SelectItem>
+                        <SelectItem value="retired">退職</SelectItem>
+                        <SelectItem value="all">すべて</SelectItem>
+                    </SelectContent>
+                </Select>
                 <Select
                     value={currentCategory || undefined}
                     onValueChange={(value) => updateFilters({ category: value && value !== "all" ? value : "", page: 1 })}
@@ -760,6 +836,7 @@ export function QualificationsClient({
                             search: currentSearch,
                             category: currentCategory,
                             level: currentLevel,
+                            employment: currentEmployment,
                             page: currentPage - 1,
                         })} />}
                     >
@@ -776,6 +853,7 @@ export function QualificationsClient({
                             search: currentSearch,
                             category: currentCategory,
                             level: currentLevel,
+                            employment: currentEmployment,
                             page: currentPage + 1,
                         })} />}
                     >

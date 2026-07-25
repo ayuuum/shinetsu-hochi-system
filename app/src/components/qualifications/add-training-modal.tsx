@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { format } from "date-fns";
 import {
     Dialog,
     DialogContent,
@@ -33,8 +34,9 @@ import { Input } from "@/components/ui/input";
 import { DatePickerField } from "@/components/shared/date-picker-field";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { calculateFireDefenseExpiry } from "@/lib/qualification-logic";
+import { addTrainingHistoryAction } from "@/app/actions/admin-record-actions";
 
 const formSchema = z.object({
     training_date: z.string().min(1, "受講日は必須です"),
@@ -50,9 +52,18 @@ type FormValues = z.infer<typeof formSchema>;
 
 interface AddTrainingModalProps {
     employeeQualificationId: string;
+    qualificationName?: string;
 }
 
-export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalProps) {
+function suggestNextDueDate(qualificationName: string | undefined, trainingDate: string, trainingType: string) {
+    if (!qualificationName?.includes("消防設備士") || !trainingDate) {
+        return "";
+    }
+    const isInitial = trainingType === "初回";
+    return format(calculateFireDefenseExpiry(trainingDate, isInitial), "yyyy-MM-dd");
+}
+
+export function AddTrainingModal({ employeeQualificationId, qualificationName }: AddTrainingModalProps) {
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const router = useRouter();
@@ -69,6 +80,13 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
             photo_url: "",
         },
     });
+
+    const applySuggestedNextDueDate = (trainingDate: string, trainingType: string) => {
+        const suggested = suggestNextDueDate(qualificationName, trainingDate, trainingType);
+        if (suggested) {
+            form.setValue("next_due_date", suggested);
+        }
+    };
 
     const resetForm = () => {
         form.reset({
@@ -92,34 +110,32 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
     async function onSubmit(values: FormValues) {
         setIsSubmitting(true);
 
-        const { error } = await supabase
-            .from("training_history")
-            .insert([{
-                employee_qualification_id: employeeQualificationId,
-                training_date: values.training_date,
-                training_type: values.training_type,
-                provider: values.provider || null,
-                certificate_number: values.certificate_number || null,
-                next_due_date: values.next_due_date || null,
-                notes: values.notes || null,
-                photo_url: values.photo_url || null,
-            }]);
+        const result = await addTrainingHistoryAction({
+            employeeQualificationId,
+            trainingDate: values.training_date,
+            trainingType: values.training_type,
+            provider: values.provider,
+            certificateNumber: values.certificate_number,
+            nextDueDate: values.next_due_date,
+            notes: values.notes,
+            photoUrl: values.photo_url,
+        });
 
         setIsSubmitting(false);
 
-        if (error) {
-            // Handle case where table doesn't exist yet
-            if (error.message.includes("relation") && error.message.includes("does not exist")) {
-                toast.error("講習履歴テーブルが未作成です。マイグレーションを実行してください。");
-            } else {
-                toast.error("登録に失敗しました。時間を置いて再度お試しください。");
-            }
-        } else {
-            toast.success("講習履歴を登録しました");
-            setOpen(false);
-            resetForm();
-            router.refresh();
+        if (!result.success) {
+            toast.error(result.error);
+            return;
         }
+
+        toast.success(
+            result.expiryUpdated
+                ? "講習履歴を登録し、資格の有効期限を自動更新しました"
+                : "講習履歴を登録しました",
+        );
+        setOpen(false);
+        resetForm();
+        router.refresh();
     }
 
     return (
@@ -130,7 +146,9 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
             <DialogContent className="sm:max-w-[540px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>講習履歴の登録</DialogTitle>
-                    <DialogDescription>受講した講習の日時・内容を入力してください。</DialogDescription>
+                    <DialogDescription>
+                        受講した講習の日時・内容を入力してください。次回期限を入力すると、資格の有効期限も自動更新されます。
+                    </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -138,14 +156,29 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
                             <FormField control={form.control} name="training_date" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>受講日 *</FormLabel>
-                                    <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
+                                    <FormControl>
+                                        <DatePickerField
+                                            value={field.value}
+                                            onChange={(value) => {
+                                                field.onChange(value);
+                                                applySuggestedNextDueDate(value, form.getValues("training_type"));
+                                            }}
+                                        />
+                                    </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />
                             <FormField control={form.control} name="training_type" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>種別 *</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
+                                    <Select
+                                        onValueChange={(value) => {
+                                            const nextType = value || "初回";
+                                            field.onChange(nextType);
+                                            applySuggestedNextDueDate(form.getValues("training_date"), nextType);
+                                        }}
+                                        value={field.value}
+                                    >
                                         <FormControl>
                                             <SelectTrigger><SelectValue /></SelectTrigger>
                                         </FormControl>
@@ -179,6 +212,9 @@ export function AddTrainingModal({ employeeQualificationId }: AddTrainingModalPr
                             <FormItem>
                                 <FormLabel>次回期限</FormLabel>
                                 <FormControl><DatePickerField value={field.value} onChange={field.onChange} /></FormControl>
+                                <p className="text-xs text-muted-foreground">
+                                    入力すると、この資格の有効期限が自動で同じ日付に更新されます。
+                                </p>
                                 <FormMessage />
                             </FormItem>
                         )} />

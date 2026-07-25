@@ -5,6 +5,7 @@ import { formatDateInTokyo, getTodayInTokyo } from "@/lib/date";
 import { getAlertLevel, type AlertLevel } from "@/lib/alert-utils";
 import { getCachedQualificationCategories, getCachedEmployeeList, getCachedQualificationCounts, getCachedQualificationMasters } from "@/lib/cached-queries";
 import { computeLicenseGroupRecord, type LicenseGroupInfo, type LicenseGroupInput } from "@/lib/license-groups";
+import { parseEmploymentStatus, type EmploymentStatus } from "@/lib/employment-status";
 
 const PAGE_SIZE = 50;
 
@@ -25,10 +26,24 @@ function buildBooleanGroup(operator: "or" | "and", conditions: string[]) {
     return `${operator}(${conditions.join(",")})`;
 }
 
+function applyEmployeeEmploymentFilter<T extends {
+    or: (filters: string) => T;
+    not: (column: string, operator: string, value: null) => T;
+    lt: (column: string, value: string) => T;
+}>(query: T, status: EmploymentStatus, today: string): T {
+    if (status === "active") {
+        return query.or(`employees.termination_date.is.null,employees.termination_date.gte.${today}`);
+    }
+    if (status === "retired") {
+        return query.not("employees.termination_date", "is", null).lt("employees.termination_date", today);
+    }
+    return query;
+}
+
 export default async function QualificationsPage({
     searchParams,
 }: {
-    searchParams: Promise<{ page?: string; q?: string; category?: string; level?: AlertLevel | "all" }>;
+    searchParams: Promise<{ page?: string; q?: string; category?: string; level?: AlertLevel | "all"; employment?: string }>;
 }) {
     const params = await searchParams;
 
@@ -38,6 +53,7 @@ export default async function QualificationsPage({
     const currentSearch = (params.q || "").trim();
     const currentCategory = (params.category || "").trim();
     const currentLevel = params.level && params.level !== "all" ? params.level : "";
+    const currentEmployment = parseEmploymentStatus(params.employment);
 
     let qualifications: QualificationRow[] = [];
     let categories: string[] = [];
@@ -59,36 +75,43 @@ export default async function QualificationsPage({
         const supabase = createSupabaseAdmin();
         if (!supabase) throw new Error("Service role client is unavailable");
 
+        const today = getTodayInTokyo();
         // 同一免状（同じ社員×同じ免状番号）の最新版判定は全件を対象に算出する必要があるため、
         // 免状番号を持つ有効な資格を一覧取得しておく（ページネーションとは独立して並行実行）。
-        const licenseGroupPromise = supabase
+        let licenseGroupQuery = supabase
             .from("employee_qualifications")
             .select("id, employee_id, certificate_number, acquired_date, created_at, employees!inner(id)")
             .is("deleted_at", null)
             .is("employees.deleted_at", null)
             .not("certificate_number", "is", null)
             .limit(5000);
-        const today = getTodayInTokyo();
+        licenseGroupQuery = applyEmployeeEmploymentFilter(licenseGroupQuery, currentEmployment, today);
+        const licenseGroupPromise = licenseGroupQuery;
         const urgentLimit = formatDateInTokyo(addDays(new Date(), 14));
         const warningLimit = formatDateInTokyo(addDays(new Date(), 30));
         const infoLimit = formatDateInTokyo(addDays(new Date(), 60));
         const searchPattern = currentSearch ? `%${currentSearch.replace(/,/g, " ").trim()}%` : null;
 
         // Build main queries early so they can run in parallel with lookup queries when no filter is active
-        const basePageQuery = () => supabase
-            .from("employee_qualifications")
-            .select(`*, employees!inner(id, name, branch), qualification_master(name, category)`)
-            .is("deleted_at", null)
-            .is("employees.deleted_at", null)
-            .order("expiry_date", { ascending: true })
-            .range(from, toPlusOne);
+        const basePageQuery = () => applyEmployeeEmploymentFilter(
+            supabase
+                .from("employee_qualifications")
+                .select(`*, employees!inner(id, name, branch), qualification_master(name, category)`)
+                .is("deleted_at", null)
+                .is("employees.deleted_at", null)
+                .order("expiry_date", { ascending: true })
+                .range(from, toPlusOne),
+            currentEmployment,
+            today,
+        );
 
-        const noFilter = !currentSearch && !currentCategory;
+        const noTextFilter = !currentSearch && !currentCategory;
+        const canUseCachedCounts = noTextFilter && currentEmployment === "all";
 
         let pageResult: { data: unknown[] | null; error: unknown };
         let summaryData: { expiry_date: string | null }[] = [];
 
-        if (noFilter) {
+        if (noTextFilter) {
             let pq = basePageQuery();
             if (currentLevel === "danger") pq = pq.lt("expiry_date", today);
             if (currentLevel === "urgent") pq = pq.gte("expiry_date", today).lte("expiry_date", urgentLimit);
@@ -96,21 +119,44 @@ export default async function QualificationsPage({
             if (currentLevel === "info") pq = pq.gt("expiry_date", warningLimit).lte("expiry_date", infoLimit);
             if (currentLevel === "ok") pq = pq.or("expiry_date.is.null,expiry_date.gt." + infoLimit);
 
-            // All 4 are independent — run in one parallel group
-            const [categories_cached, employees_cached, masters_cached, pqResult, cachedCounts] = await Promise.all([
+            const summaryQuery = applyEmployeeEmploymentFilter(
+                supabase
+                    .from("employee_qualifications")
+                    .select("expiry_date, employees!inner(id)")
+                    .is("deleted_at", null)
+                    .is("employees.deleted_at", null),
+                currentEmployment,
+                today,
+            );
+
+            const [categories_cached, employees_cached, masters_cached, pqResult, cachedCounts, sqResult] = await Promise.all([
                 getCachedQualificationCategories(),
                 getCachedEmployeeList(),
                 getCachedQualificationMasters(),
                 pq,
-                getCachedQualificationCounts(),
+                canUseCachedCounts ? getCachedQualificationCounts() : Promise.resolve(null),
+                canUseCachedCounts ? Promise.resolve({ data: [] as { expiry_date: string | null }[] }) : summaryQuery,
             ]);
             categories = categories_cached;
             employees = employees_cached;
             qualificationMasters = masters_cached.map((m) => ({ id: m.id, name: m.name, category: m.category ?? null }));
             pageResult = pqResult as typeof pageResult;
-            counts = cachedCounts;
+            if (cachedCounts) {
+                counts = cachedCounts;
+            } else {
+                summaryData = (sqResult.data || []) as { expiry_date: string | null }[];
+            }
         } else {
             // categories and employee list cached; search lookups are independent — run in one parallel group
+            let employeeSearchQuery = currentSearch
+                ? supabase.from("employees").select("id").is("deleted_at", null).ilike("name", searchPattern!).limit(100)
+                : null;
+            if (employeeSearchQuery && currentEmployment === "active") {
+                employeeSearchQuery = employeeSearchQuery.or(`termination_date.is.null,termination_date.gte.${today}`);
+            } else if (employeeSearchQuery && currentEmployment === "retired") {
+                employeeSearchQuery = employeeSearchQuery.not("termination_date", "is", null).lt("termination_date", today);
+            }
+
             const [
                 categories_cached,
                 employees_cached,
@@ -122,8 +168,8 @@ export default async function QualificationsPage({
                 getCachedQualificationCategories(),
                 getCachedEmployeeList(),
                 getCachedQualificationMasters(),
-                currentSearch
-                    ? supabase.from("employees").select("id").is("deleted_at", null).ilike("name", searchPattern!).limit(100)
+                employeeSearchQuery
+                    ? employeeSearchQuery
                     : Promise.resolve({ data: [] as { id: string }[], error: null }),
                 currentSearch
                     ? supabase.from("qualification_master").select("id").ilike("name", searchPattern!).limit(100)
@@ -154,11 +200,15 @@ export default async function QualificationsPage({
                 summaryData = [];
             } else {
                 let pq = basePageQuery();
-                let sq = supabase
-                    .from("employee_qualifications")
-                    .select("expiry_date, employees!inner(id)")
-                    .is("deleted_at", null)
-                    .is("employees.deleted_at", null);
+                let sq = applyEmployeeEmploymentFilter(
+                    supabase
+                        .from("employee_qualifications")
+                        .select("expiry_date, employees!inner(id)")
+                        .is("deleted_at", null)
+                        .is("employees.deleted_at", null),
+                    currentEmployment,
+                    today,
+                );
 
                 if (currentCategory) {
                     pq = pq.in("qualification_id", categoryQualificationIds);
@@ -188,7 +238,7 @@ export default async function QualificationsPage({
         qualifications = items.slice(0, PAGE_SIZE);
         hasNextPage = items.length > PAGE_SIZE;
 
-        // noFilter: counts already set from getCachedQualificationCounts(); else branch uses summaryData
+        // cached counts already set when employment=all and no text filter; else use summaryData
         if (summaryData.length > 0) {
             counts = summaryData.reduce<Record<AlertLevel, number>>((acc, row) => {
                 const level = getAlertLevel(row.expiry_date);
@@ -211,6 +261,7 @@ export default async function QualificationsPage({
             currentSearch={currentSearch}
             currentCategory={currentCategory}
             currentLevel={currentLevel}
+            currentEmployment={currentEmployment}
             currentPage={currentPage}
             hasNextPage={hasNextPage}
             employees={employees}
