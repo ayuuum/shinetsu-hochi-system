@@ -3,6 +3,7 @@
 | 項目 | 内容 |
 |------|------|
 | **作成日** | 2026年8月6日 |
+| **共有用（Google ドキュメント）** | [As-is To-be 業務フロー分析（信越報知）](https://docs.google.com/document/d/1q4HFXxAXiDobZ0Q6xL__kzaaMMpJlEV-XZgkHMUO-dk/edit) |
 | **根拠資料** | Google Drive「[信越報知システム](https://docs.google.com/spreadsheets/d/1aG8tynPp77lnSs3tg4ZapRgId_2hA3eax4N5AIiHvHo/edit)」スプレッドシート |
 | **レガシー調査** | [legacy-inspection-system-report.md](./legacy-inspection-system-report.md) |
 | **リプレイスPRD** | [inspection-system-prd.md](./inspection-system-prd.md) |

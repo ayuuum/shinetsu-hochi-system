@@ -19,6 +19,9 @@
 4. **[As-is / To-be 業務フロー分析](docs/as-is-to-be-analysis.md)**
    - Google Drive「信越報知システム」スプレッドシート × 支援システム（レガシー）の対応整理
 
+5. **[お見積構成（先方向け）](docs/estimate-structure-client.md)**
+   - 第1弾必須〜第3弾後段の切り方・金額サマリー（スプレッドシート貼付用）
+
 4. **[ユーザー向け操作マニュアル](docs/user-manual.md)**
    - 作業者向けの毎日使う操作
    - 管理者・人事向けの画面別操作
