@@ -1,0 +1,2 @@
+module JisekiTorokuKanryoHelper
+end

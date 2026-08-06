@@ -1,0 +1,295 @@
+<script type="text/javascript"><!--
+per = 100; 
+w = screen.width * (per * 0.01);
+h = screen.height * (per * 0.01);
+resizeTo(w,h);
+left = screen.width / 3;
+top = screen.height / 2;
+moveTo(left,top);
+
+$(document).ready(function($){
+
+ /*document.getElementById("id_txt_BKP_Hachusha").focus(); $(this).blur(function(){ alert("a");  $("#winbody").focus(); }); */
+$.datepicker.setDefaults( $.datepicker.regional[ "ja" ] );
+
+ $( "#datepicker1" ).datepicker({
+});
+
+ $( "#datepicker2" ).datepicker({
+});
+
+ $( "#datepicker3" ).datepicker({
+});
+
+ $('input[name="hoshuumu"]:radio').change( function(){
+
+	if ($("#id_JTR_Hoshuumu1").is(':checked')) {  $("#disp").css("display","block"); if (<%= @hasei_ymd_ari %> == 0) dayhyoji3(); }
+	else if ($("#id_JTR_Hoshuumu2").is(':checked')) { $("#disp").css("display","none"); }
+});
+	$(document).on("keypress", "input:not(.allow_submit)",function(event){
+		return event.which !== 13
+	});
+});
+
+function dayhyoji1() {
+	document.nm_frm_jiseki_Toroku.tenkenkanryoYMD.value="";
+}
+
+function dayhyoji2() {
+	var hiduke = new Date();
+	var y = hiduke.getFullYear();
+	var m = hiduke.getMonth()+1;
+	var d = hiduke.getDate();	
+	if (m < 10) {
+  		m = '0' + m;
+	}
+	if (d < 10) {
+  		d = '0' + d;
+	}
+	var dateStr = y+"/"+m+"/"+d;	
+	
+	document.nm_frm_jiseki_Toroku.hoshukanryoYMD.value = dateStr;
+}
+
+function dayhyoji3() {
+	var hiduke = new Date();
+	var y = hiduke.getFullYear();
+	var m = hiduke.getMonth()+1;
+	var d = hiduke.getDate();	
+	if (m < 10) {
+  		m = '0' + m;
+	}
+	if (d < 10) {
+  		d = '0' + d;
+	}
+	var dateStr = y+"/"+m+"/"+d;	
+	
+	document.nm_frm_jiseki_Toroku.haseiYMD.value = dateStr;
+}
+function dayhyoji4() {
+	document.nm_frm_jiseki_Toroku.hoshukanryoYMD.value="";
+}
+
+function dayhyoji5() {
+	var status = <%= @tenken["6"].to_i %>
+	if(status == 1){
+		document.nm_frm_jiseki_Toroku.tenkenkanryoYMD.value="";
+	}
+}
+
+function dayhyoji6() {
+	var status = <%= @tenken["5"].to_i %>
+	if(status == 0 || status == 1){
+		document.nm_frm_jiseki_Toroku.hoshukanryoYMD.value="";
+	}
+}
+//--></script>
+<script lang="javascript">
+	
+// rewrite the 'onkeydown' event to make sure 'Enter' key can be used as 'Tab' in some needed circumstances.  It work fine on both IE and non-IE browsers.
+document.onkeydown=function(evt)
+{
+	var isie = (document.all) ? true : false;
+	var key;
+	var srcobj;
+	// if the agent is an IE browser, it's easy to do this.
+	if (isie) {
+		key = event.keyCode;
+		srcobj=event.srcElement;
+	}
+	else {
+		key = evt.which;
+		srcobj=evt.target;
+	}
+	if(key==13 && srcobj.type!='button' && srcobj.type!='submit' &&srcobj.type!='reset' && srcobj.type!='textarea' && srcobj.type!='') {
+		if(isie)
+			event.keyCode=9;
+		else {
+			var el=getNextElement(evt.target);
+			
+			while(el.type=='hidden' || el.type=='submit' || el.type=='radio' || $(el).is("select") )
+				el=getNextElement(el);
+
+			if(!el)
+				return false;
+			else
+			{
+				el.focus();
+				evt.preventDefault();
+			}
+
+		}
+	}
+}
+function getNextElement(field) {
+	var form = field.form;
+	for(var e = 0; e < form.elements.length; e++) {
+		if (field == form.elements[e])
+		break;
+	}
+	return form.elements[++e % form.elements.length];
+}
+</script>
+<style type="text/css">
+<!--
+#page2 {
+	min-width: 930px;
+}
+
+-->
+</style>
+<div id="jiseki_toroku_box">
+	<%= form_tag( { :action => 'commit' }, { :remote => true, :method => 'post', :name => 'nm_frm_jiseki_Toroku', :id => 'nm_frm_jtr_Toroku' }) do  %>
+		
+		<%= submit_tag( '閉じる' , :class => 'close_button_jtr', :id => 'id_Btn_JTR_Sentaku', :tabindex => 37 ) %>
+	
+		<div class="kugiri"></div>
+	
+		<div class="jtr02">
+			<div class="midashi_label_175_20">発注者名</div>
+			<%= text_field_tag 'hachushamei', '', :value => @hachusha_joho[0]["hachushamei"]  , :id => 'id_txt_JTR_Hachushamei', :class => 'input_12', :maxlength => 80, :tabindex => 38, :readonly => true %>
+		</div>
+		
+		<div class="kugiri"></div>
+		
+		<div class="jtr02">
+			<div class="midashi_label_175_20">物件名</div>
+			<%= text_field_tag 'bukenmei','', :value => @buken_joho[0]["bukenmei"], :id => 'id_txt_JTR_Bukenmei', :class => 'input_12', :maxlength => 80, :tabindex => 39, :readonly => true %>
+		</div>
+		
+		<div class="kugiri"></div>
+		
+		<div class="jtr02">
+			<div class="midashi_label_175_20">点検種別</div>
+			<%= text_field_tag 'tenkenshubetu','', :value => @m_kind_joho[0]["shubetumei"], :id => 'id_txt_JTR_Tenkenshubetu', :class => 'input_13', :maxlength => 40, :tabindex => 40, :readonly => true %>
+		</div>
+		<div class="jtr02">
+			<div class="midashi_label_175_20">点検予定月</div>
+			<%= text_field_tag 'tenkenyoteiM','', :value => @tenken["3"] + '月', :id => 'id_txt_JTR_TenkenyoteiM', :class => 'input_13', :maxlength => 40, :tabindex => 41, :readonly => true %>
+		</div>
+		
+		<div class="kugiri"></div>
+		
+		<div class="jtr02">
+			<div class="midashi_label_175_20">点検担当者名</div>
+			<%= text_field_tag 'tenkentantosha','', :value => @m_checkpeople_joho[0]["tenkentantoshamei"], :id => 'id_txt_JTR_Tenkentansosha', :class => 'input_12', :maxlength => 40, :tabindex => 42, :readonly => true %>
+		</div>
+		
+		<div class="kugiri"></div>
+		
+		<div class="jtr01">
+			<div class="midashi4_label_175_20">◆点検情報</div>
+			<div class="normal_message">&nbsp;※印は入力必須項目です。&nbsp;&nbsp;<font color="#000000">●</font>は条件により必須入力です。</div>
+		</div>
+		
+		<div class="kugiri"></div>
+		
+		<div class="jtr02">
+			<div class="midashi_label_175_20">点検完了日&nbsp;&nbsp;※</div>
+			<%= text_field_tag 'tenkenkanryoYMD',@tenkenkanryo, { :id => 'datepicker1', :class => 'input_15', :style => 'ime-mode: disabled', :maxlength => 10, :tabindex => 21 } %>
+		</div>
+		<div class="jtr02">
+			<div class="midashi_label_175_20">人工&nbsp;&nbsp;※</div>
+			<%= select_tag('jinko', options_for_select({'0.5人工' => '0.5', '1.0人工' => '1.0', '1.5人工' => '1.5', '2.0人工' => '2.0', '2.5人工' => '2.5', '3.0人工' => '3.0', '4.0人工' => '4.0', '5.0人工' => '5.0', '6.0人工' => '6.0', '7.0人工' => '7.0', '8.0人工' => '8.0', '9.0人工' => '9.0', '10.0人工' => '10.0', '11.0人工' => '11.0', '12.0人工' => '12.0', '13.0人工' => '13.0', '14.0人工' => '14.0', '15.0人工' => '15.0'},@jinko), :id => 'id_cmb_JTR_Tenkenjinko', :class => 'select_165', :tabindex => 22 ) %>
+		</div>
+		<div class="jtr02">
+			<div class="midashi_label_175_20">補修有無</div>
+			<%= radio_button_tag :hoshuumu, 1 , @hoshu_umu, { :id => 'id_JTR_Hoshuumu1', :class => 'rad_stasus', :tabindex => 23 } %> 
+			<%= label_tag 'id_JTR_Hoshuumu1', "あり" , class: 'radio_txt' %>
+			<div class="radio_txt">&nbsp;&nbsp;&nbsp;&nbsp;</div>
+			<%= radio_button_tag :hoshuumu, 2 , !@hoshu_umu, { :id => 'id_JTR_Hoshuumu2', :class => 'rad_stasus', :tabindex => 24 } %>
+			<%= label_tag 'id_JTR_Hoshuumu2', "なし" , class: 'radio_txt' %>
+		</div>
+		
+		<div class="kugiri"></div>
+		
+		<div class="jtr02">
+			<div class="midashi_label_175_20">点検ステータス&nbsp;&nbsp;※</div>
+		</div>
+		
+		<div class="jtr03">
+			<%= radio_button_tag :tenkenstatus, 1 , @tenken_status[1], { :id => 'id_JTR_Tenkenstatus1', :class => 'rad_stasus', :tabindex => 25, :onClick => 'dayhyoji1()' } %>
+			<%= label_tag 'id_JTR_Tenkenstatus1', @m_init_select[0]["tenkenstatusmei1"] , class: 'radio_txt' %>
+		</div>
+		
+		<div class="jtr03">
+			<%= radio_button_tag :tenkenstatus, 2 , @tenken_status[2], { :id => 'id_JTR_Tenkenstatus2', :class => 'rad_stasus', :tabindex => 26, } %>
+			<%= label_tag 'id_JTR_Tenkenstatus2', @m_init_select[0]["tenkenstatusmei2"] , class: 'radio_txt' %>
+		</div>
+		
+		<div class="jtr03">
+			<%= radio_button_tag :tenkenstatus, 3 , @tenken_status[3], { :id => 'id_JTR_Tenkenstatus3', :class => 'rad_stasus', :tabindex => 27 } %>
+			<%= label_tag 'id_JTR_Tenkenstatus3', @m_init_select[0]["tenkenstatusmei3"] , class: 'radio_txt' %>
+		</div>
+		
+		<div class="jtr04">
+			<%= radio_button_tag :tenkenstatus, 7, @tenken_status[7], { :id => 'id_JTR_Tenkenstatus7', :class => 'rad_stasus', :tabindex => 28 , :onClick => 'dayhyoji5()' } %>
+			<%= label_tag 'id_JTR_Tenkenstatus7', "ステータスを変更しない（現在のステータス："+ @m_init_select[0]["tenkenstatusmei" + @tenken["6"].to_s]+")" , class: 'radio_txt' %>
+		</div>
+		
+		<div class="kugiri"></div>
+		
+		<div class="jtr02">
+			<div class="midashi_label_175_20">備考</div>
+			<%= text_field_tag 'biko',@t_chktrack_joho[0]["biko"], :id => 'id_txt_JTR_Biko', :class => 'biko', :maxlength => 85, :tabindex => 29 %>
+		</div>
+		
+		<div class="kugiri"></div>
+		
+		
+		<div id="disp" style="<%= @hyouji_css %>">
+		<div class="jtr01">
+			<div class="midashi4_label_175_20">◆補修情報</div>
+		</div>
+		
+		<div class="kugiri"></div>
+		
+		<div class="jtr02">
+			<div class="midashi_label_175_20">発生年月日&nbsp;&nbsp;●</div>
+			<%= text_field_tag 'haseiYMD',@haseiYMD, :id => 'datepicker2', :class => 'input_15', :style => 'ime-mode: disabled', :maxlength => 10, :tabindex => 30 %>
+		</div>
+		
+		<div class="kugiri"></div>
+		
+		<div class="jtr02">
+			<div class="midashi_label_175_20">補修完了日&nbsp;&nbsp;●</div>
+			<%= text_field_tag 'hoshukanryoYMD',@hoshukanryoYMD, :id => 'datepicker3', :class => 'input_15', :style => 'ime-mode: disabled', :maxlength => 10, :tabindex => 31 %>
+		</div>
+		
+		<div class="kugiri"></div>
+		
+		<div class="jtr02">
+			<div class="midashi_label_175_20">補修ステータス&nbsp;&nbsp;●</div>
+		</div>
+		
+		<div class="jtr03">
+			<%= radio_button_tag :hoshustatus, 1 , @hoshu_status[1], { :id => 'id_JTR_Hoshustatus1', :class => 'rad_stasus', :tabindex => 32, :onClick => 'dayhyoji4()' } %>
+			<%= label_tag 'id_JTR_Hoshustatus1', @m_init_select[0]["hoshustatusmei1"] , class: 'radio_txt' %>
+		</div>
+		
+		<div class="jtr03">
+			<%= radio_button_tag :hoshustatus, 3 , @hoshu_status[3], { :id => 'id_JTR_Hoshustatus2', :class => 'rad_stasus', :tabindex => 33, :onClick => 'dayhyoji2()' } %>
+			<%= label_tag 'id_JTR_Hoshustatus2', @m_init_select[0]["hoshustatusmei3"] , class: 'radio_txt' %>
+		</div>
+		
+		<div class="jtr04">
+			<%= radio_button_tag :hoshustatus, 7 , @hoshu_status[7], { :id => 'id_JTR_Hoshustatus7', :class => 'rad_stasus', :tabindex => 34, :onClick => 'dayhyoji6()' } %>
+			<%= label_tag 'id_JTR_Hoshustatus7', "ステータスを変更しない（現在のステータス："+@hoshu_statusmei+"）" , class: 'radio_txt' %>
+		</div>
+		
+		<div class="kugiri"></div>
+		
+		<div class="jtr02">
+			<div class="midashi_label_175_250">見積依頼内容<br>または<br>補修内容<br><br>※<br>改行する場合は、<br>キーボードの<br>「Enter」キーを<br>押してください。</div>
+			<%= text_area_tag 'mitumorinaiyou',@mitsumori, { :value => @mitumorinaiyou, :id => 'id_txt_JTR_Mitumorinaiyou', :class => 'naiyou', :maxlength => 800, :cols => 80, :rows => 10, :tabindex => 35 } %>
+		</div>
+		</div>
+
+		<div class="kugiri"></div>
+
+		<%= submit_tag( '登録' , :data => {:disable_with => "登録中..."} , :class => 'button_4', :id => 'id_Btn_JTR_Toroku', :tabindex => 36 ) %>
+	
+<% end %>
+</div>
+	<% content_for :title do %>点検実績／補修情報登録<% end %>
+	<% content_for :sub_title do %>点検実績／補修情報登録<% end %>

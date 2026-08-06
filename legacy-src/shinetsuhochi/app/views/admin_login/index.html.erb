@@ -1,0 +1,75 @@
+<script type="text/javascript"><!--
+
+/* 画面が読み込まれたらIDフィールドにフォーカスする */
+window.onload = function(){
+ document.getElementById("id_txt_LOG_Id").focus();
+ }
+
+$(document).ready(function($){
+	$(document).on("keypress", "input:not(.allow_submit)",function(event){
+		return event.which !== 13
+	});
+	/* idフィールドにあるフォーカスがあるとき */
+    $('#id_txt_LOG_Id').keyup(function(e) {
+    	$("#log_mes").empty();
+  	 	if (!e) var e = window.event;
+		/* エンターキー押された場合 */
+		if ( e.keyCode == 13 ){
+		/*IDが空でなければパスワードへフォーカス移動*/
+			if( $("#id_txt_LOG_Id").val() != '') {
+				$("#id_txt_LOG_Pwd").focus();
+     	 	}
+		}
+    }); 
+    
+	/* パスワードフィールドにあるフォーカスがあるとき */
+    $("#id_txt_LOG_Pwd").keyup(function(e) {
+		$("#log_mes").empty();	
+		if (!e) var e = window.event;
+		/* エンターキー押された場合 */
+		if ( e.keyCode == 13 ){
+			/*両方入力されていてエンターキー押されるとログイン*/
+			if ($("#id_txt_LOG_Pwd").val() != '' && $("#id_txt_LOG_Id").val() != '') {
+     	 		$(".login_button_left").trigger("click");
+     	 	}
+		}
+    }); 
+  
+  	$('.login_button_left').click(function() {
+		$("#log_mes").empty();
+  	});
+});
+//--></script>
+
+	<div id="m_index_pw">
+	<div class="login_memo1">管理者の方はログインIDとパスワードを入力して下さい。</div>
+
+		<%= form_tag( { :action => 'commit' },  { :remote => true, :method => 'post', :name => 'nm_frm_LOG_form' }) do  %>		
+			<div class="login_label1">
+				<p class="midashi">ID</p>
+			</div>
+			<div class="login_field">
+				<%= text_field_tag :uid, @uid, { :id => 'id_txt_LOG_Id', :class => 'klimit-digit', :maxlength => 4, :tabindex => 1 } %>
+			</div>
+
+			<div style="clear:both;"></div>
+			<div class="login_label1">
+				<p class="midashi">パスワード</p>
+			</div>
+			<div class="login_field" >
+				<%= password_field_tag :upass, '', { :id => 'id_txt_LOG_Pwd', :class => 'input_2_log', :tabindex => 2 } %>
+			</div>
+
+			<div class="kugiri"></div>
+			<div id="log_mes"></div>
+			<%= submit_tag 'ログイン' , :class => 'login_button_left', :tabindex => 3  %>
+
+		<% end %>
+		<%= form_tag({ :controller => 'index' }, { :method => :get }) do %>
+			<%= submit_tag 'キャンセル' , :class => 'login_button_right' , :tabindex => 4  %>
+		<% end %>	
+	</div>	
+
+	<% content_for :title do %>管理者ログイン<% end %>
+	<% content_for :for_top do %><span class="right_float"><a href="../index/index.html">トップページへ</a></span><% end %>
+	<% content_for :sub_title do %>管理者ログイン<% end %>

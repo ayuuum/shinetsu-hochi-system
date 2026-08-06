@@ -1,0 +1,29 @@
+
+
+/*** 点検担当者変更・削除 ***/
+#tenken_henko_sakujo_box {
+	width:795px;
+	height:450px;
+	margin: 0 auto;
+	margin-top:60px;
+	text-align:center;
+	padding: 20px 0 20px 0;
+}
+
+.ths01 {
+	margin:5px 0 0 5px;
+	width: 350px;
+	height:40px;
+}
+
+.ths02 {
+	margin:0 0 0 5px;
+	width: 420px;
+	height:40px;
+}
+
+.ths03 {
+	margin:0 0 0 5px;
+	width: 435px;
+	height:30px;
+}

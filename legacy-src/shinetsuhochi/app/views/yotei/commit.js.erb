@@ -1,0 +1,44 @@
+clearTimeout(timerID);
+var timerID = setInterval("jumpHome()",3600*1000);
+
+if (("<%= @error_message[0] %>").length > 0){
+	$.unblockUI();
+	var height_t = parseInt("<%= @dialog_height %>");
+	var width_t =  parseInt("<%= @dialog_width %>");
+	var title_t = "<%= @dialog_title %>";
+	var check_off = "<%= @check_clear %>";
+	$("#message").html('<img align="left" src="/assets/images/<%= @error_message[0] %>.png" /><%= @error_message[1] %>');
+	$("#message").dialog({
+		autoOpen: true, modal: true, height: height_t, width: width_t, title: title_t, dialogClass: 'dlgclass',
+		buttons: {   
+			'ＯＫ': function(event) {
+				$(this).dialog('close');
+				/*if (check_off == "1") $(".ikatu_check").attr("checked", false);*/
+			}
+		}
+	});
+} else if (("<%= @error_message[0] %>").length == 0 && '<%= @error %>' == '1') {
+	$("#kensaku_kekka").empty();
+	$("#kensaku_kekka").append('◆検索結果&nbsp;(<%= @sql_count %>件)');
+	$("#id_Hid_SearchCount").val("<%= @sql_count %>");	
+	$("#yti_table").empty();
+	$("#yti_table").html('<%=raw @html_string %>');
+	$.unblockUI();
+} else if (("<%= @error_message[0] %>").length == 0 && '<%= @error %>' == '2') {
+	w = screen.width * (1);
+	h = screen.height * (1);
+	window.open("http://" + location.host + "/" + "<%= @pdf_name %>","","width=" + w + ",height=" + h + ",resizeable=no,scrollbars=yes,status=no,menubar=1");
+	/*  window.open("http://" + location.host + "/" + "<%= @pdf_name %>");  */
+} else if ('<%= @error %>' == '3'){
+	var url = "http://" + location.host + "/" + "<%= @query_str %>";
+ 	var opt = "center=1;scroll=1;resizable=1;minimize=0;maximize=0;";
+	/*var returnValue = window.open(url,"aa","resizeable=no,scrollbars=yes,status=no"); window.showModalDialog(url,"",opt);*/
+	win = window.open(url,"jiseki_toroku","resizeable=no,scrollbars=yes,status=no");
+	str = returnValue;
+	$("#id_txt_YTI_Bukenmei").val(str);
+	
+} if ('<%= @error %>' == '4'){
+var opt = "center=1;scroll=1;resizable=1;minimize=0;maximize=0;";
+	var url = "http://" + location.host + "/" + "<%= @query_str %>";
+	win = window.open(url,"subWin","scrollbars=yes,status=yes");
+	/*window.showModalDialog(url,"",opt);*/}

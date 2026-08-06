@@ -1,0 +1,19 @@
+clearTimeout(timerID);
+var timerID = setInterval("jumpHome()",3600*1000);
+
+if ('<%= @error %>' == '1'){
+	location.href = "http://" + location.host + "/" + "<%= @query_str %>";
+} else if ('<%= @error %>' == '2') {
+	/*総合テスト不具合2-1 修正　浜 2014-12-09　*/
+	w = screen.width * (1.0);
+	h = screen.height * (1.0);
+	window.open("http://" + location.host + "/" + "<%= @pdf_name %>","","width=" + w + ",height=" + h + ",resizeable=no,scrollbars=yes,status=no,menubar=1");
+	/*  window.open("http://" + location.host + "/" + "<%= @pdf_name %>");  */
+} else if ('<%= @error %>' == '3') {
+	/*画面の情報セット*/
+	var url = "http://" + location.host + "/" + "<%= @query_str %>";
+
+	win = window.open(url,"hoshurireki","resizeable=no,scrollbars=yes,status=no");
+}
+
+

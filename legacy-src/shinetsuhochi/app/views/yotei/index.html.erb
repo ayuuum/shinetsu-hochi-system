@@ -1,0 +1,259 @@
+<script type="text/javascript" language="javascript">
+  function onButtonClick1() { 
+  	target1 = document.getElementById("id_cmb_YTI_Nendo").value;
+  	document.forms.nm_frm_yti_Shubetu.nendo.value = target1;
+  	target2 = document.getElementById("id_cmb_YTI_TenkenyoteiM").value;
+  	document.forms.nm_frm_yti_Shubetu.tenkenyoteiM.value = target2;
+  	target3 = document.getElementById("id_cmb_YTI_TenkenjishiM").value;
+  	document.forms.nm_frm_yti_Shubetu.tenkenjishiM.value = target3;
+  	target4 = document.getElementById("id_cmb_YTI_Tenkentantosha").value;
+  	document.forms.nm_frm_yti_Shubetu.kensakutantoshamei.value = target4;
+  	target5 = document.getElementById("id_txt_YTI_Bukenmei").value;
+  	document.forms.nm_frm_yti_Shubetu.kensakubukenmei.value = target5;
+  	document.nm_frm_yti_Shubetu();
+  }
+
+  function onButtonClick2() { 
+  	target1 = document.getElementById("id_cmb_YTI_Nendo").value;
+  	document.forms.nm_frm_yti_Tenkenstatus.nendo.value = target1;
+  	target2 = document.getElementById("id_cmb_YTI_TenkenyoteiM").value;
+  	document.forms.nm_frm_yti_Tenkenstatus.tenkenyoteiM.value = target2;
+  	target3 = document.getElementById("id_cmb_YTI_TenkenjishiM").value;
+  	document.forms.nm_frm_yti_Tenkenstatus.tenkenjishiM.value = target3;
+  	target4 = document.getElementById("id_cmb_YTI_Tenkentantosha").value;
+  	document.forms.nm_frm_yti_Tenkenstatus.kensakutantoshamei.value = target4;
+  	target5 = document.getElementById("id_txt_YTI_Bukenmei").value;
+  	document.forms.nm_frm_yti_Tenkenstatus.kensakubukenmei.value = target5;
+  	document.nm_frm_yti_Tenkenstatus();
+  }
+
+  function onButtonClick3() { 
+  	target1 = document.getElementById("id_cmb_YTI_Nendo").value;
+  	document.forms.nm_frm_yti_Hoshustatus.nendo.value = target1;
+  	target2 = document.getElementById("id_cmb_YTI_TenkenyoteiM").value;
+  	document.forms.nm_frm_yti_Hoshustatus.tenkenyoteiM.value = target2;
+  	target3 = document.getElementById("id_cmb_YTI_TenkenjishiM").value;
+  	document.forms.nm_frm_yti_Hoshustatus.tenkenjishiM.value = target3;
+  	target4 = document.getElementById("id_cmb_YTI_Tenkentantosha").value;
+  	document.forms.nm_frm_yti_Hoshustatus.kensakutantoshamei.value = target4;
+  	target5 = document.getElementById("id_txt_YTI_Bukenmei").value;
+  	document.forms.nm_frm_yti_Hoshustatus.kensakubukenmei.value = target5;
+  	document.nm_frm_yti_Hoshustatu();
+  }
+
+$(document).ready(function($){
+ $('.loading').click(function() {
+    $.blockUI({
+      message: 'データを読み込んでいます。お待ち下さい・・・',
+      css: {
+        border: 'none',
+        padding: '10px',
+        backgroundColor: '#333',
+        opacity: .9,
+        color: '#fff',
+        cursor: 'wait'
+      },
+      overlayCSS: {
+        backgroundColor: '#000',
+        opacity: 0.6
+      }
+    });
+  });
+
+
+});
+</script>
+		<div id="menu_box" class="tenken">
+				<p class="midashi_yti">◆設備種別</p>
+				<%= form_tag({ :controller => 'yotei', :action => 'commit' }, { :remote => true, :method => 'post', :name => 'nm_frm_yti_Shubetu', :id => 'nm_frm_yti_Shubetu' }) do %>
+					<%= submit_tag( '消防設備', :class => 'but_t' , :tabindex => 1 , :onclick => 'onButtonClick1();' ) %>
+					<%= submit_tag( '防火対象物', :class => 'but_t' , :tabindex => 2 , :onclick => 'onButtonClick1();' ) %>
+					<%= submit_tag( 'その他', :class => 'but_t' , :tabindex => 3 , :onclick => 'onButtonClick1();' ) %>
+					<input type="hidden" name="nendo" id ="nendo" value="">
+					<input type="hidden" name="tenkenyoteiM" id="tenkenyoteiM" value="">
+					<input type="hidden" name="tenkenjishiM" id="tenkenjishiM" value="">
+					<input type="hidden" name="kensakutantoshamei" id="kensakutantoshamei" value="">
+					<input type="hidden" name="kensakubukenmei" id ="kensakubukenmei" value="" >
+				<% end %>
+			</div>
+      		<div id="menu_box" class="kensaku">
+				<p class="midashi_yti">◆点検ステータス</p>
+				<%= form_tag({ :controller => 'yotei', :action => 'commit' }, { :remote => true, :method => 'post', :name => 'nm_frm_yti_Tenkenstatus' }) do %>
+					<%= submit_tag( '未着手', :class => 'but_t' , :tabindex => 4 , :onclick => 'onButtonClick2();' ) %>
+					<%= submit_tag( '点検済み', :class => 'but_t' , :tabindex => 5, :onclick => 'onButtonClick2();' ) %>
+					<%= submit_tag( '提出済み', :class => 'but_t' , :tabindex => 6, :onclick => 'onButtonClick2();' ) %>
+					<%= submit_tag( '社内確認済み ', :class => 'but_t' , :tabindex => 7, :onclick => 'onButtonClick2();' ) %>
+					<%= submit_tag( '請求済み ', :class => 'but_t' , :tabindex => 8, :onclick => 'onButtonClick2();' ) %>
+					<input type="hidden" name="nendo" id ="nendo" value="">
+					<input type="hidden" name="tenkenyoteiM" id="tenkenyoteiM" value="">
+					<input type="hidden" name="tenkenjishiM" id="tenkenjishiM" value="">
+					<input type="hidden" name="kensakutantoshamei" id="kensakutantoshamei" value="">
+					<input type="hidden" name="kensakubukenmei" id ="kensakubukenmei" value="" >
+				<% end %>
+			</div>
+			<div id="menu_box" class="etc">
+				<p class="midashi_yti">◆補修ステータス</p>
+				<%= form_tag({ :controller => 'yotei', :action => 'commit' }, { :remote => true, :method => 'post', :name => 'nm_frm_yti_Hoshustatus' }) do %>
+					<%= submit_tag( '見積もり依頼', :class => 'but_t' , :tabindex => 9 , :onclick => 'onButtonClick3();' ) %>
+					<%= submit_tag( '見積もり提出中', :class => 'but_t' , :tabindex => 10 , :onclick => 'onButtonClick3();' ) %>
+					<%= submit_tag( '補修済み', :class => 'but_t' , :tabindex => 11 , :onclick => 'onButtonClick3();' ) %>
+					<%= submit_tag( '社内確認済み', :class => 'but_t' , :tabindex => 12 , :onclick => 'onButtonClick3();' ) %>
+					<%= submit_tag( '請求済み', :class => 'but_t' , :tabindex => 13 , :onclick => 'onButtonClick3();' ) %>
+					<%= submit_tag( '対応不要', :class => 'but_t' , :tabindex => 14 , :onclick => 'onButtonClick3();' ) %>
+					<input type="hidden" name="nendo" id ="nendo" value="">
+					<input type="hidden" name="tenkenyoteiM" id="tenkenyoteiM" value="">
+					<input type="hidden" name="tenkenjishiM" id="tenkenjishiM" value="">
+					<input type="hidden" name="kensakutantoshamei" id="kensakutantoshamei" value="">
+					<input type="hidden" name="kensakubukenmei" id ="kensakubukenmei" value="" >
+				<% end %>
+			</div>
+		</div>
+	<div id="contents">
+	<div id="main_top">
+		<span class="main_h2">点検予定／実績一覧（点検担当者用）</span>
+	</div>
+	<div id="yotei_box">
+		<%= form_tag( { :action => 'commit' }, { :remote => true, :method => 'post', :name => 'nm_frm_yti_Toroku', :id => 'nm_frm_yti_Toroku' }) do  %>
+		<%= submit_tag( '帳票出力' , :class => 'chohyo_button_yti', :tabindex => -1 ) %>
+	
+		<div class="kugiri"></div>
+	
+		<%# 検索条件 %>
+		<div class="yti01">
+			<div class="midashi4_label_175_20">◆検索条件</div>
+		</div>
+		<div class="kugiri"></div>
+		<div class="yti01">
+			<div class="normal_message">&nbsp;※印は入力必須項目です。</div>
+		</div>
+	
+		<div class="kugiri"></div>
+	
+		<div class="yti02">
+			<div class="midashi_label_175_20">年度&nbsp;&nbsp;※</div>
+			<%= select_tag('nendo', options_for_select(@m_nendo_array, params[@m_nendo_array] || @nendo), :id => 'id_cmb_YTI_Nendo', :class => 'select_270', :tabindex => 21 ) %>
+		</div>
+		<div class="yti02">
+			<div class="midashi_label_155_20">点検予定月</div>
+			<%= select_tag('tenkenyoteiM', options_for_select(@m_yoteitsuki,@toutsuki.to_i), :prompt => "全月", :id => 'id_cmb_YTI_TenkenyoteiM', :class => 'select_115', :tabindex => 22 ) %>
+		</div>
+		<div class="yti02">
+			<div class="midashi_label_155_20">点検実施月</div>
+			<%= select_tag('tenkenjishiM', options_for_select(@m_yoteitsuki), :prompt => "全月", :id => 'id_cmb_YTI_TenkenjishiM', :class => 'select_115', :tabindex => 23 ) %>
+		</div>
+	
+		<div class="kugiri"></div>
+	
+		<div class="yti02">
+			<div class="midashi_label_175_20">点検担当者</div>
+			<%= select_tag('kensakutantoshamei', options_for_select(@m_checkpeople_array,@my[0]["tenkentantoshaCode"]), :prompt => "全担当者", :id => 'id_cmb_YTI_Tenkentantosha', :class => 'select_270', :selected => '', :tabindex => 24 ) %>
+		</div>
+	
+		<div class="kugiri"></div>
+	
+		<div class="yti02">
+			<div class="midashi_label_175_20">物件名</div>
+			<%= text_field_tag 'kensakubukenmei','', :id => 'id_txt_YTI_Bukenmei', :class => 'input_4', :maxlength => 40, :tabindex => 25 %>
+		</div>
+	
+		<div class="yti03">		
+			<%= submit_tag( '物件検索' , :class => 'button_yti02', :id => 'id_Btn_YTI_BukenKensaku' , :tabindex => 26 ) %>
+		</div>
+	
+		<div class="kugiri"></div>
+	
+		<%= submit_tag( '検索', :class => 'button_4 loading', :id => 'id_Btn_YTI_Kensaku', :tabindex => 26 ) %>
+	
+		<div class="kugiri"></div>
+	
+		<div class="yti01">
+			<div class="midashi5_label_175_20" id="kensaku_kekka">◆検索結果&nbsp;(<%= @sql_count %>件)</div>
+		</div>
+		<div class="kugiri"></div>
+		<div class="yti01">
+			<div class="normal_message">&nbsp;※印は入力必須項目です。</div>
+		</div>
+	
+		<div class="kugiri"></div>
+	
+		<div class="yti02">
+			<div class="midashi5_label_240_20_yti">変更後点検ステータス&nbsp;※</div>
+		</div>
+		<div class="yti04">
+			<%= radio_button_tag :tenkenstatus, 1, false, { :id => 'id_YTI_Tenkenstatus1', :class => 'rad_stasus', :tabindex => 27 } %>
+			<%= label_tag 'id_YTI_Tenkenstatus1', @m_init_select[0]["tenkenstatusmei1"] , class: 'radio_txt' %>
+		</div>		
+		<div class="yti04">
+			<%= radio_button_tag :tenkenstatus, 2, false, { :id => 'id_YTI_Tenkenstatus2', :class => 'rad_stasus', :tabindex => 28 } %>
+			<%= label_tag 'id_YTI_Tenkenstatus2', @m_init_select[0]["tenkenstatusmei2"] , class: 'radio_txt' %>
+		</div>
+		
+		<div class="yti04">
+			<%= radio_button_tag :tenkenstatus, 3, false, { :id => 'id_YTI_Tenkenstatus3', :class => 'rad_stasus', :tabindex => 29 } %>
+			<%= label_tag 'id_YTI_Tenkenstatus3', @m_init_select[0]["tenkenstatusmei3"] , class: 'radio_txt' %>
+		</div>
+
+		<%= submit_tag( '点検ステータス一括変更' , :class => 'button_yti01 loading', :id => 'id_Btn_YTI_Tenkenikatsu' , :tabindex => 30 ) %>
+
+	
+		<div class="kugiri"></div>
+	
+		<div class="yti02">
+			<div class="midashi5_label_240_20_yti">変更後補修ステータス&nbsp;※</div>
+		</div>
+		
+		<div class="yti04">
+			<%= radio_button_tag :hoshustatus, 1, false, { :id => 'id_YTI_Hoshustatus1', :class => 'rad_stasus', :tabindex => 31 } %>
+			<%= label_tag 'id_YTI_Hoshustatus1', @m_init_select[0]["hoshustatusmei1"] , class: 'radio_txt' %>
+		</div>
+		<div class="yti04">
+			<%= radio_button_tag :hoshustatus, 3, false, { :id => 'id_YTI_Hoshustatus2', :class => 'rad_stasus', :tabindex => 32 } %>
+			<%= label_tag 'id_YTI_Hoshustatus2', @m_init_select[0]["hoshustatusmei2"] , class: 'radio_txt' %>
+		</div>
+
+		<%= submit_tag( '補修ステータス一括変更' , :class => 'button_yti01 loading', :id => 'id_Btn_YTI_Hoshuikatsu' , :tabindex => 33 ) %>
+	
+		<div class="kugiri"></div>
+	
+		<%= submit_tag( '実績登録' , :class => 'button_4', :id => 'id_Btn_YTI_Jisekitoroku' , :tabindex => 34 ) %>
+	
+		<div class="kugiri"></div>
+	
+		<%# 検索結果 %>
+		<table class="yti02" cellpadding="0" cellspacing="0">
+			<tr>
+			<td class="yti_heaader01" rowspan="4">選択※</td>
+			<td class="yti_heaader01" rowspan="4">一括変更</td>
+			<td class="yti_heaader02" rowspan="2">発注者名</td>
+			<td class="yti_heaader02" rowspan="2">物件名</td>
+			<td class="yti_heaader03">点検種別</td>
+			<td class="yti_heaader04" rowspan="2">点検担当者</td>
+			<td class="yti_heaader03">点検ステータス</td>
+			<td class="yti_heaader03">補修ステータス</td>
+			<td class="yti_heaader04" rowspan="2">補修履歴</td>
+			</tr>
+			<tr>
+			<td class="yti_heaader03">点検予定月</td>
+			<td class="yti_heaader03">点検完了日</td>
+			<td class="yti_heaader03">補修完了日</td>
+			</tr>
+			<tr>
+			<td class="yti_heaader05" colspan="7">メモ（点検者用）</td>
+			</tr>
+			<tr>
+			<td class="yti_heaader05" colspan="7">備考</td>
+			</tr>
+		</table>
+	
+		<div class="kugiri"></div>
+	
+		<table class="yti05" id="yti_table" cellpadding="0" cellspacing="0">
+			<%=raw @html_string %>
+		</table>
+		
+		<input type="hidden" id="id_Hid_SearchCount" name="nm_Hid_SearchCount" value="<%= @sql_count %>">
+		<div class="kugiri"></div>
+		<% end %>
+		
+		<% content_for :title do %>点検予定／実績一覧（点検担当者用）<% end %>
+		<% content_for :for_top do %><span class="right_float">ログイン中：<%= @login_name %> <a id="jump">トップページへ</a></span><% end %>

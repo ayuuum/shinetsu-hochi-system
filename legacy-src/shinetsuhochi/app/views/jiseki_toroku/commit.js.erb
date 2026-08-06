@@ -1,0 +1,67 @@
+clearTimeout(timerID);
+var timerID = setInterval("jumpHome()",3600*1000);
+
+if (("<%= @error_message[0] %>").length > 0) {
+	if ('<%= @error %>' == '4'){
+		document.nm_frm_jiseki_Toroku.tenkenkanryoYMD.value = "";	
+	}
+	if ('<%= @error %>' == '5'){
+		document.nm_frm_jiseki_Toroku.hoshukanryoYMD.value = "";
+	}
+
+	var height_t = parseInt("<%= @dialog_height %>");
+	var width_t =  parseInt("<%= @dialog_width %>");
+	var title_t = "<%= @dialog_title %>";
+	var focus = "<%= @focus %>";
+	$("#message").html('<img align="left" src="/assets/images/<%= @error_message[0] %>.png" /><%= @error_message[1] %>');
+	$("#message").dialog({
+		autoOpen: true, modal: true, height: height_t, width: width_t, title: title_t, dialogClass: 'dlgclass',
+		buttons: {   
+			'ＯＫ': function(event) { 
+				$(this).dialog('close'); 
+				$("#" + focus).focus();
+				}
+		}
+	});
+} else if ('<%= @error %>' == '2'){
+   /* 閉じるボタンで画面を閉じる*/
+	close();
+} else if ('<%= @error %>' == '3'){
+	no = '<%= @no %>';
+	bukenCode = '<%= @bukenCode %>';
+	hachushaCode = '<%= @hachushaCode %>';
+	func = 'to_hoshurireki(' + bukenCode + ',' + hachushaCode + ');';
+	switch ('<%= @hoshukanren %>')  {
+		case '0':
+		break;
+		case '1':
+			window.opener.$('.rec_x' + bukenCode).text('あり(残件あり)');
+			window.opener.$('.rec_x' + bukenCode).attr('onClick',func);
+			window.opener.$('.rec_x' + bukenCode).attr('style','cursor:pointer;');
+		break;
+		case '2':
+			window.opener.$('.rec_x' + bukenCode).text('あり');
+			window.opener.$('.rec_x' + bukenCode).attr('onClick',func);
+			window.opener.$('.rec_x' + bukenCode).attr('style','cursor:pointer;');
+		break;
+	}	
+	
+	if ('<%= @henko %>' == '1') {
+		window.opener.$( "#rec_a" + no ).remove();
+		window.opener.$( "#rec_b" + no ).remove();
+		window.opener.$( "#rec_c" + no ).remove();
+		window.opener.$( "#rec_d" + no ).remove();
+		count = parseInt(window.opener.$( "#id_Hid_SearchCount" ).val()) - 1;
+		window.opener.$( "#id_Hid_SearchCount" ).val(count);
+		window.opener.$( "#kensaku_kekka" ).html('◆検索結果 (' + count + '件)');
+	} else if ('<%= @henko %>' == '2') {
+		window.opener.$( "#rec_e" + no ).val("<%= @sentaku_key %>");
+		window.opener.$( "#rec_f" + no ).val("<%= @sentaku_key %>");
+		window.opener.$( "#rec_g" + no ).text("<%= @tenken_statusmei %>");
+		window.opener.$( "#rec_h" + no ).text("<%= @hoshu_statusmei %>");
+		window.opener.$( "#rec_i" + no ).text("<%= @tenkenkanryoYMD %>");
+		window.opener.$( "#rec_j" + no ).text("<%= @hoshukanryoYMD %>");
+		window.opener.$( "#rec_k" + no ).text("<%= @biko %>");
+	}
+   location.href = "http://" + location.host + "/" + "<%= @query_str %>";
+}

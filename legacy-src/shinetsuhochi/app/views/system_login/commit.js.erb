@@ -1,0 +1,10 @@
+ if ('<%= @error %>' == '1'){
+	location.href = "http://" + location.host + "/" + "<%= @query_str %>";
+
+} else if ('<%= @error %>' == '2'){
+	$("#log_mes").empty();
+	$("#log_mes").html('<%=raw @error_text %>');
+} else if ('<%= @error %>' == '3'){
+	$("#id_txt_LOG_Id").val("");
+	$("#id_txt_LOG_Pwd").val("");
+}

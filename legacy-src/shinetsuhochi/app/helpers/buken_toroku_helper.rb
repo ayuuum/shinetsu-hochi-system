@@ -1,0 +1,2 @@
+module BukenTorokuHelper
+end

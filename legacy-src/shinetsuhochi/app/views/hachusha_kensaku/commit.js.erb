@@ -1,0 +1,80 @@
+clearTimeout(timerID);
+var timerID = setInterval("jumpHome()",3600*1000);
+
+if (("<%= @error_message[0] %>").length > 0){
+	$.unblockUI();
+	var height_t = parseInt("<%= @dialog_height %>");
+	var width_t =  parseInt("<%= @dialog_width %>");
+	var title_t = "<%= @dialog_title %>";
+	var focus = "<%= @focus %>";	
+	$("#message").html('<img align="left" src="/assets/images/<%= @error_message[0] %>.png" /><%= @error_message[1] %>');
+	$("#message").dialog({
+		autoOpen: true, modal: true, height: height_t, width: width_t, title: title_t, dialogClass: 'dlgclass',
+		buttons: {   
+			'ＯＫ': function(event) { 
+				$(this).dialog('close');
+				$("#" + focus).focus();
+				 }
+		}
+	});
+
+} else if ('<%= @error %>' == '1'){
+   /* 呼び出し元の物件変更削除に戻る*/
+   /*　親ウィンドウを取得する*/
+	if(!opener){
+		opener = dialogArguments;
+	}
+
+	var hachushaCode = '<%= @m_hachushaCode %>';
+	var hachushamei = '<%= @m_hachushamei %>';
+	var hachuPostno = '<%= @m_hachuPostno %>';
+	var hachuAdrs = '<%= @m_hachuAdrs %>';
+	var hachuTelno = '<%= @m_hachuTelno %>';
+	var hachuFaxno = '<%= @m_hachuFaxno %>';
+	var hachuTandoshamei = '<%= @m_hachuTandoshamei %>';
+	var bTorokuFlg = '<%= @b_torokuFlg %>';
+	
+	window.opener.$("#id_Hid_HachushaCode").val(hachushaCode);
+	window.opener.$("#id_txt_BTR_Hachushamei").val(hachushamei);
+	window.opener.$("#id_txt_BTR_HachuTantoshamei").val(hachuTandoshamei);
+	window.opener.$("#id_txt_BTR_HachuPostno1").val(hachuPostno.substr(0,3));
+	window.opener.$("#id_txt_BTR_HachuPostno2").val(hachuPostno.substr(3,6));
+	window.opener.$("#id_txt_BTR_HachuAdrs").val(hachuAdrs);
+	window.opener.$("#id_txt_BTR_HachuTelno").val(hachuTelno);
+	window.opener.$("#id_txt_BTR_HachuFaxno").val(hachuFaxno);
+	/*
+	if (bTorokuFlg == 'true') {
+		window.opener.$("#id_txt_BTR_Hachushamei").attr("readonly",true);
+		window.opener.$("#id_txt_BTR_Hachushamei").css("background-color",":#f0f080;");
+		window.opener.$("#id_txt_BTR_HachuTantoshamei").attr("readonly",true);
+		window.opener.$("#id_txt_BTR_HachuTantoshamei").css("background-color",":#f0f080;");
+		window.opener.$("#id_txt_BTR_HachuPostno1").attr("readonly",true);
+		window.opener.$("#id_txt_BTR_HachuPostno1").css("background-color",":#f0f080;");
+		window.opener.$("#id_txt_BTR_HachuPostno2").attr("readonly",true);
+		window.opener.$("#id_txt_BTR_HachuPostno2").css("background-color",":#f0f080;");
+		window.opener.$("#id_txt_BTR_HachuAdrs").attr("readonly",true);
+		window.opener.$("#id_txt_BTR_HachuAdrs").css("background-color",":#f0f080;");
+		window.opener.$("#id_txt_BTR_HachuTelno").attr("readonly",true);
+		window.opener.$("#id_txt_BTR_HachuTelno").css("background-color",":#f0f080;");
+		window.opener.$("#id_txt_BTR_HachuFaxno").attr("readonly",true);
+		window.opener.$("#id_txt_BTR_HachuFaxno").css("background-color",":#f0f080;");
+	}
+	*/
+
+	close();
+} else if ('<%= @error %>' == '2'){
+   /* 呼び出し元の物件変更削除に戻る*/
+   /*　親ウィンドウを取得する*/
+	if(!opener){
+		opener = dialogArguments;
+	}
+
+	/*returnValue = new Array('','', '', '', '', '', '','false');*/
+	close();
+} else if ('<%= @error %>' == '3'){
+	$("#kensaku_kekka").empty();
+	$("#kensaku_kekka").append('◆検索結果(<%= @sql_count %>件)');
+	$("#bks_table").empty();
+	$("#bks_table").html('<%=raw @html_string %>');
+	$.unblockUI();
+}

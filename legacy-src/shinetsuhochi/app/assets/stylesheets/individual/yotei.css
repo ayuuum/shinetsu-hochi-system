@@ -1,0 +1,330 @@
+/*** 点検予定／実績一覧 ***/
+
+#yotei_box {
+	width: 1040px;
+	margin: 0 auto;
+	margin-top: 10px;
+	text-align: left;
+	padding: 10px 0px 20px 0px;
+}
+
+.chohyo_button_yti {
+	font-size:15px;
+	float:right;
+	width: 150px;
+	height: 30px;
+	margin:0 5px 10px 5px;	
+}
+
+.button_yti01 {
+	font-size:15px;
+	float:right;
+	width: 195px;
+	height: 30px;
+	margin-left: 0px;
+	margin-bottom: 3px;
+}
+
+.button_yti02 {
+	font-size:15px;
+	float:left;
+	width: 150px;
+	height: 30px;
+	margin:0 5px 10px 5px;	
+}
+
+.yti01 {
+	margin:5px 0px 0px 5px;
+	width: 350px;
+	height:30px;
+}
+
+.yti02 {
+	margin:5px 0px 0px 5px;
+	float: left;
+}
+
+.yti03 {
+	margin: 0px;
+	padinng: 0px;
+	float: left;
+}
+
+.yti04 {
+	margin: 5px 0px 0px 0px;
+	float: left;
+	height: 20px;
+	width: 142px;
+}
+
+.yti05 {
+	margin: 0px 0px 0px 5px;
+	float: left;
+	font-size: 13px;
+}
+
+.yti_heaader01 {
+	font-size: 13px;
+	text-align: center;
+	vertical-align: center;
+	font-weight: bold;
+	border-style: outset;
+	border-width: 2px;
+	background: #f4A440;
+	border-color: #f4A440;
+	padding: 1px;
+	width: 33px;
+	height: 69px;
+}
+
+.yti_heaader02 {
+	font-size: 13px;
+	text-align: center;
+	vertical-align: center;
+	font-weight: bold;
+	border-style: outset;
+	border-width: 2px;
+	background: #f4A440;
+	border-color: #f4A440;
+	padding: 1px;
+	width: 190px;
+	height: 40px;
+}
+
+.yti_heaader03 {
+	font-size: 13px;
+	text-align: center;
+	vertical-align: center;
+	font-weight: bold;
+	border-style: outset;
+	border-width: 2px;
+	background: #f4A440;
+	border-color: #f4A440;
+	padding: 1px;
+	width: 100px;
+	height: 20px;
+}
+
+.yti_heaader04 {
+	font-size: 13px;
+	text-align: center;
+	vertical-align: center;
+	font-weight: bold;
+	border-style: outset;
+	border-width: 2px;
+	background: #f4A440;
+	border-color: #f4A440;
+	padding: 1px;
+	width: 95px;
+	height: 20px;
+}
+
+.yti_heaader05 {
+	font-size: 13px;
+	text-align: left;
+	vertical-align: center;
+	font-weight: bold;
+	border-style: outset;
+	border-width: 2px;
+	background: #f4A440;
+	border-color: #f4A440;
+	padding:1px;
+	width: 951px;
+	height: 20px;
+}
+
+.yti_heaader06 {
+	font-size: 13px;
+	text-align: center;
+	vertical-align: center;
+	font-weight: bold;
+	border-style: outset;
+	border-width: 2px;
+	background: #f4A440;
+	border-color: #f4A440;
+	padding: 1px;
+	width: 33px;
+	height: 20px;
+}
+
+.yti_info01 {
+	text-align: center;
+	border-style: ridge;
+	border-width: 2px;
+	background: #99ccff;
+	border-color: #c0c0c0;
+	padding: 8px 1px 1px 1px;
+	width: 33px;
+	height: 69px;
+}
+
+.yti_info02 {
+	text-align: left;
+	vertical-align: top;
+	border-style: ridge;
+	border-width: 2px;
+	background: #ffffff;
+	border-color: #c0c0c0;
+	padding: 1px;
+	width: 200px;
+	height: 40px;
+}
+
+.yti_info03 {
+	text-align: left;
+	border-style: ridge;
+	border-width: 2px;
+	background: #ffffff;
+	border-color: #c0c0c0;
+	padding: 1px;
+	width: 106px;
+	height: 20px;
+}
+
+.yti_info03_2 {
+	text-align: right;
+	border-style: ridge;
+	border-width: 2px;
+	background: #ffffff;
+	border-color: #c0c0c0;
+	padding: 1px;
+	width: 106px;
+	height: 20px;
+}
+
+.yti_info04 {
+	text-align: left;
+	vertical-align: top;
+	border-style: ridge;
+	border-width: 2px;
+	background: #ffffff;
+	border-color: #c0c0c0;
+	padding: 3px 1px;
+	width: 100px;
+	height: 40px;
+}
+
+.yti_info05 {
+	text-align: left;
+	border-style: ridge;
+	border-width: 2px;
+	background: #ffffff;
+	border-color: #c0c0c0;
+	padding: 1px;
+	width: 951px;
+	height: 20px;
+}
+
+.yti_info06 {
+	text-align: left;
+	vertical-align: top;
+	border-style: ridge;
+	border-width: 2px;
+	background: #99ccff;
+	border-color: #c0c0c0;
+	padding: 1px;
+	width: 100px;
+	height: 40px;
+}
+
+.yti_info07 {
+	text-align: left;
+	border-style: ridge;
+	border-width: 2px;
+	background: #ffffff;
+	border-color: #c0c0c0;
+	padding: 1px;
+	width: 33px;
+	height: 40px;
+}
+
+
+.yti_info071, .yti_info072, .yti_info073, .yti_info074 {
+	text-align: left;
+	border-style: ridge;
+	border-width: 2px;
+	background: #ffffff;
+	border-color: #c0c0c0;
+	padding: 1px;
+	width: 106px;
+	height: 20px;
+	color: #ff0000;
+}
+
+.yti_info075 {
+	text-align: left;
+	border-style: ridge;
+	border-width: 2px;
+	background: #ffffff;
+	border-color: #c0c0c0;
+	padding: 1px;
+	width: 106px;
+	height: 20px;
+	color: #000000;
+}
+
+.yti_info08, .yti_info081, .yti_info082, .yti_info083, .yti_info084, .yti_info085 {
+	text-align: left;
+	border-style: ridge;
+	border-width: 2px;
+	background: #ffffff;
+	border-color: #c0c0c0;
+	padding: 1px;
+	width: 106px;
+	height: 20px;
+	color: #ff0000;
+}
+
+.yti_info086 {
+	text-align: left;
+	border-style: ridge;
+	border-width: 2px;
+	background: #ffffff;
+	border-color: #c0c0c0;
+	padding: 1px;
+	width: 106px;
+	height: 20px;
+	color: #000000;
+}
+.radio_txt {
+	color: #ffff00;
+	margin: 4px 0px;
+	float: left;
+}
+
+.rad_stasus {
+	margin-top: 7px;
+	float: left;
+}
+
+.midashi5_label_240_20_yti { 
+	background: #f4A440;
+	border-color: #f4A440;
+	text-align: left;
+	vertical-align:middle;
+	font-weight: bold;
+	border-style: outset;
+	border-width: 2px;
+	float: left;
+	padding:1px;
+	width: 190px;
+	height: 20px;
+}
+
+p.midashi_yti {
+	font-size: 16px;
+	width: 130px;
+	height: 25px;
+	padding: 5px;
+}
+
+.radio_txt:not(:target){
+	margin: 7px 0px\9;
+}
+
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+.midashi5_label_240_20_yti{
+	height: 17px;
+	padding-top:3px;
+}
+}

@@ -1,0 +1,160 @@
+/*** 物件登録 ***/
+
+#hosyurireki_box {
+	width:1035px;
+	margin: 0 auto;
+	margin-top:20px;
+	text-align:left;
+	padding: 20px 0px 20px 5px;
+}
+
+
+.midashi_label_155_20_hrr {
+	text-align: left;
+	vertical-align:middle;
+	font-weight: bold;
+	border-style: outset;
+	border-width: 2px;
+	float: left;
+
+	padding:1px;
+	width: 115px;
+	height: 40px;
+
+	background: #f4A440;
+	border-color: #f4A440;	
+
+}
+
+.input_4_hrr, .input_5_hrr, .input_6_hrr, .input_7_hrr,.input_7_hrr_red ,.input_8_hrr,.input_9_hrr {
+	background:#f0f080;
+}
+
+
+/* 全角20文字フィールド */
+.input_4_hrr {
+	width: 265px;
+	height: 40px;
+	float:left;
+	ime-mode: active;
+	resize: none;
+	overflow:hidden
+}
+
+/* 全角20文字フィールド */
+.input_5_hrr {
+	width: 120px;
+	height: 40px;
+	float:left;
+	text-align:center;
+	ime-mode: active;
+	resize: none;
+	overflow:hidden;
+}
+/* 全角20文字フィールド */
+.input_6_hrr {
+	width: 80px;
+	height: 20px;
+	float:left;
+	ime-mode: active;
+	text-align:center;
+	resize: none;
+	overflow:hidden;
+		padding:1px;
+}
+
+
+/* 全角20文字フィールド */
+.input_7_hrr, .input_7_hrr_red {
+	width: 246px;
+	height: 20px;
+	float:left;
+	ime-mode: active;
+	text-align:left;
+	resize: none;
+	overflow:hidden;
+	
+}
+.input_7_hrr_red {
+	color:#ff0000;
+}
+
+
+/* 全角20文字フィールド */
+.input_8_hrr {
+	width: 900px;
+	height: 181px;
+		font-size:15px;
+	float:left;
+	ime-mode: active;
+	text-align:left;
+	resize: none;
+	overflow:hidden;
+	margin-top:1px;
+}
+
+.input_9_hrr {
+	width: 90px;
+	height: 20px;
+	float:left;
+	ime-mode: active;
+	resize: none;
+	overflow:hidden;
+		padding:1px;
+}
+
+
+.hrr02 {
+	margin:5px 0px 0px 0px;
+	float: left;
+}
+
+#btr04_box {
+	margin:0px 0px 0px 5px;
+	float: left;
+}
+
+.kugiri_l {
+	clear:both;
+	height:15px;
+}
+
+.hrr_header01 {
+	font-weight: bold;
+	border-style: outset;
+	border-width: 2px;
+	float: left;
+	background: #f4A440;
+	border-color: #f4A440;
+	padding: 1px;
+	width: 115px;
+	height:  20px;
+}
+
+.hrr_header02 {
+	font-weight: bold;
+	border-style: outset;
+	border-width: 2px;
+	background: #f4A440;
+	border-color: #f4A440;
+	padding: 1px;
+	width: 115px;
+		float: left;
+	height:180px;
+	margin-top:1px;
+}
+
+.hrr_header03 {
+	font-weight: bold;
+	border-style: outset;
+	border-width: 2px;
+	float: left;
+	background: #f4A440;
+	border-color: #f4A440;
+	padding: 1px;
+	width: 120px;
+	height:  20px;
+}
+
+
+

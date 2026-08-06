@@ -1,0 +1,48 @@
+<% content_for :main do %>
+<div id="page2">
+	<div id="header">
+		<span class="header_string">保守点検業務支援システム</span>
+		<%= yield :for_top %>			
+	</div>
+	<div id="container">
+		<div id="menu">
+			<div id="menu_box" class="tenken">
+				<p class="midashi">◆点検担当者</p>
+				<%= form_tag({ :controller => 'tenken_toroku'}) do %><%= submit_tag( '登録', :class => 'but_t' , :tabindex => 1 ) %><% end %>
+				<%= form_tag({ :controller => 'tenken_henko_sakujo'}) do %><%= submit_tag( '変更／削除', :class => 'but_t' , :tabindex => 2 ) %><% end %>
+			</div>
+      		<div id="menu_box" class="buken">
+				<p class="midashi">◆物件</p>
+				<%= form_tag({ :controller => 'buken_toroku', :action => 'index', :first => nil}) do %><%= submit_tag( '登録', :class => 'but_t' , :tabindex => 3 ) %><% end %>
+				<%= form_tag({ :controller => 'buken_kensaku'}) do %><%= submit_tag( '検索(変更／削除)', :class => 'but_t' , :tabindex => 4 ) %><% end %>
+			</div>
+			<div id="menu_box" class="kensaku">
+				<p class="midashi">◆検索一覧</p>
+				<%= form_tag({ :controller => 'yotei_admin', :first => nil}) do %><%= submit_tag( '点検予定／実績一覧', :class => 'but_t' , :tabindex => 5 ) %><% end %>
+				<%= form_tag({ :controller => 'monthlist'}) do %><%= submit_tag( '月別件数一覧', :class => 'but_t' , :tabindex => 6 ) %><% end %>
+				<%= form_tag({ :controller => 'hachulist'}) do %><%= submit_tag( '発注者／物件別', :class => 'but_t' , :tabindex => 7 ) %><% end %>
+				<%= form_tag({ :controller => 'tantolist'}) do %><%= submit_tag( '担当者別', :class => 'but_t' , :tabindex => 8 ) %><% end %>
+				<%= form_tag({ :controller => 'setsubilist'}) do %><%= submit_tag( '設備種別別', :class => 'but_t' , :tabindex => 9 ) %><% end %>
+			</div>
+			<div id="menu_box" class="etc">
+				<p class="midashi">◆その他</p>
+				<%= form_tag({ :controller => 'initialization', :first => nil}) do %><%= submit_tag( '初期設定', :class => 'but_t' , :tabindex => 10 ) %><% end %>	 
+				<%= form_tag({ :controller => 'admin_pass'}) do %><%= submit_tag( '管理者パスワード変更', :class => 'but_t' , :tabindex => 11 ) %><% end %>
+			<!--	<%= submit_tag( '次年度分情報自動生成', :class => 'but_t' , :tabindex => 12 ) %> -->
+				<%= form_tag({ :controller => 'system_login'}) do %><%= submit_tag( 'リストア', :class => 'but_t' , :tabindex => 13 ) %><% end %>
+			</div>
+<!-- menu --></div>
+
+		<div id="contents">
+	<div id="main_top">
+		<span class="main_h2"><%= yield :sub_title %></span>
+	</div>
+		<%= yield %>
+<!-- contents--></div>	
+<!-- container--></div>
+<div id="footer"><p>Copyright &copy; 2014 株式会社 信越報知  All rights reserved.</p></div>
+<!-- page --></div>
+<% end %>
+<%= render :template => 'layouts/application' %>
+
+

@@ -1,0 +1,2 @@
+module HachushaKensakuHelper
+end

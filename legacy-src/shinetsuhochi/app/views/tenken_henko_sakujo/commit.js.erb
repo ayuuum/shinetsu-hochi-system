@@ -1,0 +1,62 @@
+clearTimeout(timerID);
+var timerID = setInterval("jumpHome()",3600*1000);
+
+if ('<%= @error %>' == '1') {
+	$.unblockUI();
+	$('#id_txt_THS_Tenmei').val("<%= @select_checkpeople_name %>");
+	$('[name="nm_cmb_THS_Tenshu2"]').val("<%= @select_shubetu %>");	
+	$('#id_txt_THS_Tenid').val("<%= @select_uid %>"); 
+	$('#id_pas_THS_Tenpass').val("<%= @select_upass %>");
+	$('#id_txt_THS_SakujyoFlg').val("<%= @select_checkpeople_sakujyoFlg %>");
+	var tenmei_c = document.getElementById("id_txt_THS_Tenmei")
+	var tenshu2_c = document.getElementById("id_cmb_THS_Tenshu2")
+	if ('<%= @select_checkpeople_sakujyoFlg %>' == '1') {
+		tenmei_c.style.color = "#ff0000";
+		tenshu2_c.style.color = "#ff0000";
+	} else {
+		tenmei_c.style.color = "#000000";
+		tenshu2_c.style.color = "#000000";
+	}
+} else	if (("<%= @error_message[0] %>").length > 0 && '<%= @error %>' == '14'){
+	$.unblockUI();
+	var height_t = parseInt("<%= @dialog_height %>");
+	var width_t =  parseInt("<%= @dialog_width %>");
+	var title_t = "削除確認";
+	$("#message").html('<img align="left" src="/assets/images/<%= @error_message[0] %>.png" /><%= @error_message[1] %>');
+	$("#message").dialog({
+		autoOpen: true, modal: true, height: height_t, width: width_t, title: title_t, dialogClass: 'dlgclass',
+		buttons: {   
+			'はい': function(event) { 
+			location.href = "http://" + location.host + "<%= @query_str %>";
+			$(this).dialog('close'); 
+			},
+   	    	'いいえ': function(event) { $(this).dialog('close'); }
+		}
+	});
+
+} else if (("<%= @error_message[0] %>").length > 0) {
+	$.unblockUI();
+	var height_t = parseInt("<%= @dialog_height %>");
+	var width_t =  parseInt("<%= @dialog_width %>");
+	var title_t = "<%= @error_message[2] %>";
+	var focus = "<%= @focus %>";
+	$("#message").html('<img align="left" src="/assets/images/<%= @error_message[0] %>.png" /><%= @error_message[1] %>');
+	$("#message").dialog({
+		autoOpen: true, modal: true, height: height_t, width: width_t, title: title_t, dialogClass: 'dlgclass',
+		buttons: {   
+			'ＯＫ': function(event) { 
+				$(this).dialog('close'); 
+				$(focus).focus();
+				$(focus).select();
+			}
+		}
+	});
+	
+	
+} else if ('<%= @error %>' == '13') {	
+	$.unblockUI();
+	location.href = "http://" + location.host + "/tenken_henko_kanryo";
+} else if ('<%= @error %>' == '15') {
+	/*何も選択されず、選択ボタンをクリックしたとき*/
+}
+

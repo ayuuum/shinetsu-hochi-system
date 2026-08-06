@@ -1,0 +1,117 @@
+<script type="text/javascript"><!--
+window.onload = function(){
+ document.getElementById("id_cmb_TTL_Sanshonendo").focus();
+ }
+ 
+$(document).ready(function($){
+
+	/* 点検担当者種別をセレクトしたとき 点検担当者名の表示を変える*/
+	/* 点検担当者種別を変更したとき */
+	$('#id_cmb_TTL_Tenshu').change(function() {
+		/* 点検担当者種別value取得 */
+		data = $('#id_cmb_TTL_Tenshu').val();
+		string = "#id_cmb_TTL_Tenmei" + ("00" + data).slice(-3);
+		/* 点検担当者名セレクトボックスすべて隠し*/
+		$('.select_295_ttl').hide();
+		/* #id_cmb_THS_Tenmei＋点検担当者種別valueのIDを表示*/
+		$(string).show();
+	}).keyup(function(){
+		$(this).blur().focus();
+		});
+
+ $('.loading').click(function() {
+    $.blockUI({
+      message: 'データを読み込んでいます。お待ち下さい・・・',
+      css: {
+        border: 'none',
+        padding: '10px',
+        backgroundColor: '#333',
+        opacity: .9,
+        color: '#fff',
+        cursor: 'wait'
+      },
+      overlayCSS: {
+        backgroundColor: '#000',
+        opacity: 0.6
+      }
+    });
+  });
+
+
+});
+function to_buken_joho_shosai(bukenCode, hachushaCode) {
+	location.href = "http://" + location.host + "/buken_joho_shosai/index/" + bukenCode + "/" + hachushaCode;
+}
+//--></script>
+
+
+<div id="tantolist_box">
+	<%= form_tag( { :action => 'commit' },  { :remote => true,  :method => 'post', :name => 'nm_frm_BKS_Toroku' }) do  %>
+	<%= submit_tag( '帳票出力' , :class => 'chohyo_button loading', :id => 'id_Btn_THS_Kensaku' , :tabindex => 27 ) %>
+	
+	<div class="ttl02"><div class="midashi3_label_240_20">◆検索条件</div></div>
+	<div class="kugiri"></div>
+	<div class="ttl02"><div class="normal_message">※印は入力必須項目です。</div></div>
+	<div class="kugiri"></div>
+	<div class="ttl06">
+		<div class="midashi_label_ttl_150_20">参照年度&nbsp;&nbsp;※</div>
+		<%= select_tag('sanshonendo',options_for_select(@nendo_select,@default_n), :id => 'id_cmb_TTL_Sanshonendo', :class => 'select_220', :tabindex => 21 ) %>
+	</div>
+	
+	<div class="ttl07">
+		<div class="midashi_label_ttl_150_20">月</div>
+		<%= select_tag('sanshotuki',options_for_select(@tuki_select,'-1'), :id => 'id_cmb_TTL_Sanshonendo', :class => 'select_220', :tabindex => 22 ) %>
+	</div>
+	
+	<div class="kugiri"></div>
+	<div class="ttl06">
+		<div class="midashi_label_ttl_150_20">点検担当者種別</div>
+		<%= select_tag('nm_cmb_TTL_Tenshu', options_from_collection_for_select(@m_kind_select,:shubetu, :shubetumei, ''),  :id => 'id_cmb_TTL_Tenshu',  :class => 'select_220', :tabindex => 23 ) %>		
+	</div>
+
+	<div class="ttl07">
+		<div class="midashi_label_ttl_150_20">点検担当者名※</div>
+		<% for @i in 0..@m_tenken_kensu - 1 %>
+		<%= select_tag(@m_tenken_array[0][@i].sub("id","nm"), options_for_select(@m_checkpeople_array[@i]),:id => @m_tenken_array[0][@i], :class => 'select_295_ttl' ,:tabindex => 24, :style =>  @m_tenken_array[1][@i]) %> 
+		<% end %>			
+	</div>
+
+	<div class="kugiri"></div>	
+	<div class="ttl05">
+		<%= submit_tag( '検索' , :class => 'button_3 loading', :id => 'id_Btn_TTL_Kensaku' , :tabindex => 25 ) %>
+	</div>	
+	<div class="kugiri"></div>	
+
+	
+	<div class="ttl04"><div class="midashi3_label_240_20" id="kensaku_kekka">◆検索結果</div></div>
+	
+	<div class="kugiri"></div>	
+　
+	<div class="ttl01">
+	
+		<div class="ttl_header02">点検担当者名</div>
+		<div class="ttl_header03">件数<br>合計<br>(件)</div>
+		<div class="ttl_header05">契約保有高<br>合計</div>
+		<div class="ttl_header05">外注費<br>合計</div>
+		<div class="ttl_header08">人工<br>合計</div>
+		<div class="ttl_header01">発注者名</div>
+		<div class="ttl_header01">物件名</div>
+		<div class="ttl_header07">点検種別</div>
+		<div class="ttl_header04">点検<br>予定<br>月</div>
+		<div class="ttl_header06">契約保有高</div>
+		<div class="ttl_header06">外注費</div>
+		<div class="kugiri"></div>
+	
+		<% #明細＋合計行 %>
+		<div id="ttl_table"></div>
+		<div class="kugiri"></div>
+	</div>
+
+	<% end %>		
+
+</div>
+			
+	<% content_for :title do %>検索一覧(担当者別)<% end %>
+	<% content_for :for_top do %><span class="right_float">ログイン中：管理者用&nbsp;&nbsp;<a id="jump">トップページへ</a></span><% end %>
+	<% content_for :sub_title do %>検索一覧(担当者別)<% end %>
+	

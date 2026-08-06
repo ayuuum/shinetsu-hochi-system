@@ -1,0 +1,13 @@
+clearTimeout(timerID);
+var timerID = setInterval("jumpHome()",3600*1000);
+
+if ('<%= @error %>' == '2'){
+   /* 呼び出し元の物件変更削除に戻る*/
+	returnValue = '';
+	close();
+} else if ('<%= @error %>' == '1'){
+	w = screen.width * (1);
+	h = screen.height * (1);
+	window.open("http://" + location.host + "/" + "<%= @pdf_name %>","","width=" + w + ",height=" + h + ",resizeable=no,scrollbars=yes,status=no,menubar=1");
+	/*  window.open("http://" + location.host + "/" + "<%= @pdf_name %>");  */
+}

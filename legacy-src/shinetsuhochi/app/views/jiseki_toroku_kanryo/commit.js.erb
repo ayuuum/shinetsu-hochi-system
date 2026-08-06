@@ -1,0 +1,7 @@
+clearTimeout(timerID);
+var timerID = setInterval("jumpHome()",3600*1000);
+
+/* 閉じるボタンで画面を閉じる*/
+if ('<%= @error %>' == '2'){
+	close();
+}

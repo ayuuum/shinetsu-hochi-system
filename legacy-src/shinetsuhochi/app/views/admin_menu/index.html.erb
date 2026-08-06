@@ -1,0 +1,52 @@
+<script type="text/javascript"><!--
+$(document).ready(function($){
+	if ($("#id_adm_Success").val() == "true"){
+	var height_t = 200;
+	var width_t =  400;
+	var title_t = "確認";
+	$("#message").html('<img align="left" src="/assets/images/message_info.png" />次年度分情報自動生成が終了しました。');
+	$("#message").dialog({
+		autoOpen: true, modal: true, height: height_t, width: width_t, title: title_t, dialogClass: 'dlgclass',
+		buttons: {   
+			'ＯＫ': function(event) { $(this).dialog('close'); }
+		}
+	});
+	}
+	
+});
+//--></script>
+<div class="m_admin_menu">
+	<div id="admin_menu_box_2">
+		<div id="admin_menu_box_1" class="tenken">
+			<p class="main_h4">◆点検担当者</p>
+			<p><%= form_tag({ :controller => 'tenken_toroku'}) do %><%= submit_tag( '登録', :class => 'but_middle' , :tabindex => 1 ) %><% end %></p>	 
+			<p><%= form_tag({ :controller => 'tenken_henko_sakujo' }) do %><%= submit_tag( '変更／削除', :class => 'but_middle' , :tabindex => 2 ) %><% end %></p>	
+		</div>
+		<div id="admin_menu_box_1" class="buken" style="clear:both;">
+			<p class="main_h4">◆物件</p>
+			<p><%= form_tag({ :controller => 'buken_toroku' }) do %><%= submit_tag( '登録', :class => 'but_middle' , :tabindex => 3 ) %><% end %></p>	
+			<p><%= form_tag({ :controller => 'buken_kensaku' }) do %><%= submit_tag( '変更／削除', :class => 'but_middle' , :tabindex => 4 ) %><% end %></p>	
+		</div>
+	</div>
+
+	<div id="admin_menu_box_2" class="kensaku">
+		<p class="main_h4">◆検索一覧</p>
+		<p><%= form_tag({ :controller => 'yotei_admin' }) do %><%= submit_tag( '点検予定／実績一覧', :class => 'but_middle' , :tabindex => 5 ) %><% end %></p>	
+		<p><%= form_tag({ :controller => 'monthlist' }) do %><%= submit_tag( '月別件数一覧', :class => 'but_middle' , :tabindex => 6 ) %><% end %></p>	
+		<p><%= form_tag({ :controller => 'hachulist' }) do %><%= submit_tag( '発注者／物件別', :class => 'but_middle' , :tabindex => 7 ) %><% end %></p>	
+		<p><%= form_tag({ :controller => 'tantolist' }) do %><%= submit_tag( '担当者別', :class => 'but_middle' , :tabindex => 8 ) %><% end %></p>	
+		<p><%= form_tag({ :controller => 'setsubilist' }) do %><%= submit_tag( '設備種別別', :class => 'but_middle' , :tabindex => 9 ) %><% end %></p>	
+	</div>
+
+	<div id="admin_menu_box_2" class="etc">
+		<p class="main_h4">◆その他</p>
+		<p><%= form_tag({ :controller => 'initialization' }) do %><%= submit_tag( '初期設定', :class => 'but_middle' , :tabindex => 10 ) %><% end %></p>	
+		<p><%= form_tag({ :controller => 'admin_pass' }) do %><%= submit_tag( '管理者パスワード変更', :class => 'but_middle' , :tabindex => 11 ) %><% end %></p>	
+		<p><%= form_tag({ :action => 'commit'},{ :remote => true,  :method => 'post' }) do %><%= submit_tag( '次年度分情報自動生成', :class => 'but_middle' , :tabindex => 12 ) %><% end %></p>
+		<p><%= form_tag({ :controller => 'system_login' }) do %><%= submit_tag( 'リストア', :class => 'but_middle' , :tabindex => 13 ) %><input type="hidden" id="id_adm_Success" name="nm_ADM_Success" value="<%= @success %>"><% end %></p>
+	</div>
+</div>
+
+	<% content_for :title do %>管理者用メニュー<% end %>
+	<% content_for :for_top do %><span class="right_float">ログイン中：管理者用&nbsp;&nbsp;<a id="jump">トップページへ</a></span><% end %>
+	<% content_for :sub_title do %>管理者用メニュー<% end %>

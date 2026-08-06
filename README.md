@@ -5,23 +5,31 @@
 ## 収納資料一覧
 
 1. **[詳細仕様書 (PRD)](detailed_prd.md)**
-   - 消防設備士の講習期限管理（4/1起算ルール）を含む詳細な要件
-   - データベース設計（ER図）
-   - 画面仕様案
-   - API設計
-   - 技術スタック（Next.js + Supabase）
+   - Phase 1: 社員・資格管理（消防設備士講習期限、ER図、画面仕様）
+   - Phase 2 サマリー: 保守点検業務支援システム リプレイス（§13）
 
-2. **[ユーザー向け操作マニュアル](docs/user-manual.md)**
+2. **[Phase 2 PRD: 点検システム リプレイス](docs/inspection-system-prd.md)**
+   - レガシー Rails システムの機能要件（REQ-INS-001 〜）
+   - 33画面・8帳票・次年度更新・データ移行
+   - 受入テスト基準・開発フェーズ（P2a/b/c）
+
+3. **[レガシー調査レポート](docs/legacy-inspection-system-report.md)**
+   - 既存コード・DB・帳票の完全解析（2026-08-06）
+
+4. **[As-is / To-be 業務フロー分析](docs/as-is-to-be-analysis.md)**
+   - Google Drive「信越報知システム」スプレッドシート × 支援システム（レガシー）の対応整理
+
+4. **[ユーザー向け操作マニュアル](docs/user-manual.md)**
    - 作業者向けの毎日使う操作
    - 管理者・人事向けの画面別操作
    - ログイン、検索、出力、困ったときの確認事項
 
-3. **[配布用 利用者マニュアル](docs/user-manual-distribution.md)**
+5. **[配布用 利用者マニュアル](docs/user-manual-distribution.md)**
    - 社内配布・初回説明向けのまとまった利用者マニュアル
    - 作業者、管理者、人事担当者、CSV移行、困ったときの確認を収録
    - Word版: `docs/user-manual-distribution.docx`
 
-4. **配布版操作マニュアル**
+6. **配布版操作マニュアル**
    - アプリの `/manual` で閲覧
    - ブラウザから印刷またはPDF保存可能
 

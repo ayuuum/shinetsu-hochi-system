@@ -5,8 +5,9 @@
 
 ## 0. 現行スコープ
 
-> 管理者・人事・作業者の3ロールで運用する。ログイン画面は共通とし、ログイン後の入口は管理者/人事が `/dashboard`、作業者が `/today` に分かれる。
-> 業務アラートのメール通知は使わず、期限や未対応事項は画面内ダッシュボードで確認する。
+> **Phase 1（本書メイン）**: 管理者・人事・作業者の3ロールで運用する社員・資格管理。ログイン画面は共通とし、ログイン後の入口は管理者/人事が `/dashboard`、作業者が `/today` に分かれる。業務アラートのメール通知は使わず、期限や未対応事項は画面内ダッシュボードで確認する。
+>
+> **Phase 2（追補PRD）**: 2014年製レガシー「保守点検業務支援システム」のリプレイス。詳細は **[docs/inspection-system-prd.md](docs/inspection-system-prd.md)** および調査レポート **[docs/legacy-inspection-system-report.md](docs/legacy-inspection-system-report.md)** を参照。
 
 ---
 
@@ -275,9 +276,21 @@ flowchart TD
 | 主な使用者 | FK → 社員 |
 | 所属拠点 | 本社/塩尻/白馬 |
 
-#### 3.9 点検スケジュール管理
-- 顧客物件の消防設備点検スケジュール管理（年2回の義務点検）
-- 点検担当の技術者アサイン
+#### 3.9 点検スケジュール管理 → Phase 2 へ移管
+
+> [!NOTE]
+> 本項目は Phase 1 では年間予定表レベルの表示にとどめ、**物件単位の点検契約・実績・補修・帳票**は Phase 2（保守点検業務支援システム リプレイス）で実装する。要件の正本は [docs/inspection-system-prd.md](docs/inspection-system-prd.md)。
+
+Phase 2 でカバーする主要機能:
+
+| 機能 | レガシー相当 | 優先度 |
+|------|-------------|--------|
+| 点検予定/実績一覧 | `yotei_admin` / `yotei` | P2a |
+| 物件・発注者 CRUD | `buken_toroku` / `buken_kensaku` | P2a |
+| 実績登録・補修 | `jiseki_toroku` | P2a |
+| 次年度更新バッチ | `admin_menu` | P2a |
+| 帳票8種 | ThinReports `.tlf` | P2b |
+| 担当者マスタ | `m_checkpeople` → Phase 1 `employees` 連携 | P2a |
 
 #### 3.10 アルコールチェック記録
 
@@ -351,10 +364,29 @@ flowchart TD
 
 ---
 
-### P2: 将来検討
+### P2: 保守点検業務支援システム リプレイス
+
+> 正本: **[docs/inspection-system-prd.md](docs/inspection-system-prd.md)**（REQ-INS-001 〜 REQ-INS-100）
+
+Rails 4 レガシー（物件1,855 / 点検実績12,407件）を Next.js + Supabase へ移行。
+
+| サブフェーズ | 内容 |
+|-------------|------|
+| **P2a** | 物件CRUD、予定/実績一覧、実績登録、次年度更新、初期設定、担当者連携 |
+| **P2b** | 帳票8種PDF、集計画面、ダッシュボード統合、バックアップ運用 |
+| **P2c** | MySQL→PostgreSQL 移行、並行運用、レガシー停止 |
+
+**Phase 1 との統合ポイント**
+
+- 社内点検担当者 = `employees` ↔ `inspectors`
+- ダッシュボードに「今月の点検予定」「未完了件数」を追加（P2b）
+- 施工実績（`projects`）と点検物件は別エンティティだが、物件名・発注者で将来突合可能
+
+### P3: 将来検討
 
 - **AI自動入力（OCR）**: 免状写真からの情報自動読み取り
 - **LINE連携**: 「私の甲種4類の講習期限は？」→ 自動回答
+- **発注者向けポータル**: 点検結果のWeb共有
 
 ---
 
@@ -853,9 +885,13 @@ gantt
 | 2 | 通知チャネル | ✅ **メール通知なし。画面内アラートに確定** |
 | 3 | 既存データ（Excel） | ✅ **社員台帳はCSV変換してインポート** |
 | 4 | 権限管理 | ✅ 管理者・人事・作業者の3ロールで運用 |
-| 5 | 点検スケジュール管理 | ✅ 年間予定表として実装。顧客物件単位の詳細管理は後続検討 |
+| 5 | 点検スケジュール管理 | ✅ Phase 2 PRD に移管（[inspection-system-prd.md](docs/inspection-system-prd.md)） |
 | 6 | 拠点ごとの管理 | ✅ 本社・塩尻・白馬の拠点情報を保持。拠点別閲覧制限は後続検討 |
 | 7 | 施工実績書テンプレート | ⏳ 既存のExcel/紙フォーマット入手後に正式対応 |
+| 8 | レガシー点検システム調査 | ✅ [legacy-inspection-system-report.md](docs/legacy-inspection-system-report.md) 完了 |
+| 9 | 点検システムリプレイス要件 | ✅ [inspection-system-prd.md](docs/inspection-system-prd.md) に PRD 化 |
+| 10 | 帳票レイアウト（8種） | ⏳ レガシー完全一致 vs 現行UI準拠 — クライアント確認待ち |
+| 11 | データ移行・カットオーバー | ⏳ 5月年度更新タイミングとの調整要 |
 
 ---
 
@@ -881,3 +917,45 @@ gantt
 | Collapsible Sidebar | `app-sidebar.tsx` | ナビ追加はここに |
 | Alert Badge system | `employees/[id]/page.tsx` | 全アラート表示で再利用 |
 | Modal form pattern | `add-*.tsx`, `edit-*.tsx` | 新規CRUD画面で踏襲 |
+
+---
+
+## 13. Phase 2: 保守点検業務支援システム リプレイス（サマリー）
+
+> 正本: **[docs/inspection-system-prd.md](docs/inspection-system-prd.md)**（REQ-INS-001 〜 REQ-INS-100）  
+> レガシー調査: **[docs/legacy-inspection-system-report.md](docs/legacy-inspection-system-report.md)**  
+> **As-is / To-be 分析**: **[docs/as-is-to-be-analysis.md](docs/as-is-to-be-analysis.md)**（Google Drive「信越報知システム」スプレッドシート × レガシーコード対応）
+
+### 13.1 なぜリプレイスか
+
+| 課題 | Phase 2 での解決 |
+|------|------------------|
+| Rails 4 / MySQL 老朽化 | Next.js + Supabase（Phase 1 と共通基盤） |
+| 担当者・物件の二重管理 | `employees` と点検担当者の統合 |
+| 4桁平文認証 | Supabase Auth + RLS |
+| ThinReports 帳票 | React-PDF 等で再実装 |
+
+### 13.2 機能スコープ（レガシー33画面 → 新UI）
+
+```mermaid
+graph TD
+    A[点検管理者] --> B[物件・発注者マスタ]
+    A --> C[点検予定/実績一覧]
+    A --> D[次年度更新]
+    A --> E[帳票8種]
+    F[点検担当者] --> G[自分担当の予定/実績]
+    F --> H[実績登録・補修]
+    B --> C
+    C --> H
+    C --> E
+```
+
+### 13.3 開発優先度
+
+| 順 | 機能群 | REQ 範囲 |
+|----|--------|----------|
+| 1 | マスタ（発注者・物件・担当者） | REQ-INS-010 〜 013 |
+| 2 | 予定/実績一覧 + 実績登録 | REQ-INS-020 〜 030 |
+| 3 | 物件変更・停止・次年度更新 | REQ-INS-040 〜 050 |
+| 4 | 帳票・集計 | REQ-INS-060 |
+| 5 | データ移行 | REQ-INS-100 |

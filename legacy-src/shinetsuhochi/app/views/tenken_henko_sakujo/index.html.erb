@@ -1,0 +1,134 @@
+<script type="text/javascript"><!--
+$(document).ready(function($){
+	/* 点検担当者種別をセレクトしたとき 点検担当者名の表示を変える*/
+	/* 点検担当者種別を変更したとき */
+	$('#id_cmb_THS_Tenshu').change(function() {
+		/* 点検担当者種別value取得 */
+		data = $('#id_cmb_THS_Tenshu').val();
+		string = "#id_cmb_THS_Tenmei" + ("00" + data).slice(-3);
+		/* 点検担当者名セレクトボックスすべて隠し*/
+		$('.select_220_tenken').hide();
+		/* #id_cmb_THS_Tenmei＋点検担当者種別valueのIDを表示*/
+		$(string).show();
+	}).keyup(function(){
+		$(this).blur().focus();
+		});
+		
+		
+	/* 画面読み込み時、セレクトボックスの値を取得*/
+	var TTR_zenkai_shubetu = $('[name="nm_cmb_THS_Tenshu2"]').val();
+	/*セレクトボックス変更時、値を取得*/
+	$('[name="nm_cmb_THS_Tenshu2"]').change(function() {
+		data = $('[name="nm_cmb_THS_Tenshu2"]').val();
+		/*"社内"(value=1)に変わったとき*/
+		if ($('[name="nm_cmb_THS_Tenshu2"]').val() == '1' ) {
+			TTR_zenkai_shubetu = $('[name="nm_cmb_THS_Tenshu2"]').val();
+			/*idに入力があり、且つ"社内"(value=1)以外に変更されたとき*/
+		} else if ($('#id_txt_THS_Tenid').val() != '' && $('[name="nm_cmb_THS_Tenshu2"]').val() != '1' ) {
+		/*ダイアログ表示*/
+			$("#message").dialog('open');
+		}
+	});
+	$("#message").html('<img align="left" src="/assets/images/message_info.png" />入力されている点検担当者IDが無効となります。<br>よろしいですか？');
+	$("#message").dialog({
+		autoOpen: false,
+		modal: true,
+		height:200,
+		width:450,
+		title: "確認",
+		dialogClass: 'dlgclass',	
+		buttons: {  
+		'はい': function(event) {
+			$('#id_txt_THS_Tenid').val('');
+	      	$(this).dialog('close'); 	
+			},
+        'いいえ': function(event) {
+        /*いいえを押したら値を前に戻す*/
+        	$('[name="nm_cmb_THS_Tenshu2"]').val(TTR_zenkai_shubetu);
+   	      	$(this).dialog('close'); 	
+        	}
+   		}
+	});
+	
+ $('.loading').click(function() {
+    $.blockUI({
+      message: 'データを読み込んでいます。お待ち下さい・・・',
+      css: {
+        border: 'none',
+        padding: '10px',
+        backgroundColor: '#333',
+        opacity: .9,
+        color: '#fff',
+        cursor: 'wait'
+      },
+      overlayCSS: {
+        backgroundColor: '#000',
+        opacity: 0.6
+      }
+    });
+  });		
+	
+});
+//--></script>
+
+<div id="tenken_henko_sakujo_box">
+	<%= form_tag( { :action => 'commit' },  { :remote => true,  :method => 'post', :name => 'nm_frm_THS_Toroku', :autocomplete => 'off' }) do  %>
+	
+	<div class="ths03"><div class="midashi2_label_240_20">◆検索条件</div></div>
+	<div class="kugiri"></div>
+	<div class="ths03"><div class="normal_message">※印は入力必須項目です。</div></div>
+	
+	<div class="ths02">
+		<div class="midashi_label_190_20">点検担当者種別&nbsp;&nbsp;※</div>
+		<%= select_tag('nm_cmb_THS_Tenshu', options_from_collection_for_select(@m_kind_select,:shubetu, :shubetumei, @default_hyouji_shubetu),  :id => 'id_cmb_THS_Tenshu',  :class => 'select_220', :tabindex => 21 ) %>
+	</div>
+
+	<div class="ths02">
+		<div class="midashi_label_190_20">点検担当者名&nbsp;&nbsp;※</div>
+
+		<% for @i in 0..@m_tenken_kensu - 1 %>
+		<%= select_tag(@m_tenken_array[0][@i].sub("id","nm"), options_for_select(@m_checkpeople_array[@i]),:id => @m_tenken_array[0][@i], :class => 'select_220_tenken' ,:tabindex => 22, :style =>  @m_tenken_array[1][@i]) %> 
+		<% end %>
+	</div>
+
+	<%= submit_tag( '選択' , :class => 'button_3', :id => 'id_Btn_THS_Sentaku' , :tabindex => 23 ) %>
+	<div class="kugiri"></div>
+	<div style="margin-top:60px;"></div>
+	
+	<div class="ths03"><div class="midashi3_label_240_20">◆検索結果</div></div>
+	
+	<div class="ttr02">
+		<div class="midashi_label_190_20">点検担当者名&nbsp;&nbsp;※</div>
+		<%= text_field 'm_checkpeople','tenkentantoshamei', :id => 'id_txt_THS_Tenmei', :class => 'input_1', :maxlength => 20, :tabindex => 24 %>
+	</div>
+	<div class="ttr03">
+		<div class="midashi_label_190_20">点検担当者種別&nbsp;&nbsp;※</div>
+		<%= select_tag('nm_cmb_THS_Tenshu2', options_from_collection_for_select(@m_kind_select,:shubetu, :shubetumei, @default_hyouji_shubetu),  :id => 'id_cmb_THS_Tenshu2',  :class => 'select_165', :tabindex => 25 ) %>		
+		<%= hidden_field_tag 'nm_txt_THS_SakujyoFlg','',  :id => 'id_txt_THS_SakujyoFlg' %>
+	</div>	
+	
+	
+	<div class="ttr02">
+		<div class="midashi_label_190_20">点検担当者ID</div>
+		<%= text_field_tag 'nm_txt_THS_Tenid','',  :id => 'id_txt_THS_Tenid' ,:class => 'klimit-digit' , :maxlength => 4, :tabindex => 26 %>
+	</div>
+	<div class="ttr03">
+		<div class="midashi_label_190_20">点検担当者パスワード</div>
+		<%= password_field_tag 'nm_pas_THS_Tenpass', '', :id => 'id_pas_THS_Tenpass' , :class => 'input_2' , :tabindex => 27 %>
+	</div>	
+	
+
+	<div class="kugiri"></div>
+
+	<%= submit_tag( '変更' , :class => 'button_1 loading', :id => 'id_Btn_THS_Idshu', :tabindex => 28 ) %>
+
+	<%= submit_tag( '削除' , :class => 'button_2 loading', :id => 'id_Btn_THS_Toroku', :tabindex => 29 ) %>
+
+	<% end %>		
+	
+</div>
+				
+	<% content_for :title do %>点検担当者変更・削除<% end %>
+	<% content_for :for_top do %><span class="right_float">ログイン中：管理者用&nbsp;&nbsp;<a id="jump">トップページへ</a></span><% end %>
+	<% content_for :sub_title do %>点検担当者変更・削除<% end %>
+

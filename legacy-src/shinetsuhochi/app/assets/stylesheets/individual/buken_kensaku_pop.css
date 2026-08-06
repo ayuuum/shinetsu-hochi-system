@@ -1,0 +1,121 @@
+/*** 物件検索ポップアップ用 ***/
+
+#buken_hachusha_kensaku_pop_box {
+	width: 1010px;
+	height: 1000px;
+	margin-left: 40px;
+	margin-top: 20px;
+	text-align:left;
+	padding: 20px 0px 20px 0px;
+}
+
+.close_button_bkp {
+	font-size:15px;
+	float:right;
+	width: 150px;
+	height: 30px;
+	margin:0 5px 10px 5px;	
+}
+
+.bkp01 {
+	margin: 5px 0px 0px 5px;
+	width: 350px;
+	height:30px;
+}
+
+.bkp02 {
+	margin: 5px 0px 0px 5px;
+	float: left;
+}
+
+.bkp_heaader01 {
+	font-size: 14px;
+	float: left;
+	text-align: center;
+	vertical-align: center;
+	font-weight: bold;
+	border-style: outset;
+	border-width: 2px;
+	background: #f4A440;
+	border-color: #f4A440;
+	padding: 1px;
+	width: 55px;
+	height: 20px;
+	padding-top:2px;
+}
+
+.bkp_heaader02 {
+	font-size: 14px;
+	float: left;
+	text-align: center;
+	vertical-align: center;
+	font-weight: bold;
+	border-style: outset;
+	border-width: 2px;
+	background: #f4A440;
+	border-color: #f4A440;
+	padding: 1px;
+	width: 457px;
+	height: 20px;
+	padding-top:2px;
+}
+
+.bkp_info01 {
+	float: left;
+	font-size: 14px;
+	text-align: center;
+	border-style: ridge;
+	border-width: 2px;
+	background: #99ccff;
+	border-color: #c0c0c0;
+	width: 56px;
+	height: 22px;
+	margin: 0px;
+}
+
+.bkp_info10 {
+	text-align: left;
+	font-size: 14px;
+	float: left;
+	text-align: top;
+	border-style: ridge;
+	border-width: 2px;
+	background: #ffffff;
+	border-color: #c0c0c0;
+	width: 457px;
+	height: 20px;
+	margin: 0px;
+}
+
+.bkp_info11 {
+	text-align: left;
+	font-size: 14px;
+	float: left;
+	text-align: top;
+	border-style: ridge;
+	border-width: 2px;
+	background: #ffffff;
+	border-color: #c0c0c0;
+	width: 457px;
+	height: 20px;
+	margin: 0px;
+	color: #ff0000;
+}
+.bkp_info02 {
+	float: left;
+	font-size: 14px;
+	text-align: center;
+	border-style: ridge;
+	border-width: 2px;
+	background: #ffffff;
+	border-color: #c0c0c0;
+	width: 10px;
+	height: 22px;
+	margin: 0px;
+}
+
+@media all and (-ms-high-contrast:none){
+ .bkp_info10, .bkp_info11 { 
+ 	width: 455px;
+ }
+}

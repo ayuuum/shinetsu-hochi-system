@@ -1,0 +1,26 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="ja">
+<head>
+	<title><%= yield :title %> ｜ 保守点検業務支援システム</title>
+	<meta charset="UTF-8">
+	<meta http-equiv="Pragma" content="no-cache">
+	<meta http-equiv="Cache-Control" content="no-cache">
+	<meta http-equiv="Expires" content="-1">
+	<%= stylesheet_link_tag   "application" %>
+	<%= javascript_include_tag "application" %>
+	<script language="JavaScript">
+	<!--
+	
+	 
+	var 	timerID = setInterval(function() { jumpHome(); },3600*1000);
+
+	//-->
+	</script>
+</head>
+<body>
+
+<%= content_for?(:main) ? yield(:main) : yield %>
+
+	<div class="message_area"><div id ="message"></div></div>
+</body>
+</html>

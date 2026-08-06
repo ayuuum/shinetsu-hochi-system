@@ -1,0 +1,158 @@
+/*** 物件検索 / 発注者検索共通 ***/
+#hachulist_box {
+	width:1035px;
+	/*height:450px;*/
+	margin: 0 auto;
+	margin-top:20px;
+	text-align:center;
+	padding: 20px 0 20px 5px;
+}
+
+#hcl_table {
+
+}
+
+.midashi_label_bks_125_20 {
+	padding:1px;
+	width: 125px;
+	height: 20px;
+	text-align: left;
+	vertical-align:middle;
+	font-weight: bold;
+	border-style: outset;
+	border-width: 2px;
+	float: left;
+	background: #f4A440;
+	border-color: #f4A440;		
+}
+
+
+
+
+.hcl_header01 ,.hcl_header02,.hcl_header03 {
+	text-align:center;
+	font-weight:bold;
+	background: #f4A440;
+	border-color: #f4A440;
+	border-style: outset;
+	border-width: 2px;
+	vertical-align:center;
+	float:left;
+}
+
+
+.hcl_header01 {
+	width:232px;
+	height:30px;
+	padding-top:10px;
+}
+
+.hcl_header02 {
+	width:134px;
+	height:40px;
+}
+
+.hcl_header03 {
+	width:232px;
+	height:30px;
+	padding-top:10px;
+}
+
+
+
+
+.hcl01 {
+	margin:20px 0 5px 5px;
+	}
+
+.hcl02 {
+	margin:0 0 0 5px;
+	width: 510px;
+	height:30px;
+}
+.hcl03 {
+	margin:0 0 0 5px;
+	width: 440px;
+	height:30px;
+	float:left;
+}
+.hcl04 {
+	margin:10px 0 20px 5px;
+}
+
+.hcl05 {
+	margin:10px 0 20px 0;
+}
+
+/* 全角20文字フィールド */
+.hcl_body01, .hcl_body03 {
+	width:230px;
+	height: 44px;
+	float:left;
+	resize: none;
+	overflow:hidden;
+	margin:0;
+	padding:0 1px 0 1px;
+	border-width: 2px;
+}
+
+
+.hcl_body02 {
+	width: 132px;
+	height: 44px;
+	float:left;
+	resize: none;
+	overflow:hidden;
+	background:#ffffff;
+	text-align:right;
+	margin:0;
+	padding:0 1px 0 1px;
+	border-width: 2px;
+}
+
+.hcl_footer01 {
+	text-align:center;
+	font-weight:bold;
+	background: #f4A440;
+	border-color: #f4A440;
+	border-style: outset;
+	border-width: 2px;
+	vertical-align:center;
+	float:left;
+	width:232px;
+	height:21px;
+	margin:0px;
+	padding-top:3px;
+}
+.hcl_footer02 {
+	width:132px;
+	height: 22px;
+	float:left;
+	resize: none;
+	overflow:hidden;
+	margin:0px;
+	background:#ffffff;
+	text-align:right;	
+		padding:0 1px 0 1px;
+		border-width: 2px;
+}
+
+
+select.select_295_hcl {
+	width:295px;
+	height: 25px;
+	float:left;
+}
+
+
+.hcl_body03 {
+	background:#CCFFFF;
+	cursor:pointer;
+}
+.hcl_body01 {
+	background:#ffffff;
+}
+
+
+
+

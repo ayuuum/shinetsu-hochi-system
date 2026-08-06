@@ -1,0 +1,194 @@
+/*** 物件検索 / 発注者検索共通 ***/
+#buken_hachusha_kensaku_box {
+	width:890px;
+	/*height:450px;*/
+	margin: 0 auto;
+	margin-top:30px;
+	text-align:center;
+	padding: 20px 0 20px 0;
+}
+
+
+.midashi_label_bks_125_20 {
+	padding:1px;
+	width: 125px;
+	height: 20px;
+	text-align: left;
+	vertical-align:middle;
+	font-weight: bold;
+	border-style: outset;
+	border-width: 2px;
+	float: left;
+	background: #f4A440;
+	border-color: #f4A440;		
+}
+
+input.input_bks_1  {
+ 	width: 290px;
+	height: 18px;
+	float:left;
+	ime-mode:active;
+}
+
+.bks01 {
+	margin:5px 0 0 5px;
+	width: 430px;
+	height:40px;
+	float: left;
+}
+
+.bks02 {
+	margin:5px 0 0 5px;
+	width: 700px;
+	height:40px;
+	float: left;
+}
+
+.bks03 {
+	margin:5px 0 5px 4px;
+	width: 886px;
+	}
+
+.bks_header01 ,.bks_header02 {
+	text-align:center;
+	font-weight:bold;
+	background: #f4A440;
+	resize: none;
+	overflow: hidden;
+}
+
+.bks_body01 {
+	float: left;
+	font-size: 14px;
+	text-align: center;
+	border-style: ridge;
+	border-width: 2px;
+	background: #ffffff;
+	border-color: #c0c0c0;
+	width: 68px;
+	height: 23px;
+	margin: 0px;
+	padding-top:2px;
+}
+
+.bks_body020, .bks_body021 {
+	text-align: left;
+	font-size: 14px;
+	float: left;
+	text-align: top;
+	border-style: ridge;
+	border-width: 2px;
+	background: #ffffff;
+	border-color: #c0c0c0;
+	width: 390px;
+	height: 23px;
+	margin: 0px;
+}
+
+/*
+.bks_body01,.bks_body020,.bks_body021  {
+
+	text-align: left;
+	font-size:14px;
+
+}*/
+
+.bks_body021  {
+	color:#ff0000;
+}
+.bks_header01 {
+	width:70px;
+	height:20px;
+	float:left;
+	
+	border-top:solid 1px #000000;
+	border-bottom:solid 1px #000000;
+	border-left:solid 1px #000000;
+	border-right:solid 1px #000000;
+	padding-top:2px;
+}
+
+.bks_header02 {
+	width:395px;
+	height:20px;
+	float:left;
+	border-top:solid 1px #000000;
+	border-bottom:solid 1px #000000;	
+	border-right:solid 1px #000000;
+	padding-top:2px;
+}
+
+
+/*
+.bks_body01 {
+	width:70px;
+	height:23px;
+	float:left;
+	text-align: center;
+	margin :0;
+	padding-top:4px;
+	border-top:solid 1px #a0a0a0;
+	border-left:solid 1px #808080;
+	border-bottom:solid 1px #a0a0a0;
+
+	background-color: #ffffff;
+}
+
+
+.bks_body020, .bks_body021 {
+	width:390px;
+	height:23px;   
+	float:left;
+	background-color: #ffffff;	
+}*/
+
+.radio_txt_1 {
+	color: #ffffff;
+	margin: 3px 18px 0 0;
+	float: left;
+}
+.Rad_TenkenKbn {
+	margin-top: 5px;
+	float: left;
+}
+
+.but_t_bks {
+	font-size:16px;
+	width: 180px;
+	height: 36px;
+	margin: 6px 0 0 15px;
+	float:left;
+}
+
+.but_t_bks2 {
+	font-size:16px;
+	width: 180px;
+	height: 36px;
+	margin: 6px 0 0 15px;
+}
+
+.main_kanryo_bks {
+	width:400px;
+	height:200px;
+	margin:100px 0 0 160px;
+	color:#fff;
+	text-align:center;
+}
+
+
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+.midashi_label_bks_125_20 {
+	height: 17px;
+	padding-top:3px;
+}
+
+input.input_bks_1  {
+	height: 19px;
+}
+
+.bks_body020, .bks_body021 {
+	width:392px;
+	height:23px;
+}	
+}
+

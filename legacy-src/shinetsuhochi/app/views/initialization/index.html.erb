@@ -1,0 +1,161 @@
+<script type="text/javascript"><!--
+$(document).ready(function($){
+	if ($("#id_INI_Success").val() == "true"){
+	var height_t = 200;
+	var width_t =  400;
+	var title_t = "確認";
+	$("#message").html('<img align="left" src="/assets/images/message_info.png" />初期設定が終了しました。');
+	$("#message").dialog({
+		autoOpen: true, modal: true, height: height_t, width: width_t, title: title_t, dialogClass: 'dlgclass',
+		buttons: {   
+			'ＯＫ': function(event) { $(this).dialog('close'); }
+		}
+	});
+	}
+	
+	$.datepicker.setDefaults( $.datepicker.regional[ "ja" ] );
+
+ 	$( "#datepicker1" ).datepicker({
+	});
+
+	 $( "#datepicker2" ).datepicker({
+	});
+});
+//--></script>
+
+
+<div id="initialization_box">
+	<%= form_tag( { :action => 'commit' },  { :remote => true,  :method => 'post', :name => 'nm_frm_BKS_Toroku' }) do  %>
+	
+
+	<div class="ini01">
+		<div class="midashi_label_ini_150_20">点検名１</div>
+		<%= text_field_tag :nm_txt_INI_Tenken1, @tenkenmei1, { :id => 'id_txt_INI_Tenken', :class => 'input_ini_1', :maxlength => 10, :tabindex => 21 } %>
+	</div>
+
+	<div class="ini01">
+		<div class="midashi_label_ini_150_20">点検ステータス名１</div>
+		<%= text_field_tag :nm_txt_INI_TenkenStatus1, @tenken_statusmei1, { :id => 'id_txt_INI_TenkenStatus1', :class => 'input_ini_1', :maxlength => 7, :tabindex => 27 } %>	
+	</div>
+
+	<div class="kugiri"></div>
+	
+	<div class="ini01">
+		<div class="midashi_label_ini_150_20">点検名２</div>
+		<%= text_field_tag :nm_txt_INI_Tenken2, @tenkenmei2, { :id => 'id_txt_INI_Tenken1', :class => 'input_ini_1', :maxlength => 10, :tabindex => 22 } %>
+	</div>
+
+	<div class="ini01">
+		<div class="midashi_label_ini_150_20">点検ステータス名２</div>
+		<%= text_field_tag :nm_txt_INI_TenkenStatus2, @tenken_statusmei2, { :id => 'id_txt_INI_TenkenStatus2', :class => 'input_ini_1', :maxlength => 7, :tabindex => 28 } %>	
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="ini01">
+		<div class="midashi_label_ini_150_20">点検名３</div>
+		<%= text_field_tag :nm_txt_INI_Tenken3, @tenkenmei3, { :id => 'id_txt_INI_Tenken3', :class => 'input_ini_1', :maxlength => 10, :tabindex => 23 } %>
+	</div>
+
+	<div class="ini01">
+		<div class="midashi_label_ini_150_20">点検ステータス名３</div>
+		<%= text_field_tag :nm_txt_INI_TenkenStatus3, @tenken_statusmei3, { :id => 'id_txt_INI_TenkenStatus3', :class => 'input_ini_1', :maxlength => 7, :tabindex => 29 } %>	
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="ini01">
+		<div class="midashi_label_ini_150_20">点検名４</div>
+		<%= text_field_tag :nm_txt_INI_Tenken4, @tenkenmei4, { :id => 'id_txt_INI_Tenken4', :class => 'input_ini_1', :maxlength => 10, :tabindex => 24 } %>
+	</div>
+
+	<div class="ini01">
+		<div class="midashi_label_ini_150_20">点検ステータス名４</div>
+		<%= text_field_tag :nm_txt_INI_TenkenStatus4, @tenken_statusmei4, { :id => 'id_txt_INI_TenkenStatus4', :class => 'input_ini_1', :maxlength => 7, :tabindex => 30 } %>	
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="ini01">
+		<div class="midashi_label_ini_150_20">点検名５</div>
+		<%= text_field_tag :nm_txt_INI_Tenken5, @tenkenmei5, { :id => 'id_txt_INI_Tenken5', :class => 'input_ini_1', :maxlength => 10, :tabindex => 25 } %>
+	</div>
+
+	<div class="ini01">
+		<div class="midashi_label_ini_150_20">点検ステータス名５</div>
+		<%= text_field_tag :nm_txt_INI_TenkenStatus5, @tenken_statusmei5, { :id => 'id_txt_INI_TenkenStatus5', :class => 'input_ini_1', :maxlength => 7, :tabindex => 31 } %>	
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="ini01">
+		<div class="midashi_label_ini_150_20">点検名６</div>
+		<%= text_field_tag :nm_txt_INI_Tenken6, @tenkenmei6, { :id => 'id_txt_INI_Tenken6', :class => 'input_ini_1', :maxlength => 10, :tabindex => 26 } %>
+	</div>
+
+	<div class="ini01">
+		<div class="midashi_label_ini_150_20">補修ステータス名１</div>
+		<%= text_field_tag :nm_txt_INI_HoshuStatus1, @hoshu_statusmei1, { :id => 'id_txt_INI_HoshuStatus1', :class => 'input_ini_1', :maxlength => 7, :tabindex => 35 } %>
+	</div>
+
+	<div class="kugiri"></div>
+	<div class="ini01">
+		<div class="midashi_label_ini_150_20">年度開始月</div>
+		<%= select_tag('kaishiM',options_for_select(@tuki_select,@kaishiM), :id => 'id_cmb_TTL_Sanshonendo', :class => 'select_255_ini', :tabindex => 32 ) %>
+	</div>
+	<div class="ini01">
+		<div class="midashi_label_ini_150_20">補修ステータス名２</div>
+		<%= text_field_tag :nm_txt_INI_HoshuStatus2, @hoshu_statusmei2, { :id => 'id_txt_INI_HoshuStatus2', :class => 'input_ini_1', :maxlength => 7, :tabindex => 36 } %>
+	</div>
+	
+	<div class="kugiri"></div>
+	<div class="ini01">
+		<div class="midashi_label_ini_150_20">年度開始年月日</div>
+		<%= text_field_tag :nm_txt_INI_KaishiYMD, @kaishiYMD, { :id => 'datepicker1', :class => 'input_ini_1', :style => 'ime-mode: disabled', :maxlength => 10, :tabindex => 33 } %>
+	</div>
+	<div class="ini01">
+		<div class="midashi_label_ini_150_20">補修ステータス名３</div>
+		<%= text_field_tag :nm_txt_INI_HoshuStatus3, @hoshu_statusmei3, { :id => 'id_txt_INI_HoshuStatus3', :class => 'input_ini_1', :maxlength => 7, :tabindex => 37 } %>
+	</div>
+
+	<div class="kugiri"></div>
+	<div class="ini01">
+		<div class="midashi_label_ini_150_20">年度終了年月日</div>
+		<%= text_field_tag :nm_txt_INI_ShuryoYMD, @shuryoYMD, { :id => 'datepicker2', :class => 'input_ini_1', :style => 'ime-mode: disabled', :maxlength => 10, :tabindex => 34 } %>
+	</div>
+	<div class="ini01">
+		<div class="midashi_label_ini_150_20">補修ステータス名４</div>
+		<%= text_field_tag :nm_txt_INI_HoshuStatus4, @hoshu_statusmei4, { :id => 'id_txt_INI_HoshuStatus4', :class => 'input_ini_1', :maxlength => 7, :tabindex => 38 } %>
+	</div>
+
+	<div class="kugiri"></div>
+	<div class="ini01"></div>
+	<div class="ini01">
+		<div class="midashi_label_ini_150_20">補修ステータス名５</div>
+		<%= text_field_tag :nm_txt_INI_HoshuStatus5, @hoshu_statusmei5, { :id => 'id_txt_INI_HoshuStatus5', :class => 'input_ini_1', :maxlength => 7, :tabindex => 39 } %>
+	</div>
+
+	<div class="kugiri"></div>
+	<div class="ini01_message">		
+		<p>「年度開始年月日」の「月」を変更した場合は、<br>「年度開始月」の値も変更して下さい。</p>
+	</div>
+	<div class="ini01">
+		<div class="midashi_label_ini_150_20">補修ステータス名６</div>
+		<%= text_field_tag :nm_txt_INI_HoshuStatus6, @hoshu_statusmei6, { :id => 'id_txt_INI_HoshuStatus6', :class => 'input_ini_1', :maxlength => 7, :tabindex => 40 } %>
+	</div>
+
+
+	<%= submit_tag( '設定' , :class => 'chohyo_button_ini', :tabindex => 41 ) %>
+	<input type="hidden" id="id_INI_Success" name="nm_INI_Success" value="<%= @success %>">
+
+	<div class="kugiri"></div>
+
+
+	<% end %>
+
+</div>
+			
+	<% content_for :title do %>初期設定<% end %>
+	<% content_for :for_top do %><span class="right_float">ログイン中：管理者用&nbsp;&nbsp;<a id="jump">トップページへ</a></span><% end %>
+	<% content_for :sub_title do %>初期設定<% end %>
+	

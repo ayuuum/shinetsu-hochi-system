@@ -1,0 +1,57 @@
+clearTimeout(timerID);
+var timerID = setInterval("jumpHome()",3600*1000);
+
+if (("<%= @error_message[0] %>").length > 0){
+	$.unblockUI();
+	var height_t = parseInt("<%= @dialog_height %>");
+	var width_t =  parseInt("<%= @dialog_width %>");
+	var focus = "<%= @focus %>";
+	var title_t = "<%= @dialog_title %>";
+	$("#message").html('<img align="left" src="/assets/images/<%= @error_message[0] %>.png" /><%= @error_message[1] %>');
+	$("#message").dialog({
+		autoOpen: true, modal: true, height: height_t, width: width_t, title: title_t, dialogClass: 'dlgclass',
+		buttons: {   
+			'ＯＫ': function(event) { 
+				if (focus != "") {/*発注者名、物件名未入力で登録された場合選択チェック外し、発注者名か物件名にフォーカス*/
+					$("#sentaku11").attr("checked", false);
+					$("#sentaku21").attr("checked", false);
+					$("#sentaku31").attr("checked", false);
+					$("#sentaku32").attr("checked", false);
+					$("#sentaku33").attr("checked", false);
+					$("#sentaku34").attr("checked", false);
+					$("#sentaku35").attr("checked", false);
+					$("#sentaku36").attr("checked", false);
+					$("#" + focus).focus();
+				}
+				$(this).dialog('close'); }
+		}
+	});
+
+
+} else if (("<%= @error_message[0] %>").length > 0 && '<%= @error %>' == '1'){
+	$.unblockUI();
+	var height_t = parseInt("<%= @dialog_height %>");
+	var width_t =  parseInt("<%= @dialog_width %>");
+	var title_t = "<%= @dialog_title %>";
+	$("#message").html('<img align="left" src="/assets/images/<%= @error_message[0] %>.png" /><%= @error_message[1] %>');
+	$("#message").dialog({
+		autoOpen: true, modal: true, height: height_t, width: width_t, title: title_t, dialogClass: 'dlgclass',
+		buttons: {   
+			'はい': function(event) { 
+			location.href = "http://" + location.host + "/" + "<%= @query_str %>";
+			$(this).dialog('close'); 
+			},
+   	    	'いいえ': function(event) { $(this).dialog('close'); }
+		}
+	});
+
+} else if ('<%= @error %>' == '2'){
+	$.unblockUI();
+	/*画面の情報セット*/
+	var url = "http://" + location.host + "/" + "<%= @query_str %>" + "/1";
+	win = window.open(url,"hachusha_kensaku","resizeable=no,scrollbars=yes,status=no");
+	
+} else if ('<%= @error %>' == '3'){
+	$.unblockUI();
+	location.href = "http://" + location.host + "/" + "<%= @query_str %>";
+}

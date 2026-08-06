@@ -1,0 +1,2 @@
+module TenkenLoginHelper
+end

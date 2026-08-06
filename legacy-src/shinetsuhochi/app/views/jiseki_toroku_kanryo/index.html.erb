@@ -1,0 +1,12 @@
+<div id="jiseki_toroku_box">
+	<%= form_tag( { :action => 'commit' }, { :remote => true, :method => 'post', :name => 'nm_frm_Jiseki_Toroku_Kanryo', :id => 'nm_frm_Jtk_Toroku_Kanryo' }) do  %>
+		<%= submit_tag( '閉じる',  :class => 'close_button_jtr' ) %>
+	<% end %>
+</div>
+
+<div class="main_kanryo">
+	<h3>点検実績情報／補修情報を登録しました。</h3>
+</div>
+
+	<% content_for :title do %>点検実績情報／補修情報登録完了<% end %>
+	<% content_for :sub_title do %>点検実績情報／補修情報登録完了<% end %>

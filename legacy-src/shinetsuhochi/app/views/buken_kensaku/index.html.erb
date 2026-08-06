@@ -1,0 +1,139 @@
+<script type="text/javascript"><!--
+window.onload = function(){
+ document.getElementById("id_txt_BKS_Hachusha").focus();
+ }
+
+$(document).ready(function($){
+	$("#id_Rad_TenkenKbn").val("0").attr("checked", true);
+	 $('.loading').click(function() {
+    $.blockUI({
+      message: 'データを読み込んでいます。お待ち下さい・・・',
+      css: {
+        border: 'none',
+        padding: '10px',
+        backgroundColor: '#333',
+        opacity: .9,
+        color: '#fff',
+        cursor: 'wait'
+      },
+      overlayCSS: {
+        backgroundColor: '#000',
+        opacity: 0.6
+      }
+    });
+  });
+
+	$(document).on("keypress", "input:not(.allow_submit)",function(event){
+		return event.which !== 13
+	});
+});
+//--></script>
+
+<script lang="javascript">
+// rewrite the 'onkeydown' event to make sure 'Enter' key can be used as 'Tab' in some needed circumstances.  It work fine on both IE and non-IE browsers.
+document.onkeydown=function(evt)
+{
+	var isie = (document.all) ? true : false;
+	var key;
+	var srcobj;
+	// if the agent is an IE browser, it's easy to do this.
+	if (isie) {
+		key = event.keyCode;
+		srcobj=event.srcElement;
+	}
+	else {
+		key = evt.which;
+		srcobj=evt.target;
+	}
+	if(key==13 && srcobj.type!='button' && srcobj.type!='submit' &&srcobj.type!='reset' && 
+	srcobj.type!='textarea' && srcobj.type!='') {
+		if(isie)
+			event.keyCode=9;
+		else {
+			var el=getNextElement(evt.target);
+			
+			while(el.type=='hidden' || el.type=='submit' || el.type=='radio' || el.readonly == true )
+				el=getNextElement(el);
+
+			if(!el)
+				return false;
+			else
+				el.focus();
+		}
+	}
+}
+function getNextElement(field) {
+	var form = field.form;
+	for(var e = 0; e < form.elements.length; e++) {
+		if (field == form.elements[e])
+		break;
+	}
+	return form.elements[++e % form.elements.length];
+}
+</script>
+
+<div id="buken_hachusha_kensaku_box">
+	<%= form_tag( { :action => 'commit' },  { :remote => true,  :method => 'post', :name => 'nm_frm_BKS_Toroku' }) do  %>
+	
+	<div class="ths03"><div class="midashi2_label_240_20">◆検索条件</div></div>
+	<div class="kugiri"></div>
+	
+	<div class="bks01">
+		<div class="midashi_label_bks_125_20">発注者名</div>
+		<%= text_field_tag :nm_txt_BKS_Hachusha, '', { :id => 'id_txt_BKS_Hachusha', :class => 'input_bks_1', :maxlength => 40, :tabindex => 21 } %>
+	</div>
+
+	<div class="bks01">
+		<div class="midashi_label_bks_125_20">物件名</div>
+		<%= text_field_tag :nm_txt_BKS_Buken, '',{ :id => 'id_txt_BKS_Buken', :class => 'input_bks_1', :maxlength => 40, :tabindex => 22 } %>		
+	</div>
+	
+	<div class="kugiri"></div>
+		
+	<div class="bks02">
+		<div class="midashi_label_bks_125_20">点検区分</div>
+		<%= radio_button_tag :nm_Rad_TenkenKbn, '0' , false,{ :id => 'id_Rad_TenkenKbn', :class => 'Rad_TenkenKbn', :tabindex => -1 } %>
+		<%= label_tag 'id_Rad_TenkenKbn', '全て' , class: 'radio_txt_1' %>
+		<% @index = 1%>		
+		<% @m_kind_select.each do | radio | %>		
+		<%= radio_button_tag :nm_Rad_TenkenKbn, radio.shubetu , false,{ :id => 'id_Rad_TenkenKbn'+@index.to_s, :class => 'Rad_TenkenKbn',:tabindex => -1 } %>
+		<%= label_tag 'id_Rad_TenkenKbn'+@index.to_s, radio.shubetumei , class: 'radio_txt_1' %>
+		<% @index = @index+1 %>
+		<% end %>
+	</div>	
+
+	<div class="kugiri"></div>	
+
+	<%= submit_tag( '検索' , :class => 'button_3 loading', :id => 'id_Btn_BKS_Kensaku' , :tabindex => 23 ) %>
+	<div class="kugiri"></div>
+	<div style="margin-top:60px;"></div>
+	<div class="ths03"><div class="midashi3_label_240_20" id="kensaku_kekka">◆検索結果(<%= @sql_count %>件)</div></div>
+	
+	<div class="kugiri"></div>	
+	
+	<div class="bks03">
+		<div class="bks_header01">選択 ※</div>
+		<div class="bks_header02">発注者名</div>
+		<div class="bks_header02">物件名</div>
+		<div id="bks_table"><%=raw @html_string %></div>
+	</div>
+
+	<div class="kugiri"></div>
+
+	<div class="kugiri"></div>
+
+	<%= submit_tag( '物件変更／停止へ' , :class => 'button_1', :id => 'id_Btn_BKS_Henkou', :tabindex => 25 ) %>
+
+	<%= submit_tag( '物件詳細参照へ' , :class => 'button_1', :id => 'id_Btn_BKS_Sanshou', :tabindex => 26 ) %>
+
+	<%= submit_tag( '再利用' , :class => 'button_1', :id => 'id_Btn_BKS_Sairiyou', :tabindex => 27 ) %>
+	
+	<%= submit_tag( '削除' , :class => 'button_1', :id => 'id_Btn_BKS_Sakujo', :tabindex => 28 ) %>	
+	<% end %>		
+
+</div>
+			
+	<% content_for :title do %>物件検索<% end %>
+	<% content_for :for_top do %><span class="right_float">ログイン中：管理者用&nbsp;&nbsp;<a id="jump">トップページへ</a></span><% end %>
+	<% content_for :sub_title do %>物件検索<% end %>
+	

@@ -1,0 +1,88 @@
+<script type="text/javascript"><!--
+per = 85; // 画面の大きさの何パーセントで開くかを指定する
+w = screen.width * (per * 0.01);
+h = screen.height * (per * 0.01);
+resizeTo(w,h);
+left = screen.width / 3;
+top = screen.height / 2;
+moveTo(left,top);
+$(document).ready(function($){
+
+});
+
+
+//--></script>
+<style type="text/css">
+<!--
+#container_top {
+	padding-bottom:0;
+}
+
+#page2 {
+	min-width: 1075px;
+}
+-->
+</style>
+
+
+<div id="hosyurireki_box">
+
+	<%= form_tag( { :action => 'commit' },  { :remote => true,  :method => 'post' }) do  %>	
+	<%= submit_tag( '帳票出力' , :class => 'chohyo_button_bjs', :tabindex => 22, :id => 'id_Btn_BKS_BKkensaku' ) %>
+	<%= submit_tag( '閉じる' , :class => 'chohyo_button_bjs', :id => 'id_Btn_BKS_tojiru' , :tabindex => 21 ) %>	
+	<%# 発注者情報 %>
+
+	<div class="kugiri"></div>
+	
+	<div class="hrr02">
+		<div class="midashi_label_155_20_hrr">発注者名</div>
+		<%= text_area_tag 'hachushamei', @hachushamei, { :id => 'id_txt_HRR_Hachushamei', :class => 'input_4_hrr', :maxlength => 80, :cols =>40, :rows => 2, :tabindex => 23, :readonly => 'readonly' } %>
+		
+	
+	</div>
+	
+	<div class="hrr02">
+		<div class="midashi_label_155_20_hrr">物件名</div>
+
+		<%= text_area_tag 'bukenmei', @bukenmei, { :id => 'id_txt_HRR_Bukenmei', :class => 'input_4_hrr', :maxlength => 80, :cols =>40, :rows => 2, :tabindex => 24, :readonly => 'readonly' }  %>		
+	</div>
+	
+	<div class="hrr02">
+		<div class="midashi_label_155_20_hrr">件数</div>
+
+			<%= text_area_tag 'kensu', @kensu, { :id => 'id_txt_HRR_Kensu', :class => 'input_5_hrr', :maxlength => 80, :cols =>40, :rows => 2, :tabindex => 25, :readonly => 'readonly' } %>	
+	</div>
+	
+	
+	
+	<% unless @hoshulist.blank?  %>
+	<% @index = 1 %>
+	<% @hoshulist.each do |hoshu_list| %>
+	<% @status_class = (hoshu_list["hoshuStatusmei"] == @kuroji_status1 or hoshu_list["hoshuStatusmei"] == @kuroji_status2) ? %>
+	<% 'input_7_hrr' : 'input_7_hrr_red' %>
+	<div class="hrr02">
+	<div class="kugiri_l"></div>
+		<div class="hrr_header01">NO</div>
+		<%= text_field_tag 'hachuTantoshamei','', :value => @index, :id => 'id_txt_BTR_HachuTantoshamei', :class => 'input_6_hrr', :maxlength => 40, :tabindex => 26  %>
+		<div class="hrr_header03">発生年月日</div>
+		<%= text_field_tag 'hachuTantoshamei','', :value => hoshu_list["haseiYMD"].to_s.gsub('-','/'), :id => 'id_txt_BTR_HachuTantoshamei', :class => 'input_9_hrr', :maxlength => 40, :tabindex => 26  %>
+		<div class="hrr_header03">補修完了日</div>
+		<%= text_field_tag 'hachuTantoshamei','', :value => hoshu_list["hoshukanryoYMD"].to_s.gsub('-','/'), :id => 'id_txt_BTR_HachuTantoshamei', :class => 'input_9_hrr', :maxlength => 40, :tabindex => 26  %>
+		
+		<div class="hrr_header03">補修ステータス</div>
+		<%= text_field_tag 'hachuTantoshamei','', :value => hoshu_list["hoshuStatusmei"], :id => 'id_txt_BTR_HachuTantoshamei', :class => @status_class, :maxlength => 40, :tabindex => 26  %>
+	<div class="kugiri"></div>
+		<div class="hrr_header02">見積依頼内容<br>または<br>補修内容</div>
+	<%= text_area_tag 'kensu',  hoshu_list["mitumorinaiyou"], { :id => 'id_txt_HRR_Kensu', :class => 'input_8_hrr', :maxlength => 80, :cols =>200, :rows => 10, :tabindex => 26, :readonly => 'readonly' } %>	
+
+	</div>
+	<% @index += 1 %>
+	<% end %>
+	<% end %>
+		
+	<div class="kugiri"></div>
+
+<% end %>
+
+	<% content_for :title do %>補修履歴<% end %>
+	<% content_for :sub_title do %>補修履歴<% end %>

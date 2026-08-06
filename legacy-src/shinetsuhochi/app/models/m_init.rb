@@ -1,0 +1,30 @@
+class MInit < ActiveRecord::Base
+  # attr_accessible :title, :body
+#  attr_accessible :tenkenmei1,
+#                  :tenkenmei2,
+#                  :tenkenmei3,
+#                  :tenkenmei4,
+#                  :tenkenmei5,
+#                  :tenkenmei6,
+#                  :tenkenmei7,
+#                  :tenkenmei8,
+#                  :tenkenmei9,
+#                  :tenkenmei10,
+#                  :tenkenstatusmei1,
+#                  :tenkenstatusmei2,
+#                  :tenkenstatusmei3,
+#                  :tenkenstatusmei4,
+#                  :tenkenstatusmei5,
+#                  :hoshustatusmei1,
+#                  :hoshustatusmei2,
+#                  :hoshustatusmei3,
+#                  :hoshustatusmei4,
+#                  :hoshustatusmei5,
+#                  :hoshustatusmei6,
+#                  :nendokaishiM,
+#                  :zennenY,
+#                  :tounenY,
+#                  :jinenY,
+#                  :kaishinendoM
+#end
+end

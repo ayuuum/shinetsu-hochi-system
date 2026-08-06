@@ -1,0 +1,139 @@
+<script type="text/javascript"><!--
+per = 85; 
+w = screen.width * (per * 0.01);
+h = screen.height * (per * 0.01);
+resizeTo(w,h);
+left = screen.width / 3;
+top = screen.height / 2;
+moveTo(left,top);
+window.onload = function(){
+ document.getElementById("id_txt_BKS_Hachusha").focus();
+ }
+$(document).ready(function($){
+	$("#id_Rad_TenkenKbn").val("0").attr("checked", true);
+ $('.loading').click(function() {
+    $.blockUI({
+      message: 'データを読み込んでいます。お待ち下さい・・・',
+      css: {
+        border: 'none',
+        padding: '10px',
+        backgroundColor: '#333',
+        opacity: .9,
+        color: '#fff',
+        cursor: 'wait'
+      },
+      overlayCSS: {
+        backgroundColor: '#000',
+        opacity: 0.6
+      }
+    });
+	
+	$(document).on("keypress", "input:not(.allow_submit)",function(event){
+		return event.which !== 13
+	});
+
+});
+	
+});
+//--></script>
+<script lang="javascript">
+	
+// rewrite the 'onkeydown' event to make sure 'Enter' key can be used as 'Tab' in some needed circumstances.  It work fine on both IE and non-IE browsers.
+document.onkeydown=function(evt)
+{
+	var isie = (document.all) ? true : false;
+	var key;
+	var srcobj;
+	// if the agent is an IE browser, it's easy to do this.
+	if (isie) {
+		key = event.keyCode;
+		srcobj=event.srcElement;
+	}
+	else {
+		key = evt.which;
+		srcobj=evt.target;
+	}
+	if(key==13 && srcobj.type!='button' && srcobj.type!='submit' &&srcobj.type!='reset' && srcobj.type!='textarea' && srcobj.type!='') {
+		if(isie)
+			event.keyCode=9;
+		else {
+			var el=getNextElement(evt.target);
+			
+			while(el.type=='hidden' || el.type=='submit' || el.type=='radio' || $(el).is("select") )
+				el=getNextElement(el);
+
+			if(!el)
+				return false;
+			else
+			{
+				el.focus();
+				evt.preventDefault();
+			}
+
+		}
+	}
+}
+function getNextElement(field) {
+	var form = field.form;
+	for(var e = 0; e < form.elements.length; e++) {
+		if (field == form.elements[e])
+		break;
+	}
+	return form.elements[++e % form.elements.length];
+}
+</script>
+<style type="text/css">
+<!--
+
+
+#page2 {
+	min-width: 930px;
+}
+
+-->
+</style>
+
+<div id="buken_hachusha_kensaku_box">
+	<%= form_tag( { :action => 'commit' },  { :remote => true,  :method => 'post', :name => 'nm_frm_BKS_Toroku' }) do  %>
+		<%= submit_tag( '閉じる' , :class => 'chohyo_button_bjs', :id => 'id_Btn_BKS_tojiru' , :tabindex => 26 ) %>
+	<div class="ths03"><div class="midashi2_label_240_20">◆検索条件</div></div>
+	<div class="kugiri"></div>
+	<div class="hks01"><div class="normal_message">※発注者名、物件名どちらかを必ず入力し、検索を行って下さい。</div></div>
+	
+	<div class="bks01">
+		<div class="midashi_label_bks_125_20">発注者名</div>
+		<%= text_field_tag :nm_txt_BKS_Hachusha, '', { :id => 'id_txt_BKS_Hachusha', :class => 'input_bks_1', :maxlength => 40, :tabindex => 21 } %>
+	</div>
+
+	<div class="bks01">
+		<div class="midashi_label_bks_125_20">物件名</div>
+		<%= text_field_tag :nm_txt_BKS_Buken, '',{ :id => 'id_txt_BKS_Buken', :class => 'input_bks_1', :maxlength => 40, :tabindex => 22 } %>		
+	</div>
+	
+	<div class="kugiri"></div>	
+
+	<%= submit_tag( '検索' , :class => 'button_3 loading', :id => 'id_Btn_BKS_Kensaku' , :tabindex => 23 ) %>
+	<div class="kugiri"></div>	
+	<div style="margin-top:60px;"></div>
+	
+	<div class="ths03"><div class="midashi3_label_240_20" id="kensaku_kekka">◆検索結果(<%= @sql_count %>件)</div></div>
+	
+	<div class="kugiri"></div>	
+	
+	<div class="bks03">
+		<div class="bks_header01">選択 ※</div>
+		<div class="bks_header02">発注者名</div>
+		<div id="bks_table"><%=raw @html_string %></div>
+	</div>
+
+	<div class="kugiri"></div>
+
+	<%= submit_tag( '発注者選択' , :class => 'button_1', :id => 'id_Btn_BKS_Henkou', :tabindex => 25 ) %>
+	<input type="hidden" id="id_Hid_bukentorokuflg" name="nm_Hid_bukentorokuflg" value="<%= @buken_toroku_flg %>">
+	<% end %>		
+
+</div>
+			
+	<% content_for :title do %>発注者検索<% end %>
+	<% content_for :sub_title do %>発注者検索<% end %>
+	

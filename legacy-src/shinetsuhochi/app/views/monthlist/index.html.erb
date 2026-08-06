@@ -1,0 +1,185 @@
+<script type="text/javascript"><!--
+$(document).ready(function($){
+
+ $('.loading').click(function() {
+    $.blockUI({
+      message: 'データを読み込んでいます。お待ち下さい・・・',
+      css: {
+        border: 'none',
+        padding: '10px',
+        backgroundColor: '#333',
+        opacity: .9,
+        color: '#fff',
+        cursor: 'wait'
+      },
+      overlayCSS: {
+        backgroundColor: '#000',
+        opacity: 0.6
+      }
+    });
+  });
+
+});
+function to_yotei_joho(tuki, tenkenstatus, hoshustatus,nendo,jishituki,ren) {
+	var year = $('#id_cmb_MOL_Sanshonendo').val()
+
+	var thisYear = "<%= session[:konnendo] %>";
+	if(parseInt(year) == thisYear -2 )
+	{
+		year = thisYear;
+	}
+	location.href = "http://" + location.host + "/yotei_admin/index/" + tuki + "/" + tenkenstatus + "/" + hoshustatus + "/" + year + "/" + jishituki + "/" + ren;
+}
+//--></script>
+
+
+<div id="monthlist_box">
+	<%= form_tag( { :action => 'commit' },  { :remote => true,  :method => 'post', :name => 'nm_frm_BKS_Toroku' }) do  %>
+	<%= submit_tag( '帳票出力' , :class => 'chohyo_button loading', :id => 'id_Btn_THS_Kensaku' , :tabindex => 20 ) %>
+
+	<div class="mol02"><div class="midashi3_label_240_20">◆検索条件</div></div>
+	<div class="kugiri"></div>
+	<div class="mol02"><div class="normal_message">※印は入力必須項目です。</div></div>
+	<div class="kugiri"></div>
+	<div class="mol03">
+		<div class="midashi_label_bks_125_20">参照年度&nbsp;&nbsp;※</div>
+		<%= select_tag('sanshonendo',options_for_select(@nendo_select,@nendo.to_s), :id => 'id_cmb_MOL_Sanshonendo', :class => 'select_200_mol', :tabindex => 21 ) %>
+		<div class="mol05">
+				<%= submit_tag( '検索' , :class => 'button_3 loading', :id => 'id_Btn_MOL_Kensaku' , :tabindex => 22 ) %>
+		</div>	
+
+	</div>
+
+
+
+	<div class="kugiri"></div>	
+
+	
+	<div class="mol04"><div class="midashi3_label_240_20" id="kensaku_kekka">◆点検情報</div></div>
+	
+	<div class="kugiri"></div>	
+	
+	<div class="mol01">
+		<%# 検索結果 %>
+		<table class="mol_t_02" cellpadding="0" cellspacing="0">
+			<tr>
+				<td class="mol_header01" rowspan="3">月</td>
+				<td class="mol_header05" colspan="6">予定情報</td>
+				<td class="mol_header08" colspan="4">実績情報</td>
+			</tr>
+			<tr>
+				<td class="mol_header02" rowspan="2">総件数<br>(契約保有高)</td>
+				<td class="mol_header03" colspan="5">内訳</td>
+				<td class="mol_header02" rowspan="2">①+②点検実施件数<br>(①+②契約保有高)</td>
+				<td class="mol_header03" colspan="2">内訳</td>
+				<td class="mol_header04" rowspan="2">人工<br>合計</td>
+			</tr>
+			<tr>
+				<td class="mol_header06"><%= @m_init[0]["tenkenstatusmei1"] %></td>
+				<td class="mol_header06"><%= @m_init[0]["tenkenstatusmei2"] %></td>
+				<td class="mol_header06"><%= @m_init[0]["tenkenstatusmei3"] %></td>
+				<td class="mol_header06"><%= @m_init[0]["tenkenstatusmei4"] %></td>
+				<td class="mol_header06"><%= @m_init[0]["tenkenstatusmei5"] %></td>
+				<td class="mol_header07">①予定内点検実施件数<br>(契約保有高)</td>
+				<td class="mol_header07">②予定外点検実施件数<br>(契約保有高)</td>
+			</tr>
+		</table>
+<div class="kugiri"></div>	
+	<% #明細行 %>
+	<%  for @i in 0..11 do %>
+
+	<% #月%>
+	<%= text_field_tag 'list_0_' + @i.to_s,'', :value => @monthlist_ary[@i][0] + '月', :class => 'mol_body01', :tabindex => 23 + @i*11, :readonly => true, :style => "text-align:left;" %>
+	
+	<% #総件数（契約保有高）%>
+	<%= text_field_tag 'list_1_' + @i.to_s,'', :value => @monthlist_ary[@i][1], :class => 'mol_body02', :tabindex => 24 + @i*11, :readonly => true, :onClick => "to_yotei_joho(#{@monthlist_ary[@i][0]},0,0,#{@nendo},0,0);" %>	
+	
+	<% #総件数（点検ステータス１～５）%>
+	<%= text_field_tag 'list_2_' + @i.to_s,'', :value => @monthlist_ary[@i][2], :class => 'mol_body03', :tabindex => 25 + @i*11, :readonly => true, :onClick => "to_yotei_joho(#{@monthlist_ary[@i][0]},1,0,#{@nendo},0,0);" %>	
+	<%= text_field_tag 'list_3_' + @i.to_s,'', :value => @monthlist_ary[@i][3], :class => 'mol_body03', :tabindex => 26 + @i*11, :readonly => true, :onClick => "to_yotei_joho(#{@monthlist_ary[@i][0]},2,0,#{@nendo},0,0);" %>		
+	<%= text_field_tag 'list_4_' + @i.to_s,'', :value => @monthlist_ary[@i][4], :class => 'mol_body03', :tabindex => 27 + @i*11, :readonly => true, :onClick => "to_yotei_joho(#{@monthlist_ary[@i][0]},3,0,#{@nendo},0,0);" %>	
+	<%= text_field_tag 'list_5_' + @i.to_s,'', :value => @monthlist_ary[@i][5], :class => 'mol_body03', :tabindex => 28 + @i*11, :readonly => true, :onClick => "to_yotei_joho(#{@monthlist_ary[@i][0]},4,0,#{@nendo},0,0);" %>	
+	<%= text_field_tag 'list_6_' + @i.to_s,'', :value => @monthlist_ary[@i][6], :class => 'mol_body03', :tabindex => 29 + @i*11, :readonly => true, :onClick => "to_yotei_joho(#{@monthlist_ary[@i][0]},5,0,#{@nendo},0,0);" %>	
+
+	<% #１＋２点検実績件数（１＋２契約保有高）%>
+	<%= text_field_tag 'list_7_' + @i.to_s,'', :value => @monthlist_ary[@i][7], :class => 'mol_body02', :tabindex => 30 + @i*11, :readonly => true, :onClick => "to_yotei_joho(0,0,0,#{@nendo},#{@monthlist_ary[@i][0]},1);" %>
+	
+	<% #１予定内点検実績件数（１契約保有高）%>
+	<%= text_field_tag 'list_8_' + @i.to_s,'', :value => @monthlist_ary[@i][8], :class => 'mol_body04', :tabindex => 31 + @i*11, :readonly => true, :onClick => "to_yotei_joho(#{@monthlist_ary[@i][0]},0,0,#{@nendo},#{@monthlist_ary[@i][0]},0);" %>	
+	
+	<% #２予定外点検実績件数（２契約保有高）%>
+	<%= text_field_tag 'list_9_' + @i.to_s,'', :value => @monthlist_ary[@i][9], :class => 'mol_body04', :tabindex => 32 + @i*11, :readonly => true, :onClick => "to_yotei_joho(0,0,0,#{@nendo},#{@monthlist_ary[@i][0]},1);" %>
+	
+	<% #人工合計%>
+	<%= text_field_tag 'list_10_' + @i.to_s,'', :value => @monthlist_ary[@i][10], :class => 'mol_body05', :tabindex => 33 + @i*11, :readonly => true %>	
+<div class="kugiri"></div>	
+	<% end %>
+
+
+	<div class="mol_footer01">合計</div>
+	<% #総件数（契約保有高）計%>
+	<%= text_field_tag 'list_1_12','', :value => @sum_ary[0], :class => 'mol_footer02', :tabindex => 156, :readonly => true %>	
+	
+	<% #総件数（点検ステータス１～５）計%>
+	<%= text_field_tag 'list_2_12','', :value => @sum_ary[1], :class => 'mol_footer03', :tabindex => 157, :readonly => true %>	
+	<%= text_field_tag 'list_3_12','', :value => @sum_ary[2], :class => 'mol_footer03', :tabindex => 158, :readonly => true %>
+	<%= text_field_tag 'list_4_12','', :value => @sum_ary[3], :class => 'mol_footer03', :tabindex => 159, :readonly => true %>	
+	<%= text_field_tag 'list_5_12','', :value => @sum_ary[4], :class => 'mol_footer03', :tabindex => 160, :readonly => true %>	
+	<%= text_field_tag 'list_6_12','', :value => @sum_ary[5], :class => 'mol_footer03', :tabindex => 161, :readonly => true %>	
+
+	<% #１＋２点検実績件数（１＋２契約保有高）計%>
+	<%= text_field_tag 'list_7_12','', :value => @sum_ary[6], :class => 'mol_footer02', :tabindex => 162, :readonly => true %>
+	
+	<% #１予定内点検実績件数（１契約保有高）計%>
+	<%= text_field_tag 'list_8_12','', :value => @sum_ary[7], :class => 'mol_footer04', :tabindex => 163, :readonly => true %>	
+	
+	<% #２予定外点検実績件数（２契約保有高）計%>
+	<%= text_field_tag 'list_9_12','', :value => @sum_ary[8], :class => 'mol_footer04', :tabindex =>164, :readonly => true %>
+	
+	<% #人工合計計%>
+	<%= text_field_tag 'list_10_12','', :value => @sum_ary[9], :class => 'mol_footer05', :tabindex => 165, :readonly => true %>
+
+	</div>
+<div class="kugiri"></div>
+	<div class="mol04"><div class="midashi3_label_240_20" id="kensaku_kekka">◆補修情報</div></div>
+	<div class="kugiri"></div>
+	<div class="mol06">
+
+　	<%# 検索結果 %>
+	<table class="mol_t_02" cellpadding="0" cellspacing="0">
+		<tr>
+			<td class="mol_header02" rowspan="2">総件数</td>
+			<td class="mol_header03" colspan="6">内訳</td>
+		</tr>
+		<tr>
+			<td class="mol_header09"><%= @m_init[0]["hoshustatusmei1"] %></td>
+			<td class="mol_header09"><%= @m_init[0]["hoshustatusmei2"] %></td>
+			<td class="mol_header09"><%= @m_init[0]["hoshustatusmei3"] %></td>
+			<td class="mol_header09"><%= @m_init[0]["hoshustatusmei4"] %></td>
+			<td class="mol_header09"><%= @m_init[0]["hoshustatusmei5"] %></td>
+			<td class="mol_header09"><%= @m_init[0]["hoshustatusmei6"] %></td>
+		</tr>
+	</table>
+　		<div class="kugiri"></div>
+	<% #総件数%>
+	<%= text_field_tag 'hoshu_list_0','', :value => @hoshu_list1, :class => 'mol_body06', :tabindex => 166, :readonly => true, :onClick => "to_yotei_joho(0,0,7,#{@nendo},0,0);" %>	
+	
+	<% #（補修ステータス１～６）%>
+	<%= text_field_tag 'hoshu_list_1','', :value => @hoshu_list2, :class => 'mol_body07', :tabindex => 167, :readonly => true, :onClick => "to_yotei_joho(0,0,1,#{@nendo},0,0);"  %>	
+	<%= text_field_tag 'hoshu_list_2','', :value => @hoshu_list3, :class => 'mol_body07', :tabindex => 168, :readonly => true, :onClick => "to_yotei_joho(0,0,2,#{@nendo},0,0);"  %>	
+	<%= text_field_tag 'hoshu_list_3','', :value => @hoshu_list4, :class => 'mol_body07', :tabindex => 169, :readonly => true, :onClick => "to_yotei_joho(0,0,3,#{@nendo},0,0);"  %>	
+	<%= text_field_tag 'hoshu_list_4','', :value => @hoshu_list5, :class => 'mol_body07', :tabindex => 170, :readonly => true, :onClick => "to_yotei_joho(0,0,4,#{@nendo},0,0);"  %>	
+	<%= text_field_tag 'hoshu_list_5','', :value => @hoshu_list6, :class => 'mol_body07', :tabindex => 171, :readonly => true, :onClick => "to_yotei_joho(0,0,5,#{@nendo},0,0);"  %>	
+	<%= text_field_tag 'hoshu_list_6','', :value => @hoshu_list7, :class => 'mol_body07', :tabindex => 172, :readonly => true, :onClick => "to_yotei_joho(0,0,6,#{@nendo},0,0);"  %>	
+		<div class="kugiri"></div>
+
+	</div>
+
+	<% end %>		
+
+</div>
+			
+	<% content_for :title do %>月別件数一覧<% end %>
+	<% content_for :for_top do %><span class="right_float">ログイン中：管理者用&nbsp;&nbsp;<a id="jump">トップページへ</a></span><% end %>
+	<% content_for :sub_title do %>月別件数一覧<% end %>
+	

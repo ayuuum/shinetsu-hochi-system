@@ -1,0 +1,19 @@
+<div class="main_kanryo_bks">
+	<h3><%= @action_title %></h3>
+	<%= form_tag({ :action => 'commit', :first => @bukenCode, :second => @hachushaCode }) do %>
+	<% if @action_title != '' and @action_title != '物件を停止しました。' then %>
+	<%= submit_tag( '物件変更・削除へ戻る', :class => 'but_t_bks') %>
+	
+	<% end %>
+	<% if @action_title != '物件を停止しました。' then %>
+	<%= submit_tag( '物件検索', :class => 'but_t_bks' ) %>
+	<% else %>
+	<%= submit_tag( '物件検索', :class => 'but_t_bks2' ) %>
+	<% end %>
+	
+	<% end %>
+</div>
+
+	<% content_for :title do %>物件変更／削除完了<% end %>
+	<% content_for :for_top do %><span class="right_float">ログイン中：管理者用&nbsp;&nbsp;<a id="jump">トップページへ</a></span><% end %>
+	<% content_for :sub_title do %>物件変更／削除完了<% end %>

@@ -1,0 +1,8 @@
+<div class="main_kanryo">
+	<h3>点検担当者を登録しました。</h3>
+	<p><%= form_tag({ :controller => 'tenken_toroku'}) do %><%= submit_tag( '続けて登録する', :class => 'but_t' ) %><% end %></p>
+</div>
+
+	<% content_for :title do %>点検担当者登録完了<% end %>
+	<% content_for :for_top do %><span class="right_float">ログイン中：管理者用&nbsp;&nbsp;<a id="jump">トップページへ</a></span><% end %>
+	<% content_for :sub_title do %>点検担当者登録完了<% end %>

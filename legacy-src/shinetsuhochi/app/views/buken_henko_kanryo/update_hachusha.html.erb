@@ -1,0 +1,11 @@
+<div class="main_kanryo_bks">
+	<h3><%= @title_action %></h3>
+	<%= form_tag({ :action => 'commit'}) do %>
+	<%= submit_tag( '物件変更・削除へ戻る', :class => 'but_t_bks') %>
+	<%= submit_tag( '物件検索', :class => 'but_t_bks' ) %>
+	<% end %>
+</div>
+
+	<% content_for :title do %>物件変更／削除完了<% end %>
+	<% content_for :for_top do %><span class="right_float">ログイン中：管理者用&nbsp;&nbsp;<a id="jump">トップページへ</a></span><% end %>
+	<% content_for :sub_title do %>物件変更／削除完了<% end %>

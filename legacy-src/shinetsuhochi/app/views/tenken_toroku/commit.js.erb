@@ -1,0 +1,25 @@
+if ('<%= @error %>' == '1') {
+	$('#id_txt_TTR_Tenid').val("<%= @uid_select %>"); 
+} else if (("<%= @error_message[0] %>").length > 0) {
+	$.unblockUI();
+	var height_t = parseInt("<%= @dialog_height %>");
+	var width_t =  parseInt("<%= @dialog_width %>");
+	var title_t = "<%= @dialog_title %>";
+	var focus = "<%= @focus %>";
+	$("#message").html('<img align="left" src="/assets/images/<%= @error_message[0] %>.png" /><%= @error_message[1] %>');
+	$("#message").dialog({
+		autoOpen: true, modal: true, height: height_t, width: width_t, title: title_t, dialogClass: 'dlgclass',
+		buttons: {   
+			'ＯＫ': function(event) {
+				$(this).dialog('close');
+				$(focus).focus();
+				$(focus).select();				
+			}
+			
+		}
+	});
+} else if ('<%= @error %>' == '3') {
+	$.unblockUI();
+	location.href = "http://" + location.host + "/tenken_toroku_kanryo.html";
+}
+

@@ -1,0 +1,14 @@
+	<div id="m_index">
+		<p>
+			<%= form_tag({ :controller => 'tenken_login' }, { :method => :get }) do %>
+			<%= submit_tag '点検担当者用', :id => 'but_large_ten'	%>
+			<% end %>		
+		</p>
+		<p>
+			<%= form_tag({ :controller => 'admin_login' }, { :method => :get }) do %>
+			<%= submit_tag '管理者用', :id => 'but_large_adm'	%>
+			<% end %>		
+		</p>
+	</div>
+
+	<% content_for :title do %>トップページ<% end %>

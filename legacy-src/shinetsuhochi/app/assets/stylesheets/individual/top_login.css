@@ -1,0 +1,89 @@
+/*** トップ・ログインフォーム ***/
+
+#m_index {
+	width:500px;
+	height:185px;
+	margin: 0 auto;
+	margin-top:100px;
+	text-align:center;
+	padding: 45px 0 30px 0;
+	background: #ccffff;
+    color: #ffffff;
+}
+
+#m_index_pw {
+	width:500px;
+	height:220px;
+	margin: 0 auto;
+	margin-top:100px;
+	text-align:center;
+	padding: 20px 0 20px 0;
+	background: #ccffff;
+}
+
+#m_index_pw_henko {
+	width:500px;
+	height:310px;
+	margin: 0 auto;
+	margin-top:100px;
+	text-align:center;
+	padding: 20px 0 10px 0;
+	background: #ccffff;
+}
+
+#but_large_ten {
+	font-size:24px;
+	width: 380px;
+	height: 54px;
+	margin: 15px 0 15px 0;
+	color: #000090;
+}
+#but_large_adm {
+	font-size:24px;
+	width: 380px;
+	height: 54px;
+	margin: 15px 0 15px 0;
+	color: #107010;
+}
+
+.login_message2 {
+	width:400px;
+	height:50px;
+	background:#ff0000;
+	font-size:16px;
+	color:#ffffff;
+	margin:0 auto;
+	margin-bottom:3px;
+	visibility:hidden;
+	font-weight:bold;
+}
+.login_message3 {
+	background:#ff0000;
+		padding:10px;
+}
+
+#log_mes {
+clear:both;
+	width:400px;
+	height:55px;
+	font-size:16px;
+	color:#ffffff;
+	margin:0 auto;
+	margin-top:5px;
+	margin-bottom:5px;
+
+}
+
+input.input_2_log {
+	height: 16px;
+	float:left;
+ 	width:160px;
+	height:25px;
+}
+
+p.midashi_adp {
+	font-size:16px;
+	width:190px;
+	height:25px;
+	padding:5px;
+}

@@ -1,0 +1,195 @@
+/* ボタンが押された場合、トップページ遷移のタイマーリセット*/
+clearTimeout(timerID);
+var timerID = setInterval("jumpHome()",3600*1000);
+
+if (("<%= @error_message[0] %>").length > 0){
+/* ローディングメッセージ解除*/
+	$.unblockUI();
+	
+	var height_t = parseInt("<%= @dialog_height %>");
+	var width_t =  parseInt("<%= @dialog_width %>");
+	var title_t = "<%= @dialog_title %>";
+	$("#message").html('<img align="left" src="/assets/images/<%= @error_message[0] %>.png" /><%= @error_message[1] %>');
+	$("#message").dialog({
+		autoOpen: true, modal: true, height: height_t, width: width_t, title: title_t, dialogClass: 'dlgclass',
+		buttons: {   
+			'ＯＫ': function(event) { $(this).dialog('close'); }
+		}
+	});
+
+} else if ('<%= @error %>' == '1'){
+
+	$("#list_0_0").val("<%= @monthlist_ary[0][0] %>" + "月");
+	$("#list_1_0").val("<%= @monthlist_ary[0][1] %>");
+	$("#list_2_0").val("<%= @monthlist_ary[0][2] %>");
+	$("#list_3_0").val("<%= @monthlist_ary[0][3] %>");
+	$("#list_4_0").val("<%= @monthlist_ary[0][4] %>");
+	$("#list_5_0").val("<%= @monthlist_ary[0][5] %>");
+	$("#list_6_0").val("<%= @monthlist_ary[0][6] %>");
+	$("#list_7_0").val("<%= @monthlist_ary[0][7] %>");
+	$("#list_8_0").val("<%= @monthlist_ary[0][8] %>");
+	$("#list_9_0").val("<%= @monthlist_ary[0][9] %>");
+	$("#list_10_0").val("<%= @monthlist_ary[0][10] %>");
+	
+	$("#list_0_1").val("<%= @monthlist_ary[1][0] %>" + "月");
+	$("#list_1_1").val("<%= @monthlist_ary[1][1] %>");
+	$("#list_2_1").val("<%= @monthlist_ary[1][2] %>");
+	$("#list_3_1").val("<%= @monthlist_ary[1][3] %>");
+	$("#list_4_1").val("<%= @monthlist_ary[1][4] %>");
+	$("#list_5_1").val("<%= @monthlist_ary[1][5] %>");
+	$("#list_6_1").val("<%= @monthlist_ary[1][6] %>");
+	$("#list_7_1").val("<%= @monthlist_ary[1][7] %>");
+	$("#list_8_1").val("<%= @monthlist_ary[1][8] %>");
+	$("#list_9_1").val("<%= @monthlist_ary[1][9] %>");
+	$("#list_10_1").val("<%= @monthlist_ary[1][10] %>");	
+	
+	$("#list_0_2").val("<%= @monthlist_ary[2][0] %>" + "月");
+	$("#list_1_2").val("<%= @monthlist_ary[2][1] %>");
+	$("#list_2_2").val("<%= @monthlist_ary[2][2] %>");
+	$("#list_3_2").val("<%= @monthlist_ary[2][3] %>");
+	$("#list_4_2").val("<%= @monthlist_ary[2][4] %>");
+	$("#list_5_2").val("<%= @monthlist_ary[2][5] %>");
+	$("#list_6_2").val("<%= @monthlist_ary[2][6] %>");
+	$("#list_7_2").val("<%= @monthlist_ary[2][7] %>");
+	$("#list_8_2").val("<%= @monthlist_ary[2][8] %>");
+	$("#list_9_2").val("<%= @monthlist_ary[2][9] %>");
+	$("#list_10_2").val("<%= @monthlist_ary[2][10] %>");
+
+	$("#list_0_3").val("<%= @monthlist_ary[3][0] %>" + "月");
+	$("#list_1_3").val("<%= @monthlist_ary[3][1] %>");
+	$("#list_2_3").val("<%= @monthlist_ary[3][2] %>");
+	$("#list_3_3").val("<%= @monthlist_ary[3][3] %>");
+	$("#list_4_3").val("<%= @monthlist_ary[3][4] %>");
+	$("#list_5_3").val("<%= @monthlist_ary[3][5] %>");
+	$("#list_6_3").val("<%= @monthlist_ary[3][6] %>");
+	$("#list_7_3").val("<%= @monthlist_ary[3][7] %>");
+	$("#list_8_3").val("<%= @monthlist_ary[3][8] %>");
+	$("#list_9_3").val("<%= @monthlist_ary[3][9] %>");
+	$("#list_10_3").val("<%= @monthlist_ary[3][10] %>");
+
+	$("#list_0_4").val("<%= @monthlist_ary[4][0] %>" + "月");
+	$("#list_1_4").val("<%= @monthlist_ary[4][1] %>");
+	$("#list_2_4").val("<%= @monthlist_ary[4][2] %>");
+	$("#list_3_4").val("<%= @monthlist_ary[4][3] %>");
+	$("#list_4_4").val("<%= @monthlist_ary[4][4] %>");
+	$("#list_5_4").val("<%= @monthlist_ary[4][5] %>");
+	$("#list_6_4").val("<%= @monthlist_ary[4][6] %>");
+	$("#list_7_4").val("<%= @monthlist_ary[4][7] %>");
+	$("#list_8_4").val("<%= @monthlist_ary[4][8] %>");
+	$("#list_9_4").val("<%= @monthlist_ary[4][9] %>");
+	$("#list_10_4").val("<%= @monthlist_ary[4][10] %>");
+
+	$("#list_0_5").val("<%= @monthlist_ary[5][0] %>" + "月");
+	$("#list_1_5").val("<%= @monthlist_ary[5][1] %>");
+	$("#list_2_5").val("<%= @monthlist_ary[5][2] %>");
+	$("#list_3_5").val("<%= @monthlist_ary[5][3] %>");
+	$("#list_4_5").val("<%= @monthlist_ary[5][4] %>");
+	$("#list_5_5").val("<%= @monthlist_ary[5][5] %>");
+	$("#list_6_5").val("<%= @monthlist_ary[5][6] %>");
+	$("#list_7_5").val("<%= @monthlist_ary[5][7] %>");
+	$("#list_8_5").val("<%= @monthlist_ary[5][8] %>");
+	$("#list_9_5").val("<%= @monthlist_ary[5][9] %>");
+	$("#list_10_5").val("<%= @monthlist_ary[5][10] %>");		
+
+	$("#list_0_6").val("<%= @monthlist_ary[6][0] %>" + "月");
+	$("#list_1_6").val("<%= @monthlist_ary[6][1] %>");
+	$("#list_2_6").val("<%= @monthlist_ary[6][2] %>");
+	$("#list_3_6").val("<%= @monthlist_ary[6][3] %>");
+	$("#list_4_6").val("<%= @monthlist_ary[6][4] %>");
+	$("#list_5_6").val("<%= @monthlist_ary[6][5] %>");
+	$("#list_6_6").val("<%= @monthlist_ary[6][6] %>");
+	$("#list_7_6").val("<%= @monthlist_ary[6][7] %>");
+	$("#list_8_6").val("<%= @monthlist_ary[6][8] %>");
+	$("#list_9_6").val("<%= @monthlist_ary[6][9] %>");
+	$("#list_10_6").val("<%= @monthlist_ary[6][10] %>");	
+
+	$("#list_0_7").val("<%= @monthlist_ary[7][0] %>" + "月");
+	$("#list_1_7").val("<%= @monthlist_ary[7][1] %>");
+	$("#list_2_7").val("<%= @monthlist_ary[7][2] %>");
+	$("#list_3_7").val("<%= @monthlist_ary[7][3] %>");
+	$("#list_4_7").val("<%= @monthlist_ary[7][4] %>");
+	$("#list_5_7").val("<%= @monthlist_ary[7][5] %>");
+	$("#list_6_7").val("<%= @monthlist_ary[7][6] %>");
+	$("#list_7_7").val("<%= @monthlist_ary[7][7] %>");
+	$("#list_8_7").val("<%= @monthlist_ary[7][8] %>");
+	$("#list_9_7").val("<%= @monthlist_ary[7][9] %>");
+	$("#list_10_7").val("<%= @monthlist_ary[7][10] %>");	
+
+	$("#list_0_8").val("<%= @monthlist_ary[8][0] %>" + "月");
+	$("#list_1_8").val("<%= @monthlist_ary[8][1] %>");
+	$("#list_2_8").val("<%= @monthlist_ary[8][2] %>");
+	$("#list_3_8").val("<%= @monthlist_ary[8][3] %>");
+	$("#list_4_8").val("<%= @monthlist_ary[8][4] %>");
+	$("#list_5_8").val("<%= @monthlist_ary[8][5] %>");
+	$("#list_6_8").val("<%= @monthlist_ary[8][6] %>");
+	$("#list_7_8").val("<%= @monthlist_ary[8][7] %>");
+	$("#list_8_8").val("<%= @monthlist_ary[8][8] %>");
+	$("#list_9_8").val("<%= @monthlist_ary[8][9] %>");
+	$("#list_10_8").val("<%= @monthlist_ary[8][10] %>");	
+
+	$("#list_0_9").val("<%= @monthlist_ary[9][0] %>" + "月");
+	$("#list_1_9").val("<%= @monthlist_ary[9][1] %>");
+	$("#list_2_9").val("<%= @monthlist_ary[9][2] %>");
+	$("#list_3_9").val("<%= @monthlist_ary[9][3] %>");
+	$("#list_4_9").val("<%= @monthlist_ary[9][4] %>");
+	$("#list_5_9").val("<%= @monthlist_ary[9][5] %>");
+	$("#list_6_9").val("<%= @monthlist_ary[9][6] %>");
+	$("#list_7_9").val("<%= @monthlist_ary[9][7] %>");
+	$("#list_8_9").val("<%= @monthlist_ary[9][8] %>");
+	$("#list_9_9").val("<%= @monthlist_ary[9][9] %>");
+	$("#list_10_9").val("<%= @monthlist_ary[9][10] %>");	
+
+	$("#list_0_10").val("<%= @monthlist_ary[10][0] %>" + "月");
+	$("#list_1_10").val("<%= @monthlist_ary[10][1] %>");
+	$("#list_2_10").val("<%= @monthlist_ary[10][2] %>");
+	$("#list_3_10").val("<%= @monthlist_ary[10][3] %>");
+	$("#list_4_10").val("<%= @monthlist_ary[10][4] %>");
+	$("#list_5_10").val("<%= @monthlist_ary[10][5] %>");
+	$("#list_6_10").val("<%= @monthlist_ary[10][6] %>");
+	$("#list_7_10").val("<%= @monthlist_ary[10][7] %>");
+	$("#list_8_10").val("<%= @monthlist_ary[10][8] %>");
+	$("#list_9_10").val("<%= @monthlist_ary[10][9] %>");
+	$("#list_10_10").val("<%= @monthlist_ary[10][10] %>");	
+
+	$("#list_0_11").val("<%= @monthlist_ary[11][0] %>" + "月");
+	$("#list_1_11").val("<%= @monthlist_ary[11][1] %>");
+	$("#list_2_11").val("<%= @monthlist_ary[11][2] %>");
+	$("#list_3_11").val("<%= @monthlist_ary[11][3] %>");
+	$("#list_4_11").val("<%= @monthlist_ary[11][4] %>");
+	$("#list_5_11").val("<%= @monthlist_ary[11][5] %>");
+	$("#list_6_11").val("<%= @monthlist_ary[11][6] %>");
+	$("#list_7_11").val("<%= @monthlist_ary[11][7] %>");
+	$("#list_8_11").val("<%= @monthlist_ary[11][8] %>");
+	$("#list_9_11").val("<%= @monthlist_ary[11][9] %>");
+	$("#list_10_11").val("<%= @monthlist_ary[11][10] %>");	
+
+	$("#list_1_12").val("<%= @sum_ary[0] %>");
+	$("#list_2_12").val("<%= @sum_ary[1] %>");
+	$("#list_3_12").val("<%= @sum_ary[2] %>");
+	$("#list_4_12").val("<%= @sum_ary[3] %>");
+	$("#list_5_12").val("<%= @sum_ary[4] %>");
+	$("#list_6_12").val("<%= @sum_ary[5] %>");
+	$("#list_7_12").val("<%= @sum_ary[6] %>");
+	$("#list_8_12").val("<%= @sum_ary[7] %>");
+	$("#list_9_12").val("<%= @sum_ary[8] %>");
+	$("#list_10_12").val("<%= @sum_ary[9] %>");
+									
+	$("#hoshu_list_0").val("<%= @hoshu_list1 %>");
+	$("#hoshu_list_1").val("<%= @hoshu_list2 %>");
+	$("#hoshu_list_2").val("<%= @hoshu_list3 %>");
+	$("#hoshu_list_3").val("<%= @hoshu_list4 %>");
+	$("#hoshu_list_4").val("<%= @hoshu_list5 %>");
+	$("#hoshu_list_5").val("<%= @hoshu_list6 %>");
+	$("#hoshu_list_6").val("<%= @hoshu_list7 %>");
+/* ローディングメッセージ解除*/				
+	$.unblockUI();									
+} else if ('<%= @error %>' == '2'){
+/* ローディングメッセージ解除*/
+	$.unblockUI();
+
+	w = screen.width * (1);
+	h = screen.height * (1);
+	window.open("http://" + location.host + "/" + "<%= @pdf_name %>","","width=" + w + ",height=" + h + ",resizeable=no,scrollbars=yes,status=no,menubar=1");
+	/*  window.open("http://" + location.host + "/" + "<%= @pdf_name %>");  */
+}
+

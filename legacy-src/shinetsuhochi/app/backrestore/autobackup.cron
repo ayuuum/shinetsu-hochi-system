@@ -1,0 +1,8 @@
+# /bin/ls
+#  1時　　日曜日に自動バックアップ
+# crontab autobackup.cron   設定反映
+# crontab -l 					設定確認
+#↓テスト環境
+#0 1 * * 0 /var/www/shinetsuhochi/app/backrestore/autobackup.sh
+#↓本番環境（ディレクトリが異なる）
+0 1 * * 0 /var/www/shinetsuhochi/shinetsuhochi/app/backrestore/autobackup.sh

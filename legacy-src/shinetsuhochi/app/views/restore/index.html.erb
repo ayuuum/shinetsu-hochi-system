@@ -1,0 +1,85 @@
+<script type="text/javascript"><!--
+window.onload = function(){
+ document.getElementById("id_txt_LOG_Id").focus();
+ }
+
+$(document).ready(function($){
+
+ $('.loading').click(function() {
+    $.blockUI({
+      message: 'データを読み込んでいます。お待ち下さい・・・',
+      css: {
+        border: 'none',
+        padding: '10px',
+        backgroundColor: '#333',
+        opacity: .9,
+        color: '#fff',
+        cursor: 'wait'
+      },
+      overlayCSS: {
+        backgroundColor: '#000',
+        opacity: 0.6
+      }
+    });
+  });
+	
+
+});
+//--></script>
+
+
+<div id="restore_box">
+	<%= form_tag( { :action => 'commit' },  { :remote => true,  :method => 'post', :name => 'nm_frm_BKS_Toroku' }) do  %>
+	
+	
+	<% #---------- 認証後----------- %>	
+	<div id="auth">
+
+	<div class="ths03"><div class="midashi2_label_240_20">◆バックアップ年月</div></div>
+	
+	
+	<div class="btr04">
+		<div class="midashi_label_100_20">年</div>
+		<%= select_tag('restoreY', options_for_select(@restoreY,@genY), :id => 'id_cmb_BTR_TenkenkaishiY', :class => 'select_108', :tabindex => 21) %>
+		<div class="midashi_label_100_20">月</div>
+		<%= select_tag('restoreM', options_for_select(@restoreM,@genM), :id => 'id_cmb_BTR_TenkenkaishiM', :class => 'select_108', :tabindex => 22) %>
+	</div>
+	<div class="kugiri"></div>
+	<div style="margin:20px 0 10px 0;"></div>
+	<div class="kugiri"></div>
+	<%= submit_tag( '検索' , :class => 'chohyo_button_ini loading', :tabindex => 23 ) %>
+	<div class="kugiri"></div>
+	<div style="margin:10px 0 40px 0;"></div>
+		
+	<div class="ths03"><div class="midashi2_label_240_20">◆バックアップファイル<span id="count">（<%= @count %>件）</span></div></div>
+	<div class="hcl01">
+		<div class="rst_header01">選択</div>
+		<div class="rst_header02">バックアップファイル日時</div>
+		<% #明細＋合計行 %>
+		<div id="rst_table">
+		<%  @backupfiles.each do |list| %>
+		<% @date = "#{list.slice(0,4)}年 #{list.slice(4,2)}月 #{list.slice(6,2)}日  #{list.slice(8,2)}:#{list.slice(10,2)}" %>
+		<div class="kugiri"></div>
+		<div class="rst_body01">
+			<%= radio_button_tag :restore_list, list, false, {  :class => 'bks_radio', :tabindex => 24 } %>
+		</div>
+		<%= text_field_tag '','', :value => @date, :class => 'rst_body02', :tabindex => 25, :readonly => true %>	
+			<% end %>
+		</div>
+
+		<div class="kugiri"></div>
+	</div>
+		<div style="margin:20px 0 0 0;"></div>
+	<%= submit_tag( 'リストア' , :class => 'chohyo_button_ini loading', :tabindex => 42 ) %>
+	<input type="hidden" id="id_RST_Success" name="nm_RST_Success" value="<%= @success %>">
+	<div class="kugiri"></div>
+
+	</div>
+	<% end %>
+
+</div>
+			
+	<% content_for :title do %>リストア<% end %>
+	<% content_for :for_top do %><span class="right_float">ログイン中：管理者用&nbsp;&nbsp;<a id="jump">トップページへ</a></span><% end %>
+	<% content_for :sub_title do %>リストア<% end %>
+	

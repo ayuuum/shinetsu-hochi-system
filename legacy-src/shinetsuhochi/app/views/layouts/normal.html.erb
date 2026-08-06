@@ -1,0 +1,19 @@
+<% content_for :main do %>
+	<div id="page2">
+		<div id="header">
+			<span class="header_string">保守点検業務支援システム</span>
+			<%= yield :for_top %>			
+		</div>
+			<div id="container_top">
+				<div id="contents_main">
+						<div id="main_top">
+							<span class="main_h2"><%= yield :sub_title %></span>
+						</div>
+						<%= yield %>
+				<!-- contents_main--></div>
+			<!-- container_top--></div>
+		<div id="footer_nocontents"><p>Copyright &copy; 2014 株式会社 信越報知  All rights reserved.</p></div>
+	<!-- page --></div>
+<% end %>
+
+<%= render :template => 'layouts/application' %>

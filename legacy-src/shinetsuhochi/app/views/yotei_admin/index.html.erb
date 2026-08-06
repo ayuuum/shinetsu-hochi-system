@@ -1,0 +1,281 @@
+<script type="text/javascript"><!--
+$(document).ready(function($){
+ $('.loading').click(function() {
+    $.blockUI({
+      message: 'データを読み込んでいます。お待ち下さい・・・',
+      css: {
+        border: 'none',
+        padding: '10px',
+        backgroundColor: '#333',
+        opacity: .9,
+        color: '#fff',
+        cursor: 'wait'
+      },
+      overlayCSS: {
+        backgroundColor: '#000',
+        opacity: 0.6
+      }
+    });
+  });
+
+
+});
+
+//--></script>
+
+<div id="yotei_box">
+	<%= form_tag( { :action => 'commit' }, { :remote => true, :method => 'post', :name => 'nm_frm_yam_Toroku', :id => 'nm_frm_yam_Toroku' }) do  %>
+	<%= submit_tag( '帳票出力' , :class => 'chohyo_button_yti', :tabindex => -1 ) %>
+	<%= submit_tag( '月別件数一覧へ' , :class => 'chohyo_button_yti', :tabindex => -1 ) %>
+	
+	<div class="kugiri"></div>
+	
+	<div class="yti01">
+			<div class="midashi4_label_175_20">◆検索条件</div>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="yti01">
+		<div class="normal_message">&nbsp;※印は入力必須項目です。</div>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="yti02">
+		<div class="midashi_label_175_20">年度&nbsp;&nbsp;※</div>
+		<%= select_tag('nendo', options_for_select(@m_nendo_array, params[@m_nendo_array] || @hyoji_nendo), :id => 'id_cmb_YAM_Nendo', :class => 'select_270', :tabindex => 21 ) %>
+	</div>
+	
+	<div class="yti02">
+		<div class="midashi_label_155_20">点検予定月</div>
+		<%= select_tag('tenkenyoteiM', options_for_select(@m_yoteitsuki,@default_tuki.to_i), :prompt => "全月", :id => 'id_cmb_YAM_TenkenyoteiM', :class => 'select_115', :tabindex => 22 ) %>
+	</div>
+	
+	<div class="yti02">
+		<div class="midashi_label_155_20">点検実施月</div>
+		<%= select_tag('tenkenjishiM', options_for_select(@m_yoteitsuki,@default_jishituki), :prompt => "全月", :id => 'id_cmb_YAM_TenkenjishiM', :class => 'select_115', :tabindex => 23 ) %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="yti02">
+		<div class="midashi_label_175_20">点検担当者</div>
+		<%= select_tag('kensakutantoshamei', options_for_select(@m_checkpeople_array), :prompt => "全担当者", :id => 'id_cmb_YAM_Tenkentantosha', :class => 'select_270', :selected => '', :tabindex => 24 ) %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="yti02">
+		<div class="midashi_label_175_20">物件名</div>
+		<%= text_field_tag 'kensakubukenmei','', :id => 'id_txt_YAM_Bukenmei', :class => 'input_4', :maxlength => 40, :tabindex => 25 %>
+	</div>
+	
+	<div class="yti03">
+		<%= submit_tag( '物件検索' , :class => 'button_yti02', :id => 'id_Btn_YAM_BukenKensaku' , :tabindex => 26 ) %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="yti02">
+		<div class="midashi_label_175_20">設備種別&nbsp;&nbsp;※</div>
+	</div>
+	
+	<div class="yti04">
+		<%= check_box_tag 'condsetubi[]', 1, true, { :id => 'id_YAM_Condsetubi1', :class => 'rad_stasus', :tabindex => 27 } %>
+		<%= label_tag 'id_YAM_Condsetubi1', "①"+@m_setubi_select[0]["shubetumei"] , class: 'radio_txt' %>
+	</div>
+	
+	<div class="yti04">
+		<%= check_box_tag 'condsetubi[]', 2, true, { :id => 'id_YAM_Condsetubi2', :class => 'rad_stasus', :tabindex => 27 } %>
+		<%= label_tag 'id_YAM_Condsetubi2', "②"+@m_setubi_select[1]["shubetumei"] , class: 'radio_txt' %>	
+	</div>
+	
+	<div class="yti04">
+		<%= check_box_tag 'condsetubi[]', 3, true, { :id => 'id_YAM_Condsetubi3', :class => 'rad_stasus', :tabindex => 27 } %>
+		<%= label_tag 'id_YAM_Condsetubi3', "③"+@m_setubi_select[2]["shubetumei"] , class: 'radio_txt' %>	
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="yti02">
+		<div class="midashi_label_175_20">点検ステータス</div>
+	</div>
+	
+	<div class="yti04">
+		<%= check_box_tag 'condtenstatus[]', 1, @ten[0], { :id => 'id_YAM_Condtenstatus1', :class => 'rad_stasus', :tabindex => 28 } %>
+		<%= label_tag 'id_YAM_Condtenstatus1', "①"+@m_init_select[0]["tenkenstatusmei1"] , class: 'radio_txt' %>	
+	</div>
+	
+	<div class="yti04">
+		<%= check_box_tag 'condtenstatus[]', 2, @ten[1], { :id => 'id_YAM_Condtenstatus2', :class => 'rad_stasus', :tabindex => 28 } %>
+		<%= label_tag 'id_YAM_Condtenstatus2', "②"+@m_init_select[0]["tenkenstatusmei2"] , class: 'radio_txt' %>		
+	</div>
+	
+	<div class="yti04">
+		<%= check_box_tag 'condtenstatus[]', 3, @ten[2], { :id => 'id_YAM_Condtenstatus3', :class => 'rad_stasus', :tabindex => 28 } %>
+		<%= label_tag 'id_YAM_Condtenstatus3', "③"+@m_init_select[0]["tenkenstatusmei3"] , class: 'radio_txt' %>
+	</div>
+	
+	<div class="yti04">
+		<%= check_box_tag 'condtenstatus[]', 4, @ten[3], { :id => 'id_YAM_Condtenstatus4', :class => 'rad_stasus', :tabindex => 28 } %>
+		<%= label_tag 'id_YAM_Condtenstatus4', "④"+@m_init_select[0]["tenkenstatusmei4"] , class: 'radio_txt' %>
+	</div>
+	
+	<div class="yti04">
+		<%= check_box_tag 'condtenstatus[]', 5, @ten[4], { :id => 'id_YAM_Condtenstatus5', :class => 'rad_stasus', :tabindex => 28 } %>
+		<%= label_tag 'id_YAM_Condtenstatus5', "⑤"+@m_init_select[0]["tenkenstatusmei5"] , class: 'radio_txt' %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="yti02">
+		<div class="midashi_label_175_20">補修ステータス</div>
+	</div>
+	
+	<div class="yti04">
+		<%= check_box_tag 'condhostatus[]', 1, @hoshu[0], { :id => 'id_YAM_Condhostatus1', :class => 'rad_stasus', :tabindex => 29 } %>
+		<%= label_tag 'id_YAM_Condhostatus1', "①"+@m_init_select[0]["hoshustatusmei1"] , class: 'radio_txt' %>
+	</div>
+	
+	<div class="yti04">
+		<%= check_box_tag 'condhostatus[]', 2, @hoshu[1], { :id => 'id_YAM_Condhostatus2', :class => 'rad_stasus', :tabindex => 29 } %>
+		<%= label_tag 'id_YAM_Condhostatus2', "②"+@m_init_select[0]["hoshustatusmei2"] , class: 'radio_txt' %>
+	</div>
+	
+	<div class="yti04">
+		<%= check_box_tag 'condhostatus[]', 3, @hoshu[2], { :id => 'id_YAM_Condhostatus3', :class => 'rad_stasus', :tabindex => 29 } %>
+		<%= label_tag 'id_YAM_Condhostatus3', "③"+@m_init_select[0]["hoshustatusmei3"] , class: 'radio_txt' %>
+	</div>
+	
+	<div class="yti04">
+		<%= check_box_tag 'condhostatus[]', 4, @hoshu[3], { :id => 'id_YAM_Condhostatus4', :class => 'rad_stasus', :tabindex => 29 } %>
+		<%= label_tag 'id_YAM_Condhostatus4', "④"+@m_init_select[0]["hoshustatusmei4"] , class: 'radio_txt' %>
+	</div>
+	
+	<div class="yti04">
+		<%= check_box_tag 'condhostatus[]', 5, @hoshu[4], { :id => 'id_YAM_Condhostatus5', :class => 'rad_stasus', :tabindex => 29 } %>
+		<%= label_tag 'id_YAM_Condhostatus5', "⑤"+@m_init_select[0]["hoshustatusmei5"] , class: 'radio_txt' %>
+	</div>
+	
+	<div class="yti04">
+		<%= check_box_tag 'condhostatus[]', 6, @hoshu[5], { :id => 'id_YAM_Condhostatus6', :class => 'rad_stasus', :tabindex => 29 } %>
+		<%= label_tag 'id_YAM_Condhostatus6', "⑥"+@m_init_select[0]["hoshustatusmei6"] , class: 'radio_txt' %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<%= submit_tag( '検索' , :disable_with => '検索中', :class => 'button_4 loading', :id => 'id_Btn_YAM_Kensaku', :tabindex => 30 ) %>
+	
+	<div class="kugiri"></div>
+	
+	<div class="yti01">
+		<div class="midashi5_label_175_20" id="kensaku_kekka">◆検索結果&nbsp;(<%= @sql_count %>件)</div>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="yti01">
+		<div class="normal_message">&nbsp;※印は入力必須項目です。</div>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="yti02">
+		<div class="midashi5_label_240_20_yti">変更後点検ステータス&nbsp;※</div>
+	</div>
+	
+	<div class="yti04">
+		<%= radio_button_tag :tenkenstatus, 3, false, { :id => 'id_YAM_Tenkenstatus1', :class => 'rad_stasus', :tabindex => 31 } %>
+		<%= label_tag 'id_YAM_Tenkenstatus1', @m_init_select[0]["tenkenstatusmei3"] , class: 'radio_txt' %>
+	</div>
+	
+	<div class="yti04">
+		<%= radio_button_tag :tenkenstatus, 4, false, { :id => 'id_YAM_Tenkenstatus2', :class => 'rad_stasus', :tabindex => 31 } %>
+		<%= label_tag 'id_YAM_Tenkenstatus2', @m_init_select[0]["tenkenstatusmei4"] , class: 'radio_txt' %>
+	</div>
+		
+	<div class="yti04">
+		<%= radio_button_tag :tenkenstatus, 5, false, { :id => 'id_YAM_Tenkenstatus3', :class => 'rad_stasus', :tabindex => 31 } %>
+		<%= label_tag 'id_YAM_Tenkenstatus3', @m_init_select[0]["tenkenstatusmei5"] , class: 'radio_txt' %>
+	</div>
+
+	<%= submit_tag( '点検ステータス一括変更' , :class => 'button_yti01 loading', :id => 'id_Btn_YAM_Tenkenikatsu' , :tabindex => 32 ) %>
+
+	
+	<div class="kugiri"></div>
+	
+	<div class="yti02">
+		<div class="midashi5_label_240_20_yti">変更後補修ステータス&nbsp;※</div>
+	</div>
+		
+	<div class="yti04">
+		<%= radio_button_tag :hoshustatus, 2, false, { :id => 'id_YAM_Hoshustatus1', :class => 'rad_stasus', :tabindex => 33 } %>
+		<%= label_tag 'id_YAM_Hoshustatus1', @m_init_select[0]["hoshustatusmei2"] , class: 'radio_txt' %>
+	</div>
+	
+	<div class="yti04">
+		<%= radio_button_tag :hoshustatus, 4, false, { :id => 'id_YAM_Hoshustatus2', :class => 'rad_stasus', :tabindex => 33 } %>
+		<%= label_tag 'id_YAM_Hoshustatus2', @m_init_select[0]["hoshustatusmei4"] , class: 'radio_txt' %>
+	</div>
+	
+	<div class="yti04">
+		<%= radio_button_tag :hoshustatus, 5, false, { :id => 'id_YAM_Hoshustatus5', :class => 'rad_stasus', :tabindex => 33 } %>
+		<%= label_tag 'id_YAM_Hoshustatus5', @m_init_select[0]["hoshustatusmei5"] , class: 'radio_txt' %>
+	</div>
+	
+	<div class="yti04">
+		<%= radio_button_tag :hoshustatus, 6, false, { :id => 'id_YAM_Hoshustatus6', :class => 'rad_stasus', :tabindex => 33 } %>
+		<%= label_tag 'id_YAM_Hoshustatus6', @m_init_select[0]["hoshustatusmei6"] , class: 'radio_txt' %>
+	</div>
+
+	<%= submit_tag( '補修ステータス一括変更' , :class => 'button_yti01 loading', :id => 'id_Btn_YAM_Hoshuikatsu' , :tabindex => 34 ) %>
+	
+	<div class="kugiri"></div>
+	
+	<%= submit_tag( '実績登録' , :class => 'button_4', :id => 'id_Btn_YTI_Jisekitoroku' , :tabindex => 35 ) %>
+	<%= submit_tag( '点検ステータス順' , :class => 'button_5', :id => 'id_Btn_YTI_Tenken_Sort' , :tabindex => 37 ) %>
+	<%= submit_tag( '発注者名順' , :class => 'button_5', :id => 'id_Btn_YTI_Hatsusya_Sort' , :tabindex => 36 ) %>
+	
+	
+	<div class="kugiri"></div>
+	
+	<table class="yti02" cellpadding="0" cellspacing="0">
+		<tr>
+			<td class="yti_heaader01" rowspan="4">担当※</td>
+			<td class="yti_heaader01" rowspan="4">管理※</td>
+			<td class="yti_heaader06" rowspan="2">予定月</td>
+			<td class="yti_heaader02" rowspan="2">発注者名</td>
+			<td class="yti_heaader02" rowspan="2">物件名</td>			
+			<td class="yti_heaader03">点検種別</td>
+			<td class="yti_heaader04" rowspan="2">点検担当者</td>
+			<td class="yti_heaader03">点検ステータス</td>
+			<td class="yti_heaader03">補修ステータス</td>
+			<td class="yti_heaader04" rowspan="2">補修履歴</td>
+		</tr>
+		<tr>
+			<td class="yti_heaader03">契約金額</td>
+			<td class="yti_heaader03">点検完了日</td>
+			<td class="yti_heaader03">補修完了日</td>
+		</tr>
+		<tr>
+			<td class="yti_heaader05" colspan="8">メモ（点検者用）</td>
+		</tr>
+		<tr>
+			<td class="yti_heaader05" colspan="8">備考</td>
+		</tr>
+	</table>
+	
+	<div class="kugiri"></div>
+	
+	<table class="yti05" id="yti_table" cellpadding="0" cellspacing="0">
+		<%=raw @html_string %>
+	</table>
+	<input type="hidden" id="id_Hid_SearchCount" name="nm_Hid_SearchCount" value="<%= @sql_count %>">
+	<div class="kugiri"></div>
+	<% end %>
+		
+	<% content_for :title do %>点検予定／実績一覧（管理者用）<% end %>
+	<% content_for :for_top do %><span class="right_float">ログイン中：管理者用&nbsp;&nbsp;<a id="jump">トップページへ</a></span><% end %>
+	<% content_for :sub_title do %>点検予定／実績一覧（管理者用）<% end %>
+		

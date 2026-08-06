@@ -1,0 +1,210 @@
+<script type="text/javascript"><!--
+$(document).ready(function($){
+});
+//--></script>
+<style type="text/css">
+<!--
+.input_4_bjs, .input_5_1_bjs, .input_5_2_bjs, .input_6_bjs, .input_7_bjs, .input_8 { background-color:#f0f080; }
+
+-->
+</style>
+
+
+	<%= form_tag( { :action => 'commit' },  { :remote => true,  :method => 'post', :name => 'nm_frm_sbl_Toroku' }) do  %>
+	<%= submit_tag( '帳票出力(実績補修)' , :class => 'chohyo_button_bjs', :tabindex => 32766 ) %>
+	<%= submit_tag( '帳票出力(点検情報)' , :class => 'chohyo_button_bjs', :tabindex => 32766 ) %>
+	<%= submit_tag( '補修履歴' , :class => 'chohyo_button_bjs',  :tabindex => 32766 ) %>
+	<%= submit_tag( '物件変更／削除へ' , :class => 'chohyo_button_bjs', :tabindex => 32766 ) %>		
+	<%= submit_tag( '検索一覧へ戻る' , :class => 'chohyo_button_bjs',  :tabindex => 32766 ) %>
+	<%= submit_tag( '物件検索へ戻る' , :class => 'chohyo_button_bjs', :tabindex => 32766 ) %>
+
+<div id="buken_joho_shosai_box">
+
+
+	<%# 発注者情報 %>
+	<div class="bjs01">
+		<div class="midashi_label_175_20">基準年度</div>
+		<%= text_field_tag 'hachushamei','',:value => @genzai_nendo_str , :id => 'id_txt_BTR_Hachushamei', :class => 'input_4_bjs', :maxlength => 80, :tabindex => 21, :readonly => true %>
+	</div>	
+	
+	<div class="kugiri" style="height:10px;"></div>
+	
+	<div class="bjs01">
+		<div class="midashi4_label_175_20">◆発注者情報</div>
+	</div>
+	
+	<div class="kugiri"></div>
+
+	<div class="bjs01">
+		<div class="midashi_label_175_20">発注者名（全角）</div>
+		<%= text_field_tag 'hachushamei', '', :value => @hachushamei  , :id => 'id_txt_BTR_Hachushamei', :class => 'input_4_bjs', :maxlength => 80, :tabindex => 22, :readonly => true %>
+	</div>
+	
+	<div class="bjs01">
+		<div class="midashi_label_175_20">発注者担当者名</div>
+		<%= text_field_tag 'hachuTantoshamei','', :value => @hachuTandoshamei, :id => 'id_txt_BTR_HachuTantoshamei', :class => 'input_4_bjs', :maxlength => 40, :tabindex => 23, :readonly => true %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="bjs01">
+		<div class="midashi_label_175_20">発注者郵便番号</div>
+		<%= text_field_tag 'hachuPostno1','', :value => @hachuPostno.to_s.slice(0,3), :id => 'id_txt_BTR_HachuPostno1', :class => 'input_5_1_bjs', :maxlength => 3, :tabindex => 24, :readonly => true %>
+		<span class="bjs02">―</span>
+		<%= text_field_tag 'hachuPostno2','', :value => @hachuPostno.to_s.slice(3,4), :id => 'id_txt_BTR_HachuPostno2', :class => 'input_5_2_bjs', :maxlength => 4, :tabindex => 25, :readonly => true %>
+	</div>	
+	
+	<div class="bjs04">
+		<div class="midashi_label_175_20">発注者住所</div>
+		<%= text_field_tag 'hachuAdrs','', :value => @hachuAdrs, :id => 'id_txt_BTR_HachuAdrs', :class => 'input_6_bjs', :maxlength => 80, :tabindex => 26, :readonly => true %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="bjs01">
+		<div class="midashi_label_175_20">発注者電話番号</div>
+		<%= text_field_tag 'hachuTelno','', :value => @hachuTelno, :id => 'id_txt_BTR_HachuTelno', :class => 'input_4_bjs', :maxlength => 40, :tabindex => 27, :readonly => true %>
+	</div>
+	<div class="bjs01">
+		<div class="midashi_label_175_20">発注者FAX番号</div>
+		<%= text_field_tag 'hachuFaxno','', :value => @hachuFaxno, :id => 'id_txt_BTR_HachuFaxno', :class => 'input_4_bjs', :maxlength => 40, :tabindex => 28, :readonly => true %>
+	</div>
+
+	<div class="kugiri" style="height:10px;"></div>
+	
+	<%# 物件情報 %>
+	<div class="bjs01">
+		<div class="midashi4_label_175_20">◆物件情報</div>
+	</div>
+	
+	<div class="kugiri"></div>
+
+	
+	<div class="bjs01">
+		<div class="midashi_label_175_20">物件者名（全角）</div>
+		<%= text_field_tag 'bukenmei','', :value => @bukenmei, :id => 'id_txt_BTR_Bukenmei', :class => 'input_4_bjs', :maxlength => 80, :tabindex => 29, :readonly => true %>
+	</div>
+	<div class="bjs01">
+		<div class="midashi_label_175_20">物件担当者名</div>
+		<%= text_field_tag 'hachuTantoshamei','', :value => @bukenTandoshamei, :id => 'id_txt_BTR_BukenTantoshamei', :class => 'input_4_bjs', :maxlength => 40, :tabindex => 30, :readonly => true %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="bjs01">
+		<div class="midashi_label_175_20">物件郵便番号</div>
+		<%= text_field_tag 'bukenPostno1','', :value => @bukenPostno.to_s.slice(0,3), :id => 'id_txt_BTR_BukenPostno1', :class => 'input_5_1_bjs', :maxlength => 3, :tabindex => 31, :readonly => true %>
+		<span class="bjs02">―</span>
+		<%= text_field_tag 'bukenPostno2','', :value => @bukenPostno.to_s.slice(3,4), :id => 'id_txt_BTR_BukenPostno2', :class => 'input_5_2_bjs', :maxlength => 3, :tabindex => 32, :readonly => true %>
+	</div>
+	
+	
+	<div class="bjs04">
+		<div class="midashi_label_175_20">物件住所</div>
+		<%= text_field_tag 'bukenAdrs','', :value => @bukenAdrs, :id => 'id_txt_BTR_BukenAdrs', :class => 'input_6_bjs', :maxlength => 80, :tabindex => 33, :readonly => true %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="bjs01">
+		<div class="midashi_label_175_20">物件電話番号</div>
+		<%= text_field_tag 'bukenTelno','', :value => @bukenTelno, :id => 'id_txt_BTR_BukenTelno', :class => 'input_4_bjs', :maxlength => 40, :tabindex => 34, :readonly => true %>
+	</div>
+	<div class="bjs01">
+		<div class="midashi_label_175_20">物件FAX番号</div>
+		<%= text_field_tag 'bukenFaxno','', :value => @bukenFaxno, :id => 'id_txt_BTR_BukenFaxno', :class => 'input_4_bjs', :maxlength => 40, :tabindex => 35, :readonly => true %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="bjs01">
+		<div class="midashi_label_175_20">点検開始年度</div>
+		<%= text_field_tag 'tenkenkaishiY','', :value => @tenkenkaishi_data.to_s + '年度', :id => 'id_txt_BTR_TenkenkaishiY', :class => 'input_4_bjs', :maxlength => 40, :tabindex => 36, :readonly => true %>
+	</div>
+	
+	<div class="bjs01">
+		<div class="midashi_label_175_20">点検区分</div>
+		<%= text_field_tag 'tenkenKbn','', :value => @tenken_Kbn, :id => 'id_txt_BTR_Tenkenkbn', :class => 'input_4_bjs', :maxlength => 40, :tabindex => 37, :readonly => true %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="bjs01">
+		<div class="midashi_label_175_20">請求方法</div>
+		<%= text_field_tag 'seikyuhouou','', :value => @seikyu_houhou, :id => 'id_txt_BTR_Seikyuhouhou', :class => 'input_4_bjs', :maxlength => 40, :tabindex => 38, :readonly => true %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="bjs05">
+		<div class="midashi_label_175_60">メモ（管理者用）</div>
+		<%= text_area_tag 'memo1',@memo1, {  :id => 'id_txt_BTR_Memo1', :class => 'input_7_bjs', :maxlength => 300, :cols =>40, :rows => 3, :tabindex => 39, :readonly => true } %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="bjs03">
+		<div class="midashi_label_175_20">メモ（点検者用）</div>
+		<%= text_field_tag 'memo2','', :value => @memo2, :id => 'id_txt_BTR_Memo2', :class => 'input_8', :maxlength => 160, :tabindex => 40, :readonly => true %>
+	</div>
+
+	<div class="kugiri" style="height:20px;"></div>
+	
+	<%# 点検情報 %>
+	<div class="bjs01">
+		<div class="midashi4_label_175_20">◆点検情報</div>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+
+	<div class="bjs06">
+		<div class="bjs_header01">年度</div>
+		<div class="bjs_header02">契約金額合計<br>(外注費合計)</div>
+		<div class="bjs_header03">点検種別</div>
+		<div class="bjs_header04">年間点検回数</div>
+		<div class="bjs_header05">
+			<div class="bjs_header05_1">上段:総合／１回目、下段:機器／２回目</div>
+			<div class="bjs_header05_2">点検予定月</div>
+			<div class="bjs_header05_2">契約金額</div>
+			<div class="bjs_header05_3">点検担当者</div>
+			<div class="bjs_header05_2">外注費</div>
+		</div>
+		
+		<div id="bjs_table1">
+			<%=raw @tenkenjoho_html %>
+		</div>
+	</div>	
+	
+
+	<div class="kugiri" style="height:20px;"></div>
+
+	<%# 点検実績／補修情報 %>
+	<div class="bjs01">
+		<div class="midashi4_label_175_20">◆点検実績／補修情報</div>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="bjs06">
+		<div class="bjs_header06">年度</div>
+		<div class="bjs_header07">点検種別</div>
+		<div class="bjs_header08">点検担当者</div>
+		<div class="bjs_header09_c">点検実施日</div>
+		<div class="bjs_header09">人工</div>
+		<div class="bjs_header10">点検ステータス</div>
+		<div class="bjs_header10">補修ステータス</div>
+		<div class="bjs_header11">備考</div>	
+		
+		<div id="bjs_table2">
+			<%=raw @tenkenjiseki_html %>
+		</div>	
+
+	</div>	
+	
+
+</div>
+<% end %>
+	<% content_for :title do %>物件詳細参照<% end %>
+	<% content_for :for_top do %><span class="right_float">ログイン中：管理者用&nbsp;&nbsp;<a id="jump">トップページへ</a></span><% end %>
+	<% content_for :sub_title do %>物件詳細参照<% end %>

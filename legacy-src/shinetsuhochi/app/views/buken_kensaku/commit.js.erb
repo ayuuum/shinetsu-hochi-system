@@ -1,0 +1,49 @@
+/* ボタンがされたらタイマーリセット。その後3600秒でホームに遷移 */
+clearTimeout(timerID);
+var timerID = setInterval("jumpHome()",3600*1000);
+
+if (("<%= @error_message[0] %>").length > 0 && ('<%= @error %>' != '5')){
+	$.unblockUI();
+	var height_t = parseInt("<%= @dialog_height %>");
+	var width_t =  parseInt("<%= @dialog_width %>");
+	var title_t = "<%= @dialog_title %>";
+	$("#message").html('<img align="left" src="/assets/images/<%= @error_message[0] %>.png" /><%= @error_message[1] %>');
+	$("#message").dialog({
+		autoOpen: true, modal: true, height: height_t, width: width_t, title: title_t, dialogClass: 'dlgclass',
+		buttons: {   
+			'ＯＫ': function(event) { 
+			if ("<%= @tsh %>" == "1"){
+				$(".bks_radio").attr("checked", false);
+			
+				}
+			$(this).dialog('close'); 
+			}
+		}
+	});
+
+} else if (("<%= @error_message[0] %>").length > 0 && ('<%= @error %>' == '5')){
+	var height_t = parseInt("<%= @dialog_height %>");
+	var width_t =  parseInt("<%= @dialog_width %>");
+	var title_t = "削除確認";
+	$("#message").html('<img align="left" src="/assets/images/<%= @error_message[0] %>.png" /><%= @error_message[1] %>');
+	$("#message").dialog({
+		autoOpen: true, modal: true, height: height_t, width: width_t, title: title_t, dialogClass: 'dlgclass',
+		buttons: {   
+			'はい': function(event) { 
+				location.href = "http://" + location.host + "/" + "<%= @query_str %>";
+				$(this).dialog('close'); 
+				},
+			'いいえ': function(event) { $(this).dialog('close'); }
+		}
+	});
+
+} else if (("<%= @error_message[0] %>").length == 0 && ('<%= @error %>' == '1')){
+	$("#kensaku_kekka").empty();
+	$("#kensaku_kekka").append('◆検索結果(<%= @sql_count %>件)')
+	$("#bks_table").empty();
+	$("#bks_table").html('<%=raw @html_string %>');
+	$.unblockUI();
+} else if (("<%= @error_message[0] %>").length == 0 && ('<%= @error %>' == '2' || '<%= @error %>' == '3' || '<%= @error %>' == '4' )) {
+	location.href = "http://" + location.host + "/" + "<%= @query_str %>";
+}
+

@@ -1,0 +1,111 @@
+<script type="text/javascript"><!--
+
+/* 画面が読み込まれたら点検担当者名フィールドにフォーカスする */
+window.onload = function(){
+ document.getElementById("id_txt_TTR_Tenmei").focus();
+ }
+ 
+$(document).ready(function($){
+
+	/* 画面読み込み時、セレクトボックスの値を取得*/
+	var TTR_zenkai_shubetu = $('[name="m_kind[shubetumei]"]').val();
+	/*セレクトボックス変更時、値を取得*/
+	$('[name="m_kind[shubetumei]"]').change(function() {
+		data = $('[name="m_kind[shubetumei]"]').val();
+		/*"社内"に変わったとき*/
+		if ($('[name="m_kind[shubetumei]"]').val() == '社内' ) {
+			TTR_zenkai_shubetu = $('[name="m_kind[shubetumei]"]').val();
+		} else if ($('#id_txt_TTR_Tenid').val() != '' && $('[name="m_kind[shubetumei]"]').val() != '社内' ) {
+		/*IDに値が入力されていたら、注意ダイアログ表示*/
+
+			$("#message").html('<img align="left" src="/assets/images/message_question.png" />発行した点検担当者IDが無効となります。<br>よろしいですか？');
+
+			$("#message").dialog({
+				autoOpen: true,
+				modal: true,
+				height:200,
+				width:450,
+				title: "確認",	
+				dialogClass: 'dlgclass',	
+				buttons: {  
+				'はい': function(event) {
+					$('#id_txt_TTR_Tenid').val('');
+					nm_cmb_TTR_Tenshu = $('[name="m_kind[shubetumei]"]').val();		
+	    		  	$(this).dialog('close'); 	
+					},
+        		'いいえ': function(event) {
+        		/*いいえを押したら値を前に戻す*/
+       		 	$('[name="m_kind[shubetumei]"]').val(TTR_zenkai_shubetu);
+   	    		  	$(this).dialog('close'); 	
+        			}
+   				}
+			});
+			
+			
+		}
+	});
+	
+ $('.loading').click(function() {
+    $.blockUI({
+      message: 'データを読み込んでいます。お待ち下さい・・・',
+      css: {
+        border: 'none',
+        padding: '10px',
+        backgroundColor: '#333',
+        opacity: .9,
+        color: '#fff',
+        cursor: 'wait'
+      },
+      overlayCSS: {
+        backgroundColor: '#000',
+        opacity: 0.6
+      }
+    });
+  });	
+	
+});
+//--></script>
+
+<div id="tenken_toroku_box">
+	
+
+	<%= form_tag( { :action => 'commit' },  { :remote => true,  :method => 'post', :name => 'nm_frm_TTR_Toroku', :autocomplete => 'off' }) do  %>
+		
+	<div class="ttr01"><div class="normal_message">※印は入力必須項目です。&nbsp;&nbsp;<font color="#000000">●</font>は条件により必須入力です。</div></div>
+	<div class="ttr02">
+		<div class="midashi_label_190_20">点検担当者名&nbsp;&nbsp;※</div>
+		<%= text_field 'm_checkpeople','tenkentantoshamei', :id => 'id_txt_TTR_Tenmei', :class => 'input_1', :maxlength => 20, :tabindex => 21 %>
+	</div>
+	<div class="ttr03">
+		<div class="midashi_label_190_20">点検担当者種別&nbsp;&nbsp;※</div>
+		<%= fields_for( @m_kind_name,  :name => 'nm_frm_TTR_Tenshu' ) do |f| %>		
+		<%= f.collection_select :shubetumei ,@m_kind_select, :shubetumei, :shubetumei, {},{ :class => 'select_165' , :tabindex => 22 }   %>
+		<% end %>
+	</div>
+
+	<div class="kugiri"></div>
+	
+	<div class="ttr02">
+		<div class="midashi_label_190_20">点検担当者ID&nbsp;&nbsp;●</div>
+		
+		<%= text_field_tag 'uid','',  :id => 'id_txt_TTR_Tenid' ,:class => 'klimit-digit' , :maxlength => 4, :tabindex => 23 %>
+	</div>
+	<div class="ttr03">
+		<div class="midashi_label_190_20">点検担当者パスワード&nbsp;●</div>
+		
+		<%= password_field_tag 'upass', '', :id => 'id_pas_TTR_Tenpass' , :class => 'input_2' , :tabindex => 24 %>
+	</div>
+	
+	<div class="kugiri"></div>
+
+	<%= submit_tag( 'ID取得' , :class => 'button_1', :id => 'id_Btn_TTR_Idshu' , :tabindex => 25 ) %>
+
+	<%= submit_tag( '登録' , :class => 'button_2 loading', :id => 'id_Btn_TTR_Toroku'  , :tabindex => 26 ) %>
+
+	<% end %>
+	
+</div>
+				
+	<% content_for :title do %>点検担当者登録<% end %>
+	<% content_for :for_top do %><span class="right_float">ログイン中：管理者用&nbsp;&nbsp;<a id="jump">トップページへ</a></span><% end %>
+	<% content_for :sub_title do %>点検担当者登録<% end %>

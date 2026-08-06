@@ -1,0 +1,79 @@
+#jiseki_toroku_box {
+	width: 1185px;
+	margin-left: 20px;
+	margin-top: 20px;
+	text-align: left;
+	padding: 20px 0 20px 5px;
+}
+
+.close_button_jtr {
+	font-size:15px;
+	float:right;
+	width: 150px;
+	height: 30px;
+	margin:0 5px 10px 5px;	
+}
+
+.jtr01 {
+	margin: 20px 0px 0px 5px;
+	width: 700px;
+}
+
+.jtr02 {
+	margin: 5px 0px 0px 5px;
+	float: left;
+}
+
+.jtr03 {
+	margin: 5px 0px 0px 0px;
+	float: left;
+	height: 20px;
+	width: 150px;
+}
+
+.jtr04 {
+	margin: 5px 0px 0px 0px;
+	float: left;
+	height: 20px;
+}
+
+.midashi_label_175_250 {
+	text-align: left;
+	vertical-align: middle;
+	font-weight: bold;
+	border-style: outset;
+	border-width: 2px;
+	float: left;
+	padding: 1px;
+	width: 175px;
+	height: 246px;
+	background: #f4A440;
+	border-color: #f4A440;
+}
+
+input.biko {
+	width: 980px;
+	height: 18px;
+	float: left;
+	ime-mode: active;
+}
+
+/* 見積内容*/
+textarea.naiyou {
+	float: left;
+	ime-mode: active;
+	resize: none;
+	width:975px;
+	height:245px;
+	
+}
+
+@media all and (-ms-high-contrast:none){
+/* 見積内容*/
+textarea.naiyou {
+	width:980px;
+	height:245px;
+}
+}
+
+

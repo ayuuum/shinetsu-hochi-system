@@ -1,0 +1,84 @@
+<script type="text/javascript"><!--
+$(document).ready(function($){
+
+ $('.loading').click(function() {
+    $.blockUI({
+      message: 'データを読み込んでいます。お待ち下さい・・・',
+      css: {
+        border: 'none',
+        padding: '10px',
+        backgroundColor: '#333',
+        opacity: .9,
+        color: '#fff',
+        cursor: 'wait'
+      },
+      overlayCSS: {
+        backgroundColor: '#000',
+        opacity: 0.6
+      }
+    });
+  });
+
+});
+
+window.onload = function(){
+ document.getElementById("id_cmb_SBL_Nendo").focus();
+ }
+
+
+//--></script>
+
+	<%= form_tag( { :action => 'commit' },  { :remote => true,  :method => 'post', :name => 'nm_frm_sbl_Toroku' }) do  %>
+	<%= submit_tag( '帳票出力' , :class => 'chohyo_button loading', :id => 'id_Btn_THS_Kensaku' , :tabindex => 26 ) %>
+	
+<div id="setsubilist_box">
+
+	
+	<div class="sbl03"><div class="midashi3_label_240_20">◆検索条件</div></div>
+	<div class="kugiri"></div>
+	<div class="sbl03"><div class="normal_message">※印は入力必須項目です。</div></div>
+	
+	<div class="sbl04">
+		<div class="midashi_label_175_20_bjs">参照年度&nbsp;&nbsp;※</div>
+		<%= select_tag('nm_cmb_SBL_Nendo', options_for_select(@m_tenken_array,@default_n),  :id => 'id_cmb_SBL_Nendo',  :class => 'select_165', :tabindex => 21 ) %>		
+	</div>
+
+	<div class="sbl05">
+		<div class="midashi_label_175_20_bjs">月</div>
+		<%= select_tag('nm_cmb_SBL_Tsuki', options_for_select(@m_checkpeople_array,'-1'),  :id => 'id_cmb_SBL_Tsuki',  :class => 'select_165', :tabindex => 22 ) %>		
+	</div>	
+	<div class="kugiri"></div>
+	<%= submit_tag( '検索' , :class => 'button_3_sbl loading', :id => 'id_Btn_THS_Kensaku' , :tabindex => 23 ) %>
+
+	<div class="kugiri"></div>
+	<div style="margin-top:60px;"></div>
+	
+	<div class="sbl03"><div class="midashi3_label_240_20" id="kensaku_kekka">◆検索結果</div></div>
+	
+	<div class="sbl01">
+	<div class="sbl_header01">設備種別</div>
+	<div class="sbl_header02"><div class="sbl_header02_1">予定</div>
+	<div class="sbl_header02_2">件数合計</div>
+	<div class="sbl_header02_3">契約保有高<br>合計</div></div>
+	<div class="sbl_header02"><div class="sbl_header02_1">実績</div>
+	<div class="sbl_header02_2">件数合計</div>
+	<div class="sbl_header02_3">契約保有高<br>合計</div></div>
+	<div class="sbl_header03">点検種別</div>
+	<div class="sbl_header02"><div class="sbl_header02_1">予定</div>
+	<div class="sbl_header02_2">件数合計</div>
+	<div class="sbl_header02_3">契約保有高<br>合計</div></div>
+	<div class="sbl_header02"><div class="sbl_header02_1">実績</div>
+	<div class="sbl_header02_2">件数合計</div>
+	<div class="sbl_header02_3">契約保有高<br>合計</div></div>
+	<div id="sbl_table"></div>
+	<div class="kugiri"></div>
+
+	</div>
+		
+</div>
+	<% end %>		
+	<% content_for :title do %>検索一覧(設備種別別)<% end %>
+	<% content_for :for_top do %><span class="right_float">ログイン中：管理者用&nbsp;&nbsp;<a id="jump">トップページへ</a></span><% end %>
+	<% content_for :sub_title do %>検索一覧(設備種別別)<% end %>
+	
+

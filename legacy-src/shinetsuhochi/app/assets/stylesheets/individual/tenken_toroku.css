@@ -1,0 +1,36 @@
+/*** 点検担当者登録 ***/
+
+#tenken_toroku_box {
+	width:795px;
+	height:240px;
+	margin: 0 auto;
+	margin-top:100px;
+	text-align:center;
+	padding: 20px 0 20px 0;
+}
+
+
+
+/*** 点検担当者変更・削除と共通 ***/
+
+.ttr01 {
+	margin:5px 0 0 5px;
+	width: 430px;
+	height:30px;
+}
+
+.ttr02 {
+	margin:5px 0 0 5px;
+	width: 420px;
+	height:40px;
+	float: left;
+}
+
+.ttr03 {
+	margin:5px 0 0 5px;
+	width: 365px;
+	height:40px;
+	float: left;
+}
+
+

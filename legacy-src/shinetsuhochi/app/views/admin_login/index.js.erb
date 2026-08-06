@@ -1,0 +1,49 @@
+$('#result').html("<%= @greeting %>");
+		alert("呼び出した_admin_login");
+$(document).on('page:change',function(e) {
+
+    $('#id_btnAdminLogin').click(function() {
+
+      login_submit_chk1(); 
+    }); 
+
+    $('#idId').keyup(function(e) {
+		if ( e.keyCode == 13 ){
+			if( $("input[name='txtId']").val() != '' && $("input[name='txtPass']").val() != ''){
+	    		login_submit_chk1();
+			} else if  ( $("input[name='txtId']").val() != '') {
+				document.frmLogin.txtPass.focus();
+     	 	}
+		}
+    }); 
+    
+    $("#idPass").keyup(function(e) {
+		if ( e.keyCode == 13 ){
+			if( $("input[name='txtId']").val() != '' && $("input[name='txtPass']").val() != ''){
+	    		login_submit_chk1();
+			} else if  ( $("input[name='txtPass']").val() != '') {
+				document.frmLogin.txtId.focus();
+     	 	}
+		}
+    });  
+});
+
+function login_submit_chk1() { 			
+	var str1 = $("input[name='txtId']").val();
+	var str2 = $("input[name='txtPass']").val();
+
+	if(str1.match( /[^0-9]+/ ) || countLength(str1) != 4) { 
+        if (confirm ("IDは半角数字4文字で入力して下さい")){ 
+			document.frmLogin.txtId.focus();
+		}
+      return false; 
+	}  else if(str2.match( /[^0-9]+/ ) || countLength(str2) != 4) { 
+        if (confirm ("パスワードは半角数字4文字で入力して下さい")){ 
+			document.frmLogin.txtPass.focus();
+		}
+      return false; 
+    } 
+	document.frmLogin.ID = document.frmLogin.txtId.value;
+	document.frmLogin.PASS = document.frmLogin.txtPass.value;
+	mySubmit('frmLogin', 'admin_login.html', 'POST');
+}

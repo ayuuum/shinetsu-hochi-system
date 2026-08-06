@@ -1,0 +1,6 @@
+if (("<%= @error_message[0] %>").length > 0) {
+	$('.login_message').html("<%= @error_message[1] %>"); 
+}  else if ('<%= @error %>' == '1') {
+		location.href = "http://" + location.host + "/admin_tmenu.html";
+}
+

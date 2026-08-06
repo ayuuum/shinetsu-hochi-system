@@ -1,0 +1,89 @@
+<script type="text/javascript" language="javascript">
+window.onload = function(){
+ 	document.getElementById("id_pas_ADP_Adminpass1").focus();
+}
+
+$(document).ready(function($){
+ $('.login_button_left').click(function() {
+	$("#log_mes").empty();
+  });
+
+ $(document).on("keypress", "input:not(.allow_submit)",function(event){
+		return event.which !== 13
+ });
+	/* idフィールドにあるフォーカスがあるとき */
+    $('#id_pas_ADP_Adminpass1').keyup(function(e) {
+    	$("#log_mes").empty();
+  	 	if (!e) var e = window.event;
+		/* エンターキー押された場合 */
+		if ( e.keyCode == 13 ){
+		/*IDが空でなければパスワードへフォーカス移動*/
+			if( $("#id_pas_ADP_Adminpass1").val() != '') {
+				$("#id_pas_ADP_Adminpass2").focus();
+     	 	}
+		}
+    }); 
+    
+    $('#id_pas_ADP_Adminpass2').keyup(function(e) {
+    	$("#log_mes").empty();
+  	 	if (!e) var e = window.event;
+		/* エンターキー押された場合 */
+		if ( e.keyCode == 13 ){
+		/*IDが空でなければパスワードへフォーカス移動*/
+			if( $("#id_pas_ADP_Adminpass2").val() != '') {
+				$("#id_pas_ADP_Adminpass3").focus();
+     	 	}
+		}
+    }); 
+
+	/* パスワードフィールドにあるフォーカスがあるとき */
+    $("#id_pas_ADP_Adminpass3").keyup(function(e) {
+		$("#log_mes").empty();	
+		if (!e) var e = window.event;
+		/* エンターキー押された場合 */
+		if ( e.keyCode == 13 ){
+			/*両方入力されていてエンターキー押されるとログイン*/
+			if ($("#id_pas_ADP_Adminpass1").val() != '' && $("#id_pas_ADP_Adminpass2").val() != ''
+				&& $("#id_pas_ADP_Adminpass3").val() != '') {
+     	 		$("#id_Btn_ADP_Idshu").trigger("click");
+     	 	}
+		}
+    }); 
+
+});
+</script>
+<div id="m_index_pw_henko">
+	<%= form_tag( { :action => 'commit' },  { :remote => true,  :method => 'post', :name => 'nm_frm_ADP_Henko', :autocomplete => 'off' }) do  %>
+	<div class="login_memo1">現在のパスワードと新しいパスワードを入力して下さい。</div><br>
+	<div class="pass_henko_label1"><p class="midashi_adp">現在のパスワード</p></div>
+	<div class="pass_henko_field" >
+		<%= password_field_tag 'nm_pas_ADP_Adminpass1', '', :id => 'id_pas_ADP_Adminpass1' , :class => 'input_2' , :tabindex => 21 %>
+	</div>
+
+	<div class="kugiri"></div>
+
+	<div class="pass_henko_label1"><p class="midashi_adp">新しいパスワード</p></div>
+	<div class="pass_henko_field">
+		<%= password_field_tag 'nm_pas_ADP_Adminpass2', '', :id => 'id_pas_ADP_Adminpass2' , :class => 'input_2' , :tabindex => 22 %>
+	</div>
+			
+	<div class="kugiri"></div>
+
+	<div class="pass_henko_label1"><p class="midashi_adp">新しいパスワード(確認用)</p></div>
+	<div class="pass_henko_field">
+		<%= password_field_tag 'nm_pas_ADP_Adminpass3', '', :id => 'id_pas_ADP_Adminpass3' , :class => 'input_2' , :tabindex => 23 %>
+	</div>
+			
+	<div class="kugiri"></div>
+	<div id="log_mes" style="margin-bottom:5px;"></div>
+	<%= submit_tag( '変更' , :class => 'login_button_left loading', :id => 'id_Btn_ADP_Idshu', :tabindex => 24 ) %>
+
+	<%= submit_tag( 'クリア' , :class => 'login_button_right2', :id => 'id_Btn_ADP_Toroku', :tabindex => 25 ) %>
+			
+	<% end %>		
+			
+</div>
+
+	<% content_for :title do %>管理者用パスワード変更<% end %>
+	<% content_for :for_top do %><span class="right_float">ログイン中：管理者用&nbsp;&nbsp;<a id="jump">トップページへ</a></span><% end %>
+	<% content_for :sub_title do %>管理者用パスワード変更<% end %>

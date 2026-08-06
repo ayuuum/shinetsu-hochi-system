@@ -1,0 +1,131 @@
+<script type="text/javascript"><!--
+$(document).ready(function($){
+
+ $('.loading').click(function() {
+    $.blockUI({
+      message: 'データを読み込んでいます。お待ち下さい・・・',
+      css: {
+        border: 'none',
+        padding: '10px',
+        backgroundColor: '#333',
+        opacity: .9,
+        color: '#fff',
+        cursor: 'wait'
+      },
+      overlayCSS: {
+        backgroundColor: '#000',
+        opacity: 0.6
+      }
+    });
+  });
+
+	$(document).on("keypress", "input:not(.allow_submit)",function(event){
+		return event.which !== 13
+	});
+});
+
+window.onload = function(){
+ document.getElementById("id_txt_HCL_Hachusha").focus();
+ }
+function to_buken_joho_shosai(bukenCode, hachushaCode) {
+	location.href = "http://" + location.host + "/buken_joho_shosai/index/" + bukenCode + "/" + hachushaCode;
+}
+//--></script>
+<script lang="javascript">
+// rewrite the 'onkeydown' event to make sure 'Enter' key can be used as 'Tab' in some needed circumstances.  It work fine on both IE and non-IE browsers.
+document.onkeydown=function(evt)
+{
+	var isie = (document.all) ? true : false;
+	var key;
+	var srcobj;
+	// if the agent is an IE browser, it's easy to do this.
+	if (isie) {
+		key = event.keyCode;
+		srcobj=event.srcElement;
+	}
+	else {
+		key = evt.which;
+		srcobj=evt.target;
+	}
+	if(key==13 && srcobj.type!='button' && srcobj.type!='submit' &&srcobj.type!='reset' && 
+	srcobj.type!='textarea' && srcobj.type!='') {
+		if(isie)
+			event.keyCode=9;
+		else {
+			var el=getNextElement(evt.target);
+			
+			while(el.type=='hidden' || el.type=='submit' || el.type=='radio' || $(el).is("select") )
+				el=getNextElement(el);
+
+			if(!el)
+				return false;
+			else
+				el.focus();
+		}
+	}
+}
+function getNextElement(field) {
+	var form = field.form;
+	for(var e = 0; e < form.elements.length; e++) {
+		if (field == form.elements[e])
+		break;
+	}
+	return form.elements[++e % form.elements.length];
+}
+</script>
+
+<div id="hachulist_box">
+	<%= form_tag( { :action => 'commit' },  { :remote => true,  :method => 'post', :name => 'nm_frm_BKS_Toroku' }) do  %>
+	<%= submit_tag( '帳票出力' , :class => 'chohyo_button loading', :id => 'id_Btn_THS_Kensaku' , :tabindex => 27 ) %>
+	
+	<div class="hcl02"><div class="midashi3_label_240_20">◆検索条件</div></div>
+	<div class="kugiri"></div>
+	<div class="hcl02"><div class="normal_message">※発注者名、物件名のどちらかを必ず入力し、検索を行って下さい。</div></div>
+	<div class="kugiri"></div>
+	<div class="hcl03">
+		<div class="midashi_label_bks_125_20">参照年度&nbsp;&nbsp;※</div>
+		<%= select_tag('sanshonendo',options_for_select(@nendo_select,@default_n), :id => 'id_cmb_HCL_Sanshonendo', :class => 'select_295_hcl', :tabindex => 21 ) %>
+	</div>
+	<div class="kugiri"></div>
+	<div class="hcl03">
+		<div class="midashi_label_bks_125_20">発注者名</div>
+		<%= text_field_tag :nm_txt_HCL_Hachusha, '', { :id => 'id_txt_HCL_Hachusha', :class => 'input_bks_1', :maxlength => 40, :tabindex => 22 } %>
+	</div>
+
+	<div class="hcl03">
+		<div class="midashi_label_bks_125_20">物件名</div>
+		<%= text_field_tag :nm_txt_HCL_Buken, '',{ :id => 'id_txt_HCL_Buken', :class => 'input_bks_1', :maxlength => 40, :tabindex => 23 } %>		
+	</div>
+
+	<div class="kugiri"></div>	
+	<div class="hcl05">
+		<%= submit_tag( '検索' , :class => 'button_3 loading', :id => 'id_Btn_HCL_Kensaku' , :tabindex => 24 ) %>
+	</div>	
+	<div class="kugiri"></div>	
+
+	
+	<div class="hcl04"><div class="midashi3_label_240_20" id="kensaku_kekka">◆検索結果</div></div>
+	
+	<div class="kugiri"></div>	
+
+	<div class="hcl01">
+		<div class="hcl_header01">発注者名</div>
+		<div class="hcl_header02">発注者別<br>契約保有高合計</div>
+		<div class="hcl_header02">発注者別<br>外注費合計</div>
+		<div class="hcl_header03">物件名</div>
+		<div class="hcl_header02">物件別<br>契約保有高合計</div>
+		<div class="hcl_header02">物件別<br>外注費合計</div>
+		<div class="kugiri"></div>
+		<% #明細＋合計行 %>
+		<div id="hcl_table"></div>
+		<div class="kugiri"></div>
+	</div>
+
+	<% end %>		
+
+</div>
+			
+	<% content_for :title do %>検索一覧(発注者／物件別)<% end %>
+	<% content_for :for_top do %><span class="right_float">ログイン中：管理者用&nbsp;&nbsp;<a id="jump">トップページへ</a></span><% end %>
+	<% content_for :sub_title do %>検索一覧(発注者／物件別)<% end %>
+	

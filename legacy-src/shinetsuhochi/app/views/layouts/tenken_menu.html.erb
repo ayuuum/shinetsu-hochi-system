@@ -1,0 +1,25 @@
+<% content_for :main do %>
+<div id="page2">
+	<div id="header">
+		<span class="header_string">保守点検業務支援システム</span>
+		<%= yield :for_top %>
+	</div>
+	<div id="container">
+		<div id="menu">
+			<div id="menu_box" class="kensaku">
+				<p class="midashi">◆点検担当者用</p>
+				<%= form_tag({ :controller => 'yotei'}) do %><%= submit_tag( '点検予定／実績一覧', :class => 'but_t' , :tabindex => 1 ) %><% end %>
+			</div>
+		</div>
+
+		<div id="contents">
+		<div id="main_top">
+		<span class="main_h2"><%= yield :sub_title %></span>
+	</div>
+		<%= yield %>
+<!-- contents--></div>	
+<!-- container--></div>
+<div id="footer"><p>Copyright &copy; 2014 株式会社 信越報知  All rights reserved.</p></div>
+<!-- page --></div>
+<% end %>
+<%= render :template => 'layouts/application' %>

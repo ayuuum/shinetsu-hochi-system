@@ -1,0 +1,38 @@
+clearTimeout(timerID);
+var timerID = setInterval("jumpHome()",3600*1000);
+
+if (("<%= @error_message[0] %>").length > 0 && ('<%= @error %>' != '5')){
+	$.unblockUI();
+	var height_t = parseInt("<%= @dialog_height %>");
+	var width_t =  parseInt("<%= @dialog_width %>");
+	var title_t = "<%= @dialog_title %>";
+	$("#message").html('<img align="left" src="/assets/images/<%= @error_message[0] %>.png" /><%= @error_message[1] %>');
+	$("#message").dialog({
+		autoOpen: true, modal: true, height: height_t, width: width_t, title: title_t, dialogClass: 'dlgclass',
+		buttons: {   
+			'ＯＫ': function(event) { $(this).dialog('close'); }
+		}
+	});
+
+} else if (("<%= @error_message[0] %>").length == 0 && ('<%= @error %>' == '1')){
+	$("#kensaku_kekka").empty();
+	$("#kensaku_kekka").append('◆検索結果(<%= @sql_count %>件)')
+	$("#bkp_table").empty();
+	$("#bkp_table").html('<%= raw @html_string %>');
+	$.unblockUI();
+} else if ('<%= @error %>' == '2'){
+	close();
+} else if ('<%= @error %>' == '3'){
+   /* 呼び出し元の点検予定画面に選択した物件名を送る*/
+   /* 親ウィンドウを取得する*/
+	if(!opener){
+		opener = dialogArguments;
+	}
+	var kensakubukenmei = '<%= @kensakubukenmei %>';
+	window.opener.$("#id_txt_YAM_Bukenmei").val(kensakubukenmei);
+	window.opener.$("#id_txt_YTI_Bukenmei").val(kensakubukenmei);
+
+	/* var str = kensakubukenmei;
+	returnValue = str; */
+	close();
+}

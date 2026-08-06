@@ -1,0 +1,70 @@
+clearTimeout(timerID);
+var timerID = setInterval("jumpHome()",3600*1000);
+
+if ('<%= @error %>' == '4'){
+		$.unblockUI();
+   if (("<%= @error_message[0] %>").length > 0 ){
+		var height_t = parseInt("<%= @dialog_height %>");
+		var width_t =  parseInt("<%= @dialog_width %>");
+		var title_t = ("<%= @dialog_title_kakunin %>" == 2 ) ? "<%= @dialog_title_kakunin %>" : "<%= @dialog_title %>";
+	$("#message").html('<img align="left" src="/assets/images/<%= @error_message[0] %>.png" /><%= @error_message[1] %>');
+	$("#message").dialog({
+			autoOpen: true, modal: true, height: height_t, width: width_t, title: title_t, dialogClass: 'dlgclass',
+			buttons: {   
+				'ＯＫ': function(event) { $(this).dialog('close'); }
+			}
+		});
+
+	}
+
+	$("#btr04_box").empty();
+	$("#btr04_box").append('<%=raw @html_str %>');
+	$.unblockUI();
+} else if ('<%= @error %>' == '2'){
+	$.unblockUI();
+	/* 発注者検索画面をモーダルダイアログで表示*/
+
+	/*画面の情報セット*/
+	var url = "http://" + location.host + "/" + "<%= @query_str %>";
+	win = window.open(url,"hachusha_kensaku","resizeable=no,scrollbars=yes,status=no");
+	
+} else if (("<%= @error_message[0] %>").length > 0 && '<%= @error %>' == '1'){
+	$.unblockUI();
+	var height_t = parseInt("<%= @dialog_height %>");
+	var width_t =  parseInt("<%= @dialog_width %>");
+	var title_t = "<%= @error_message[2] %>";
+	$("#message").html('<img align="left" src="/assets/images/<%= @error_message[0] %>.png" /><%= @error_message[1] %>');
+	$("#message").dialog({
+		autoOpen: true, modal: true, height: height_t, width: width_t, title: title_t, dialogClass: 'dlgclass',
+		buttons: {   
+			'はい': function(event) { 
+			location.href = "http://" + location.host + "/" + "<%= @query_str %>";
+			$(this).dialog('close'); 
+			},
+   	    	'いいえ': function(event) { $(this).dialog('close'); }
+		}
+	});	
+	
+	
+}  else if (("<%= @error_message[0] %>").length > 0 ){
+	$.unblockUI();
+	var height_t = parseInt("<%= @dialog_height %>");
+	var width_t =  parseInt("<%= @dialog_width %>");
+	var title_t = "<%= @error_message[2] %>";
+	var focus = "<%= @focus %>";
+	$("#message").html('<img align="left" src="/assets/images/<%= @error_message[0] %>.png" /><%= @error_message[1] %>');
+	$("#message").dialog({
+		autoOpen: true, modal: true, height: height_t, width: width_t, title: title_t, dialogClass: 'dlgclass',
+		buttons: {   
+			'ＯＫ': function(event) { $(this).dialog('close');
+			if (focus != "")
+				$("#" + focus).focus();
+			 }
+		}
+	});
+		
+}else if (("<%= @error_message[0] %>").length == 0 && '<%= @error %>' == '1'){
+	$.unblockUI();
+	location.href = "http://" + location.host + "/" + "<%= @query_str %>";
+	
+} 

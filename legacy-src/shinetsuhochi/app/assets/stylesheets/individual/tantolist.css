@@ -1,0 +1,224 @@
+/*** 物件検索 / 発注者検索共通 ***/
+#tantolist_box {
+	width:1045px;
+	/*height:450px;*/
+	margin: 0 auto;
+	margin-top:20px;
+	text-align:center;
+	padding: 20px 0 20px 5px;
+}
+
+
+.midashi_label_ttl_150_20 {
+	padding:1px;
+	width: 150px;
+	height: 20px;
+	text-align: left;
+	vertical-align:middle;
+	font-weight: bold;
+	border-style: outset;
+	border-width: 2px;
+	float: left;
+	background: #f4A440;
+	border-color: #f4A440;		
+}
+
+.ttl01 {
+	margin:0 0 5px 5px;
+	}
+
+.ttl02 {
+	margin:0 0 0 5px;
+	width: 510px;
+	height:30px;
+}
+.ttl03 {
+	margin:0 0 0 5px;
+	width: 440px;
+	height:30px;
+	float:left;
+}
+.ttl04 {
+	margin:10px 0 20px 5px;
+}
+
+.ttl05 {
+	margin:10px 0 20px 0;
+}
+
+.ttl06 {
+	margin:0 0 0 5px;
+	width: 380px;
+	height:30px;
+	float:left;
+}
+
+.ttl07 {
+	margin:0 0 0 5px;
+	width: 490px;
+	height:30px;
+	float:left;
+}
+
+
+.ttl_header01 ,.ttl_header02,.ttl_header03,.ttl_header04, .ttl_header05, .ttl_header06, .ttl_header07, .ttl_header08  {
+	text-align:center;
+	font-weight:bold;
+	background: #f4A440;
+	border-color: #f4A440;
+	border-style: outset;
+	border-width: 2px;
+	vertical-align:center;
+	float:left;
+	font-size:14px;
+		overflow:hidden;
+}
+
+
+.ttl_header01 {
+	width:125px;
+	height:35px;
+	padding-top:20px;
+}
+
+
+.ttl_header02 {
+	width:110px;
+	height:35px;
+	padding-top:20px;
+}
+
+.ttl_header03 {
+	width:50px;
+	height:53px;
+	padding-top:2px;
+}
+
+.ttl_header04 {
+	width:45px;
+	height:53px;
+	padding-top:2px;	
+}
+
+.ttl_header05 {
+	width:100px;
+	height:45px;
+	padding-top:10px;	
+}
+
+.ttl_header06 {
+	width:100px;
+	height:35px;
+	padding-top:20px;
+}
+
+.ttl_header07 {
+	width:90px;
+	height:35px;
+	padding-top:20px;
+}
+.ttl_header08 {
+	width:50px;
+	height:45px;
+	padding-top:10px;
+}
+
+
+.ttl_body01 , .ttl_body02 , .ttl_body03 , .ttl_body04 , .ttl_body05 , .ttl_body06, .ttl_body07 {
+	height: 64px;
+	float:left;
+	resize: none;
+	overflow:hidden;
+	background:#ffffff;
+	text-align:right;
+	margin:0;
+	padding:2px 1px 0 1px;	
+	border-width: 2px;
+}
+
+.ttl_body01 , .ttl_body02 , .ttl_body04 , .ttl_body07 {
+	text-align:left;
+}
+
+.ttl_footer03, .ttl_footer04 , .ttl_footer05 , .ttl_footer06 {
+	height: 20px;
+	float:left;
+	resize: none;
+	overflow:hidden;
+	background:#ffffff;
+	text-align:right;
+	padding:2px 1px 0 1px;	
+	border-width: 2px;
+	margin:0;	
+}
+
+
+/* 全角20文字フィールド */
+.ttl_body01 {
+	width:123px;
+	
+}
+
+.ttl_footer01 {
+	width:125px;
+}
+.ttl_body02 {
+	width: 108px;
+}
+
+.ttl_footer02 {
+	width: 110px;
+}
+
+.ttl_body03,.ttl_footer03 {
+	width: 48px;
+}
+
+.ttl_footer03_r {
+width: 45px;
+}
+
+.ttl_body04,.ttl_footer04 {
+	width: 43px;
+}
+
+.ttl_body05,.ttl_footer05 {
+	width: 98px;
+}
+
+.ttl_body06,.ttl_footer06 {
+	width: 98px;
+}
+
+.ttl_body07 {
+	width: 88px;
+}
+
+.ttl_footer07 {
+	width: 90px;
+}
+.ttl_footer01,.ttl_footer02,.ttl_footer07,.ttl_footer03_r {
+	height: 21px;
+	float:left;	
+	text-align:center;
+	font-weight:bold;
+	background: #f4A440;
+	border-color: #f4A440;
+	border-style: outset;
+	border-width: 2px;
+	vertical-align:center;
+	padding-top:3px;
+
+}
+
+select.select_295_ttl {
+	width:295px;
+	height: 25px;
+	float:left;
+}
+
+
+
+
+
+

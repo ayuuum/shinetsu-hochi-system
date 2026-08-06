@@ -1,0 +1,14 @@
+<% content_for :main do %>
+	<div id="page2">
+		<div id="container_top">
+			<div id="contents_main">
+				<div id="main_top">
+					<span class="main_h2"><%= yield :sub_title %></span>
+				</div>
+				<%= yield %>
+				<!-- contents_main--></div>
+			<!-- container_top--></div>
+	<!-- page --></div>
+<% end %>
+
+<%= render :template => 'layouts/application' %>

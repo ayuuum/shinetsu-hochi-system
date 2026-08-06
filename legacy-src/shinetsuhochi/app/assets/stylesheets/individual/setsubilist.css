@@ -1,0 +1,154 @@
+/*** 点検担当者変更・削除 ***/
+#setsubilist_box {
+	width:1040px;
+/*	height:900px;*/
+	margin: 0 auto;
+	margin-top:40px;
+	text-align:center;
+	padding: 15px 0 15px 0;
+}
+a.tab {
+    text-decoration:none;
+    cursor:text;
+    color:#000000;
+}
+
+.sbl01 {
+	margin:20px 0 0 4px;
+	width: 1032px;
+	}
+
+.sbl02 {
+	margin:0 0 0 5px;
+	width: 405px;
+	height:40px;
+}
+
+.sbl03 {
+	margin:0 0 0 5px;
+	width: 420px;
+	height:30px;
+}
+
+
+.sbl_header01 ,.sbl_header02_1,.sbl_header02_2,.sbl_header02_3,.sbl_header03,.sbl_footer01,.sbl_footer03 {
+	text-align:center;
+	font-weight:bold;
+	background: #f4A440;
+/*		resize: none;*/
+	border-color: #f4A440;
+	border-style: outset;
+	border-width: 2px;
+	overflow:hidden;
+}
+
+
+.sbl_body02_2,.sbl_body02_3, .sbl_footer02_2, .sbl_footer02_3
+{
+	resize: none;
+	overflow:hidden;
+	text-align: right;
+	font-size:13px;
+}
+.sbl_body01 ,.sbl_body03 {
+	resize: none;
+	text-align: left;
+	font-size:14px;
+	overflow:hidden;
+}
+
+.sbl_header01 {
+	width:127px;
+	height:49px;
+	float:left;
+	padding-top:15px;
+}
+
+.sbl_header02 {
+	height:62px;
+	float:left;
+}
+.sbl_header02_1 {
+	height:21px;
+}
+
+.sbl_header02_2 {
+	width:76px;
+	height:39px;
+	float:left;
+}
+
+.sbl_header02_3 {
+	width:96px;
+	height:39px;
+	float:left;
+}
+
+.sbl_header03 {
+	width:177px;
+	height:49px;
+	float:left;
+	padding-top:15px;
+}
+
+.sbl_body01, .sbl_body02_2, .sbl_body02_3, .sbl_body03 {
+	height:20px;
+	float:left;
+	background-color: #ffffff;
+	padding:0 1px 0 1px;	
+}
+
+.sbl_body01 {
+	width:125px;
+}
+.sbl_body02_2 {
+	width:73px;
+}
+
+.sbl_body02_3 {
+	width:95px;
+}
+.sbl_body03 {
+	width:175px;
+	
+}
+
+.sbl_footer01 {
+	width:125px;
+	height:21px;
+	float:left;
+	padding:0 1px 0 1px;		
+		
+}
+.sbl_footer02_2 {
+	width:73px;
+	height:20px;
+	float:left;
+	background-color: #ffffff;	
+		padding:0 1px 0 1px;	
+}
+
+.sbl_footer02_3 {
+	width:95px;
+	height:20px;
+	float:left;
+	background-color: #ffffff;	
+		padding:0 1px 0 1px;	
+}
+.sbl_footer03 {
+	width:175px;
+	height:21px;
+	float:left;
+	padding:0 1px 0 1px;		
+}
+
+.button_3_sbl {
+	font-size:15px;
+	float:left;
+	width: 160px;
+	height: 30px;
+	margin:10px 10px 10px 5px;
+}
+
+
+

@@ -1,0 +1,864 @@
+<script type="text/javascript"><!--
+window.onload = function(){
+ document.getElementById("id_txt_BTR_Hachushamei").focus();
+ }
+var oldval;
+var err_str;
+var err_count;
+var shubetuNo;
+var focus_id;
+var select_flg;
+$(document).ready(function($){
+	var id_message = '#message';
+	var tenken_message_1 = "点検回数１回目の点検予定月<br>";
+	var tenken_message_2 = "点検回数２回目の点検予定月<br>";
+	var tenken_message_3 = "点検回数１回目の契約金額<br>";
+	var tenken_message_4 = "点検回数２回目の契約金額<br>";
+	var tenken_message_5 = "点検回数１回目の点検担当者<br>";
+	var tenken_message_6 = "点検回数２回目の点検担当者<br>";
+	var tenken_message_7 = "点検回数１回目の外注費<br>";
+	var tenken_message_8 = "点検回数２回目の外注費<br>";
+	var tenken_message_9 = "点検回数２回目の点検予定月は入力できません。<br>";
+	var tenken_message_10 = "点検回数１回目の外注費は入力できません。<br>";
+	var tenken_message_11 = "点検回数２回目の外注費は入力できません。<br>";
+	var tenken_message_12 = "選択した担当者は削除されています。<br>";
+	var tenken_message_13 = "点検回数１回目の外注費は無効です。<br>";
+	var tenken_message_14 = "点検回数２回目の外注費は無効です。<br>";	
+	var tenken_message_15 = "点検予定月は１回目と２回目で同じ値にできません。<br>";	
+	var tenken_message_16 = "メイン担当者が入力されていません。<br>";
+
+	var title_t = '入力確認';
+	/*エンターキーの入力を無効化*/
+	/*総合テスト不具合2-1 修正　浜 2014-12-09　*/
+    $("#id_Btn_BTR_HachushaKensaku").keyup(function(e) {
+		if (!e) var e = window.event;
+		/* エンターキー押された場合 */
+		if ( e.keyCode == 13 ){
+     	 		//$("#id_Btn_BTR_HachushaKensaku").trigger("click");
+		}
+    }); 
+    
+    $("#id_Btn_BTR_Toroku").keyup(function(e) {
+		if (!e) var e = window.event;
+		/* エンターキー押された場合 */
+		if ( e.keyCode == 13 ){
+     	 		//$("#id_Btn_BTR_Toroku").trigger("click");
+		}
+    }); 
+	
+	$(document).on("keypress", "input:not(.allow_submit)",function(event){
+		return event.which !== 13
+	});
+
+  /*契約金金額欄に３桁カンマ区切りで円記号を付ける*/
+  $('.input_9').blur( function(){
+  if ($(this).val() != ""){
+        var newval = format.call( $(this).val().split(',').join(''), ',', '.');
+        if (newval != oldval) {
+            $(this).val(newval);
+            oldval = newval;
+        }
+        }
+      });
+   /*外注費金額欄に３桁カンマ区切りで円記号を付ける*/     
+  $('.input_10').blur( function(){
+  		if ($(this).val() != ""){
+        var newval = format.call( $(this).val().split(',').join(''), ',', '.');
+        if (newval != oldval) {
+            $(this).val(newval);
+            oldval = newval;
+        }
+        }
+      });
+	
+/* 防火設備チェックされたときの処理*/	
+  $('#sentaku11').change( function(){
+	 if ($(this).is(':checked')) { 
+	 	shubetuNo = "11";
+		$(this).select_check_2();
+		}
+	});	
+	
+/* 防火対象物がチェックされたときの処理*/
+  $('#sentaku21').change( function(){
+	 if ($(this).is(':checked')) { 
+	 	shubetuNo = "21";
+		$(this).select_check_3();
+		}
+	});
+	
+/* ITVがチェックされたときの処理*/
+  $('#sentaku31').change( function(){
+	 if ($(this).is(':checked')) { 
+	 	shubetuNo = "31";
+		$(this).select_check_4();
+		}
+	});
+	
+/* 電話がチェックされたときの処理*/
+  $('#sentaku32').change( function(){
+	 if ($(this).is(':checked')) { 
+	 	shubetuNo = "32";
+		$(this).select_check_4();
+		}
+	});
+	
+/* 音響がチェックされたときの処理*/
+  $('#sentaku33').change( function(){
+	 if ($(this).is(':checked')) { 
+	 	shubetuNo = "33";
+		$(this).select_check_4();
+		}
+	});
+	
+/* 連結送水管耐圧がチェックされたときの処理*/
+  $('#sentaku34').change( function(){
+	 if ($(this).is(':checked')) { 
+	 	shubetuNo = "34";
+		$(this).select_check_3();
+		}
+	});
+	
+/* 地下タンクがチェックされたときの処理*/
+  $('#sentaku35').change( function(){
+	 if ($(this).is(':checked')) { 
+	 	shubetuNo = "35";
+		$(this).select_check_4();
+		}
+	});					
+	
+/* その他がチェックされたときの処理*/
+  $('#sentaku36').change( function(){
+	 if ($(this).is(':checked')) { 
+	 	shubetuNo = "36";
+		$(this).select_check_4();
+		}
+	});
+
+/*ダイアログ表示*/
+	$.fn.dialog_show_1 = function() {
+				$(id_message).html('<img align="left" src="/assets/images/message_warning.png" />' + err_str);
+				$(id_message).dialog({
+					autoOpen: true,
+					modal: true, 
+					height: 300, 
+					width: 410, 
+					title: title_t,
+					buttons: { 
+						'ＯＫ': function(event) {
+						/* OK押下時の動作　フォーカス、条件により全選択*/ 
+							$(this).dialog('close'); 
+							$(focus_id).focus();
+							if (select_flg) $(focus_id).select();} 
+					}	
+				}); 
+	}
+	
+
+	/* 点検回数が最大２回の種別、チェックボックスがクリックされたときの検査   */
+	$.fn.select_check_2 = function() {	
+		err_str = "";
+		tantosha_flg1 = false;
+		tantosha_flg2 = false;
+		focus_id = "";
+		select_flg = false;
+		 /*「選択」にチェックが入ったとき*/
+		if ( $("#tenkenkaisu" + shubetuNo + "_1").is(':checked') && $("[name=tenkenyoteiM" + shubetuNo + "_1]").val() == '' ) {
+  		/*点検予定月１に入力が無いとき*/	 
+		  err_str += tenken_message_1;
+		  focus_id = "#id_cmb_BTR_Tenkenyoteim" + shubetuNo + "_1";
+	 	} 
+	 	if ( $("#tenkenkaisu" + shubetuNo + "_2").is(':checked') && $("[name=tenkenyoteiM" + shubetuNo + "_2]").val() == ''){ 
+		/* 	「２回」にチェックがあり、点検予定月２に入力が無いとき*/
+			err_str += tenken_message_2;
+			if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkenyoteim" + shubetuNo + "_2";
+		} 
+		if ($("#tenkenkaisu" + shubetuNo + "_1").is(':checked') && $("#id_txt_BTR_keiyakukingaku" + shubetuNo + "_1").val() == '') {
+		/*「1回」にチェックがあり、契約金額１に入力が無いとき*/
+			err_str += tenken_message_3;
+			if (focus_id == "") focus_id = "#id_txt_BTR_keiyakukingaku" + shubetuNo + "_1";
+		} 
+		if ($("#tenkenkaisu" + shubetuNo + "_2").is(':checked') && $("#id_txt_BTR_keiyakukingaku" + shubetuNo + "_2").val() == '') {
+/*「２回」にチェックがあり、契約金額２に入力が無いとき*/
+			err_str += tenken_message_4;
+			if (focus_id == "") focus_id = "#id_txt_BTR_keiyakukingaku" + shubetuNo + "_2";
+		} 
+		if  ( $("#tenkenkaisu" + shubetuNo + "_1").is(':checked') && 
+		$("[name=tenkentantousha" + shubetuNo + "_1_1]").val() == '' && $("[name=tenkentantousha" + shubetuNo + "_1_2]").val() == '' && 
+		$("[name=tenkentantousha" + shubetuNo + "_1_3]").val() == '' && $("[name=tenkentantousha" + shubetuNo + "_1_4]").val() == '' &&
+			$("[name=tenkentantousha" + shubetuNo + "_1_5]").val() == '' && $("[name=tenkentantousha" + shubetuNo + "_1_6]").val() == '' &&
+			$("[name=tenkentantousha" + shubetuNo + "_1_7]").val() == '' && $("[name=tenkentantousha" + shubetuNo + "_1_8]").val() == '' &&
+			$("[name=tenkentantousha" + shubetuNo + "_1_9]").val() == '' && $("[name=tenkentantousha" + shubetuNo + "_1_10]").val() == '' ) {
+/*「1回」にチェックがあり、点検担当者１_1～1_10までに入力が無いとき*/
+			err_str += tenken_message_5;
+			tantosha_flg1 = true;
+			if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_1";
+		}  
+		
+		if ($("#tenkenkaisu" + shubetuNo + "_2").is(':checked') && 
+			$("[name=tenkentantousha" + shubetuNo + "_2_1]").val() == '' && $("[name=tenkentantousha" + shubetuNo + "_2_2]").val() == '' && 
+			$("[name=tenkentantousha" + shubetuNo + "_2_3]").val() == '' && $("[name=tenkentantousha" + shubetuNo + "_2_4]").val() == '' &&
+			$("[name=tenkentantousha" + shubetuNo + "_2_5]").val() == '' && $("[name=tenkentantousha" + shubetuNo + "_2_6]").val() == '' &&
+			$("[name=tenkentantousha" + shubetuNo + "_2_7]").val() == '' && $("[name=tenkentantousha" + shubetuNo + "_2_8]").val() == '' &&
+			$("[name=tenkentantousha" + shubetuNo + "_2_9]").val() == '' && $("[name=tenkentantousha" + shubetuNo + "_2_10]").val() == '' ) {
+/*「２回」にチェックがあり、点検担当者2_1～2_10までに入力が無いとき*/
+			err_str += tenken_message_6;
+			tantosha_flg2 = true;
+			if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_1";
+		} 
+		
+	/* 点検担当者１_1～1_10が「外注」で、外注費に入力が無いとき */	
+	if ($("#tenkenkaisu" + shubetuNo + "_1").is(':checked')) {
+	if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_1").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_1").val() == '' ){ err_str += tenken_message_7; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_1";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_2").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_2").val() == '' ){ err_str += tenken_message_7; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_2";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_3").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_3").val() == '' ){ err_str += tenken_message_7; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_3";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_4").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_4").val() == '' ){ err_str += tenken_message_7; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_4";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_5").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_5").val() == '' ){ err_str += tenken_message_7; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_5";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_6").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_6").val() == '' ){ err_str += tenken_message_7; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_6";}
+	else if ( $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_7").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_7").val() == '' ){ err_str += tenken_message_7; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_7";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_8").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_8").val() == '' ){ err_str += tenken_message_7; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_8";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_9").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_9").val() == '' ){ err_str += tenken_message_7; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_9";}	
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_10").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_10").val() == '' ){ err_str += tenken_message_7; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_10";}	}				
+
+	/* 点「２回」にチェックがあり、点検担当者2_1～2_10が「外注」で、外注費に入力が無いとき */	
+	if ($("#tenkenkaisu" + shubetuNo + "_2").is(':checked')) {
+	if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_1").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_1").val() == '' ){ err_str += tenken_message_8; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_1";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_2").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_2").val() == '' ){ err_str += tenken_message_8; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_2";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_3").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_3").val() == '' ){ err_str += tenken_message_8; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_3";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_4").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_4").val() == '' ){ err_str += tenken_message_8; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_4";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_5").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_5").val() == '' ){ err_str += tenken_message_8; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_5";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_6").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_6").val() == '' ){ err_str += tenken_message_8; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_6";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_7").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_7").val() == '' ){ err_str += tenken_message_8; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_7";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_8").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_8").val() == '' ){ err_str += tenken_message_8; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_8";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_9").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_9").val() == '' ){ err_str += tenken_message_8; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_9";}	
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_10").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_10").val() == '' ){ err_str += tenken_message_8; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_10";}	}	
+		
+		
+		
+	/*未入力エラーがあれば [が未入力です]と文字列挿入*/	
+		if ( err_str != "")
+				err_str = err_str.slice(0,-4) + "が未入力です。<br>";
+		
+	
+	 if ($("#tenkenkaisu" + shubetuNo + "_1").is(':checked') && $("[name=tenkenyoteiM" + shubetuNo + "_2]").val() != '' ){			
+	/*「１回」にチェックがあり、点検予定月２に入力があるとき*/	
+		err_str += tenken_message_9;
+		} 
+		
+	/*点検担当者１_1～1_10,2_1～2_10が「削除」のとき*/	
+	if ($("#tenkenkaisu" + shubetuNo + "_1").is(':checked')){
+	if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_1").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_1"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_2").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_2"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_3").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_3"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_4").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_4"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_5").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_5"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_6").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_6"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_7").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_7"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_8").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_8"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_9").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_9"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_10").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_10"; }
+	} else if ($("#tenkenkaisu" + shubetuNo + "_2").is(':checked')) {
+	if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_1").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_1"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_2").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_2"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_3").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_3"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_4").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_4"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_5").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_5"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_6").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_6"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_7").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_7"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_8").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_8"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_9").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_9"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_10").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_10"; }	}		
+		
+	/* 「1回」にチェックがあり、点検担当者１_1～1_10が「社内」で、外注費に入力があるとき */	
+	if ($("#tenkenkaisu" + shubetuNo + "_1").is(':checked')) {
+	if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_1").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_1").val() !=''){ err_str += tenken_message_10; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_1"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_2").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_2").val() !=''){err_str += tenken_message_10; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_2"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_3").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_3").val() !=''){err_str += tenken_message_10; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_3"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_4").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_4").val() !=''){err_str += tenken_message_10; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_4"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_5").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_5").val() !=''){err_str += tenken_message_10; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_5"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_6").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_6").val() !=''){err_str += tenken_message_10; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_6"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_7").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_7").val() !=''){err_str += tenken_message_10; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_7"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_8").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_8").val() !=''){err_str += tenken_message_10; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_8"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_9").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_9").val() !=''){err_str += tenken_message_10; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_9"; } 
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_10").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_9").val() !=''){err_str += tenken_message_10; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_10"; } 
+	}	   
+	
+	/*「２回」にチェックがあり、点検担当者2_1～2_10が「社内」で、外注費に入力があるとき*/	
+	if ($("#tenkenkaisu" + shubetuNo + "_2").is(':checked')) {
+	if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_1").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_1").val() !=''){ err_str += tenken_message_11; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_1"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_2").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_2").val() !=''){err_str += tenken_message_11; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_2"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_3").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_3").val() !=''){err_str += tenken_message_11; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_3"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_4").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_4").val() !=''){err_str += tenken_message_11; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_4"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_5").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_5").val() !=''){err_str += tenken_message_11; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_5"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_6").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_6").val() !=''){err_str += tenken_message_11; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_6"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_7").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_7").val() !=''){err_str += tenken_message_11; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_7"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_8").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_8").val() !=''){err_str += tenken_message_11; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_8"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_9").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_9").val() !=''){err_str += tenken_message_11; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_9"; } 
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_10").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_9").val() !=''){err_str += tenken_message_11; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_10"; } 
+	}		
+	
+		
+if ($("#tenkenkaisu" + shubetuNo + "_1").is(':checked') && ( 
+    $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_1").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_1").val() !='' 
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_2").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_2").val() !='' 
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_3").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_3").val() !=''
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_4").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_4").val() !=''
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_5").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_5").val() !=''
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_6").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_6").val() !=''
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_7").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_7").val() !=''
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_8").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_8").val() !=''
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_9").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_9").val() !=''
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_10").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_10").val() !='' )){	
+		/*「1回」にチェックがあり、点検担当者１_1～1_10に入力が無く、外注費に入力があるとき*/	
+		/*コメントアウト** err_str += tenken_message_13; */
+		} 
+
+if ($("#tenkenkaisu" + shubetuNo + "_2").is(':checked') && ( 
+	       $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_1").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_1").val() !='' 
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_2").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_2").val() !='' 
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_3").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_3").val() !=''
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_4").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_4").val() !=''
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_5").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_5").val() !=''
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_6").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_6").val() !=''
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_7").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_7").val() !=''
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_8").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_8").val() !=''
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_9").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_9").val() !=''
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_10").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_10").val() != '' )){	
+/*「２回」にチェックがあり、点検担当者2_1～2_10に入力が無く、外注費に入力があるとき*/
+		/*コメントアウト** err_str += tenken_message_14;	*/			
+}
+
+		if ($("[name=tenkenyoteiM" + shubetuNo + "_1]").val() == $("[name=tenkenyoteiM" + shubetuNo + "_2]").val()){
+		/*１回めと２回めの点検月が同じ時*/
+		/*コメントアウト**	err_str += tenken_message_15; */
+		}
+
+
+if ( !tantosha_flg1 && $("#tenkenkaisu" + shubetuNo + "_1").is(':checked') && 
+  ( $("#meintantousha" + shubetuNo + "_1_1").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_1_1]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_1_2").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_1_2]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_1_3").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_1_3]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_1_4").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_1_4]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_1_5").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_1_5]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_1_6").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_1_6]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_1_7").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_1_7]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_1_8").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_1_8]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_1_9").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_1_9]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_1_10").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_1_10]").val() == '' )
+ || !tantosha_flg2 && $("#tenkenkaisu" + shubetuNo + "_2").is(':checked') && 
+  ( $("#meintantousha" + shubetuNo + "_2_1").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_2_1]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_2_2").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_2_2]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_2_3").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_2_3]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_2_4").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_2_4]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_2_5").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_2_5]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_2_6").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_2_6]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_2_7").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_2_7]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_2_8").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_2_8]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_2_9").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_2_9]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_2_10").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_2_10]").val() == '' )){
+	/*または 「２回」にチェックがあり、メイン点検担当者ラジオボタンONに点検担当者の入力がないとき	*/
+			err_str += tenken_message_16;
+		} 
+
+
+
+		/* もし一つでもエラーがあれば、チェックボックスのチェックを外し、ダイアログを表示  */
+		if 	( err_str != ""){
+			$(this).attr("checked", false);
+			$(this).dialog_show_1();
+			
+		}
+	
+}	
+	/*-------------*/	
+	
+
+	/* 消防設備以外で点検回数が１回の種別、チェックボックスがクリックされたときの検査   */
+	$.fn.select_check_3 = function() {	
+	err_str = "";
+	tantosha_flg1 = false;
+	focus_id = "";
+	select_flg = false;
+		 /*「選択」にチェックが入ったとき*/
+		if ($("[name=tenkenyoteiM" + shubetuNo + "_1]").val() == '' ) {
+  		/*「点検予定月１に入力が無いとき*/	 
+		  err_str += tenken_message_1;
+		  focus_id = "#id_cmb_BTR_Tenkenyoteim" + shubetuNo + "_1";
+	 	} 
+
+		if ($("#id_txt_BTR_keiyakukingaku" + shubetuNo + "_1").val() == '') {
+		/*契約金額１に入力が無いとき*/
+			err_str += tenken_message_3;
+			if (focus_id == "") focus_id = "#id_txt_BTR_keiyakukingaku" + shubetuNo + "_1";
+		} 
+
+		if ($("[name=tenkentantousha" + shubetuNo + "_1_1]").val() == '' && $("[name=tenkentantousha" + shubetuNo + "_1_2]").val() == '' && 
+			$("[name=tenkentantousha" + shubetuNo + "_1_3]").val() == '' ) {
+/*点検担当者１_1～1_3までに入力が無いとき*/
+			err_str += tenken_message_5;
+			tantosha_flg1 = true;
+			if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_1";
+		} 
+
+		
+			/* 点検担当者１_1～1_3が「外注」で、外注費に入力が無いとき */	
+
+	if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_1").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_1").val() == '' ){ err_str += tenken_message_7; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_1";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_2").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_2").val() == '' ){ err_str += tenken_message_7; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_2";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_3").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_3").val() == '' ){ err_str += tenken_message_7; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_3";}
+				
+		
+
+	/*未入力エラーがあれば文字列末尾<br>削除して [が未入力です<br>]と文字列挿入*/	
+		if ( err_str != "")
+				err_str = err_str.slice(0,-4) + "が未入力です。<br>";
+		
+		
+	/*点検担当者１_1～1_3が「削除」のとき*/
+	if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_1").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_1"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_2").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_2"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_3").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_3"; }
+	
+
+/*点検担当者１_1～1_3が「社内」で、外注費に入力があるとき*/	
+	if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_1").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_1").val() !=''){ err_str += tenken_message_10; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_1"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_2").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_2").val() !=''){err_str += tenken_message_10; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_2"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_3").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_3").val() !=''){err_str += tenken_message_10; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_3"; }		
+		
+		
+		
+if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_1").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_1").val() !='' 
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_2").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_2").val() !='' 
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_3").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_3").val() !='' ){	
+		/*点検担当者１_1～1_3に入力が無く、外注費に入力があるとき*/	
+	/*コメントアウト**	err_str += tenken_message_13; */
+		} 		
+		
+		
+if ( !tantosha_flg1 && ($("#meintantousha" + shubetuNo + "_1_1").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_1_1]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_1_2").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_1_2]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_1_3").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_1_3]").val() == '')){
+	/*または 「２回」にチェックがあり、メイン点検担当者ラジオボタンONに点検担当者の入力がないとき	*/
+			err_str += tenken_message_16;
+		} 		
+		
+		
+		/* もし一つでもエラーがあれば、チェックボックスのチェックを外し、ダイアログを表示  */
+		if 	( err_str != ""){
+			$(this).attr("checked", false);
+			$(this).dialog_show_1();
+		}
+	
+}
+
+
+
+	/* 消防設備以外の点検回数が最大２回の種別、チェックボックスがクリックされたときの検査   */
+	$.fn.select_check_4 = function() {	
+		err_str = "";
+		tantosha_flg1 = false;
+		tantosha_flg2 = false;
+		focus_id = "";
+		select_flg = false;
+		 /*「選択」にチェックが入ったとき*/
+		if ($("#tenkenkaisu" + shubetuNo + "_1").is(':checked') && $("[name=tenkenyoteiM" + shubetuNo + "_1]").val() == '' ) {
+  		/*点検予定月１に入力が無いとき*/	 
+		  err_str += tenken_message_1;	
+		  focus_id = "#id_cmb_BTR_Tenkenyoteim" + shubetuNo + "_1";
+	 	} 
+	 	if ( $("#tenkenkaisu" + shubetuNo + "_2").is(':checked') && $("[name=tenkenyoteiM" + shubetuNo + "_2]").val() == ''){ 
+		/* 	「２回」にチェックがあり、点検予定月２に入力が無いとき*/
+			err_str += tenken_message_2;
+			if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkenyoteim" + shubetuNo + "_2";	
+		} 
+		if ($("#tenkenkaisu" + shubetuNo + "_1").is(':checked') && $("#id_txt_BTR_keiyakukingaku" + shubetuNo + "_1").val() == '') {
+		/*「1回」にチェックがあり、、契約金額１に入力が無いとき*/
+			err_str += tenken_message_3;
+			if (focus_id == "") focus_id = "#id_txt_BTR_keiyakukingaku" + shubetuNo + "_1";
+		} 
+		if ($("#tenkenkaisu" + shubetuNo + "_2").is(':checked') && $("#id_txt_BTR_keiyakukingaku" + shubetuNo + "_2").val() == '') {
+/*「２回」にチェックがあり、契約金額２に入力が無いとき*/
+			err_str += tenken_message_4;
+			if (focus_id == "") focus_id = "#id_txt_BTR_keiyakukingaku" + shubetuNo + "_2";
+		} 
+		if ($("#tenkenkaisu" + shubetuNo + "_1").is(':checked') &&  $("[name=tenkentantousha" + shubetuNo + "_1_1]").val() == '' && $("[name=tenkentantousha" + shubetuNo + "_1_2]").val() == '' && 
+			$("[name=tenkentantousha" + shubetuNo + "_1_3]").val() == '' ) {
+/*「1回」にチェックがあり、点検担当者１_1～1_3までに入力が無いとき*/
+			tantosha_flg1 = true;
+			err_str += tenken_message_5;
+			if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_1";
+		} 
+		if ($("#tenkenkaisu" + shubetuNo + "_2").is(':checked') && 
+			$("[name=tenkentantousha" + shubetuNo + "_2_1]").val() == '' && $("[name=tenkentantousha" + shubetuNo + "_2_2]").val() == '' && 
+			$("[name=tenkentantousha" + shubetuNo + "_2_3]").val() == '' ) {
+/*「２回」にチェックがあり、点検担当者１_1～1_3までに入力が無いとき*/
+			tantosha_flg2 = true;
+			err_str += tenken_message_6;
+			if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_1";
+		} 
+		
+
+		
+	/* 点検担当者１_1～1_10が「外注」で、外注費に入力が無いとき */	
+	if ($("#tenkenkaisu" + shubetuNo + "_1").is(':checked')) {
+	if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_1").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_1").val() == '' ){ err_str += tenken_message_7; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_1";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_2").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_2").val() == '' ){ err_str += tenken_message_7; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_2";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_3").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_3").val() == '' ){ err_str += tenken_message_7; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_3";}}				
+		
+	/* 点検担当者2_1～2_3が「外注」で、外注費に入力が無いとき */	
+	if ($("#tenkenkaisu" + shubetuNo + "_2").is(':checked')) {
+	if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_1").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_1").val() == '' ){ err_str += tenken_message_8; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_1";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_2").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_2").val() == '' ){ err_str += tenken_message_8; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_2";}
+	else if ( $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_3").val().substr(1,3) == '002' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_3").val() == '' ){ err_str += tenken_message_8; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_3";}}				
+		
+		
+					
+		
+		
+		
+		
+		
+	/*未入力エラーがあれば [が未入力です]と文字列挿入*/	
+		if ( err_str != "")
+				err_str = err_str.slice(0,-4) + "が未入力です。<br>";
+		
+	
+	 if ($("#tenkenkaisu" + shubetuNo + "_1").is(':checked') && $("[name=tenkenyoteiM" + shubetuNo + "_2]").val() != '' ){			
+	/*「１回」にチェックがあり、点検予定月２に入力があるとき*/	
+		err_str += tenken_message_9;
+		} 
+		
+		
+			/*点検担当者１_1～1_3 2_1～2_3が「削除」のとき*/	
+	if ($("#tenkenkaisu" + shubetuNo + "_1").is(':checked')){
+	if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_1").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_1"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_2").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_2"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_3").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_3"; }
+
+	} else if ($("#tenkenkaisu" + shubetuNo + "_2").is(':checked')) {
+	if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_1").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_1"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_2").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_2"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_3").val().substr(0,1) == '1') { err_str += tenken_message_12; if (focus_id == "") focus_id = "#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_3"; }}	
+		
+		
+	/* 「1回」にチェックがあり、点検担当者１_1～1_3が「社内」で、外注費に入力があるとき */	
+	if ($("#tenkenkaisu" + shubetuNo + "_1").is(':checked')) {
+	if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_1").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_1").val() !=''){ err_str += tenken_message_10; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_1"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_2").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_2").val() !=''){err_str += tenken_message_10; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_2"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_3").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_3").val() !=''){err_str += tenken_message_10; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_1_3"; }
+	}	   
+	
+	/*「２回」にチェックがあり、点検担当者2_1～2_3が「社内」で、外注費に入力があるとき*/	
+	if ($("#tenkenkaisu" + shubetuNo + "_2").is(':checked')) {
+	if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_1").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_1").val() !=''){ err_str += tenken_message_11; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_1"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_2").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_2").val() !=''){err_str += tenken_message_11; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_2"; }
+	else if ($("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_3").val().substr(1,3) == '001' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_3").val() !=''){err_str += tenken_message_11; select_flg = true; if (focus_id == "") focus_id = "#id_txt_BTR_gaichuhi" + shubetuNo + "_2_3"; }
+	}	
+		
+		
+		
+if ($("#tenkenkaisu" + shubetuNo + "_1").is(':checked') && ( 
+    $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_1").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_1").val() !='' 
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_2").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_2").val() !='' 
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_1_3").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_1_3").val() !='' )){	
+		/*「1回」にチェックがあり、点検担当者１_1～1_10に入力が無く、外注費に入力があるとき*/	
+		/*コメントアウト** err_str += tenken_message_13;*/
+		} 
+
+if ($("#tenkenkaisu" + shubetuNo + "_2").is(':checked') && ( 
+	       $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_1").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_1").val() !='' 
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_2").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_2").val() !='' 
+		|| $("#id_cmb_BTR_Tenkentantousha" + shubetuNo + "_2_3").val() == '' && $("#id_txt_BTR_gaichuhi" + shubetuNo + "_2_3").val() !='' )){	
+/*「２回」にチェックがあり、点検担当者2_1～2_10に入力が無く、外注費に入力があるとき*/
+	/*コメントアウト**	err_str += tenken_message_14;	*/		
+}
+
+		if ($("[name=tenkenyoteiM" + shubetuNo + "_1]").val() == $("[name=tenkenyoteiM" + shubetuNo + "_2]").val()){
+		/*１回めと２回めの点検月が同じ時*/
+		/*コメントアウト**	err_str += tenken_message_15; */
+		}		
+		
+if ( !tantosha_flg1 && $("#tenkenkaisu" + shubetuNo + "_1").is(':checked') && 
+  ( $("#meintantousha" + shubetuNo + "_1_1").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_1_1]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_1_2").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_1_2]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_1_3").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_1_3]").val() == '') 
+ || !tantosha_flg2 && $("#tenkenkaisu" + shubetuNo + "_2").is(':checked') && 
+  ( $("#meintantousha" + shubetuNo + "_2_1").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_2_1]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_2_2").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_2_2]").val() == '' 
+ || $("#meintantousha" + shubetuNo + "_2_3").is(':checked') && $("[name=tenkentantousha" + shubetuNo + "_2_3]").val() == '' )){
+	/*または 「２回」にチェックがあり、メイン点検担当者ラジオボタンONに点検担当者の入力がないとき	*/
+			err_str += tenken_message_16;
+		} 		
+
+		/* もし一つでもエラーがあれば、チェックボックスのチェックを外し、ダイアログを表示  */
+		if 	( err_str != ""){
+			$(this).attr("checked", false);
+			$(this).dialog_show_1();
+		}
+	
+}	
+
+$('#id_txt_BTR_HachuPostno1').keyup(function() {
+	if ($('#id_txt_BTR_HachuPostno1').val().length > 2) {
+		$('#id_txt_BTR_HachuPostno2').focus();
+	}
+});
+
+
+$('#id_txt_BTR_BukenPostno1').keyup(function() {
+	if ($('#id_txt_BTR_BukenPostno1').val().length > 2) {
+		$('#id_txt_BTR_BukenPostno2').focus();
+	}
+});
+
+ $('.loading').click(function() {
+    $.blockUI({
+      message: 'データを読み込んでいます。お待ち下さい・・・',
+      css: {
+        border: 'none',
+        padding: '10px',
+        backgroundColor: '#333',
+        opacity: .9,
+        color: '#fff',
+        cursor: 'wait'
+      },
+      overlayCSS: {
+        backgroundColor: '#000',
+        opacity: 0.6
+      }
+    });
+  });
+
+
+});
+
+
+
+
+//--></script>
+<script lang="javascript">
+	
+// rewrite the 'onkeydown' event to make sure 'Enter' key can be used as 'Tab' in some needed circumstances.  It work fine on both IE and non-IE browsers.
+document.onkeydown=function(evt)
+{
+	var isie = (document.all) ? true : false;
+	var key;
+	var srcobj;
+	// if the agent is an IE browser, it's easy to do this.
+	if (isie) {
+		key = event.keyCode;
+		srcobj=event.srcElement;
+	}
+	else {
+		key = evt.which;
+		srcobj=evt.target;
+	}
+	if(key==13 && srcobj.type!='button' && srcobj.type!='submit' &&srcobj.type!='reset' && srcobj.type!='textarea' && srcobj.type!='') {
+		if(isie)
+			event.keyCode=9;
+		else {
+			var el=getNextElement(evt.target);
+			
+			while(el.type=='hidden' || el.type=='submit' || el.type=='radio' || $(el).is("select") )
+				el=getNextElement(el);
+
+			if(!el)
+				return false;
+			else
+			{
+				el.focus();
+				evt.preventDefault();
+			}
+		}
+	}
+}
+function getNextElement(field) {
+	var form = field.form;
+	for(var e = 0; e < form.elements.length; e++) {
+		if (field == form.elements[e])
+		break;
+	}
+	return form.elements[++e % form.elements.length];
+}
+</script>
+<style type="text/css">
+<!--
+.input_5 {
+	font-size:14px;
+}
+-->
+</style>
+
+
+<div id="buken_toroku_box">
+
+<%= form_tag({:action => 'commit'},  { :remote => true,  :method => 'post' } ) do %>
+	<%# 発注者情報 %>
+	<div class="btr01">
+		<div class="midashi4_label_175_20">◆発注者情報</div>
+		<div class="normal_message">&nbsp;※印は入力必須項目です。</div>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="btr02">
+		<div class="midashi_label_175_20">発注者名（全角）&nbsp;&nbsp;※</div>
+		<%= text_field_tag 'hachushamei','', :value => @hachushamei, :id => 'id_txt_BTR_Hachushamei', :class => 'input_4', :maxlength => 40, :tabindex => 21 %>
+	</div>
+	
+	<div class="btr02">
+		<div class="midashi_label_175_20">発注者担当者名</div>
+		<%= text_field_tag 'hachuTantoshamei','', :value => @hachuTandoshamei, :id => 'id_txt_BTR_HachuTantoshamei', :class => 'input_4', :maxlength => 20, :tabindex => 22 %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="btr02">
+		<div class="midashi_label_175_20">発注者郵便番号</div>
+		<%= text_field_tag 'hachuPostno1','', :value => @hachuPostno.to_s.slice(0,3), :id => 'id_txt_BTR_HachuPostno1', :class => 'input_5', :maxlength => 3, :tabindex => 23 %>
+	</div>
+	<div class="btr02">
+		<div class="normal_message">―</div>
+	</div>
+	<div class="btr02">
+		<%= text_field_tag 'hachuPostno2','', :value => @hachuPostno.to_s.slice(3,4), :id => 'id_txt_BTR_HachuPostno2', :class => 'input_5', :maxlength => 4, :tabindex => 24 , :onkeyup => "AjaxZip3.zip2addr('hachuPostno1','hachuPostno2','hachuAdrs','hachuAdrs');" %>
+	</div>
+	<div class="btr02">
+		<div class="midashi_label_175_20">発注者住所</div>
+		<%= text_field_tag 'hachuAdrs','', :value => @hachuAdrs, :id => 'id_txt_BTR_HachuAdrs', :class => 'input_6', :maxlength => 40, :tabindex => 25 %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="btr02">
+		<div class="midashi_label_175_20">発注者電話番号</div>
+		<%= text_field_tag 'hachuTelno','', :value => @hachuTelno, :id => 'id_txt_BTR_HachuTelno', :class => 'input_4_no', :maxlength => 20, :tabindex => 26 %>
+	</div>
+	<div class="btr02">
+		<div class="midashi_label_175_20">発注者FAX番号</div>
+		<%= text_field_tag 'hachuFaxno','', :value => @hachuFaxno, :id => 'id_txt_BTR_HachuFaxno', :class => 'input_4_no', :maxlength => 20, :tabindex => 27 %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<%= submit_tag( '発注者検索' , :class => 'button_4', :id => 'id_Btn_BTR_HachushaKensaku' , :tabindex => 28 ) %>
+	<div class="btr03">
+		<div class="normal_message">（既存の発注者を設定する場合、発注者検索ボタンを押下してください。）</div>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<%# 物件情報 %>
+	<div class="btr01">
+		<div class="midashi4_label_175_20">◆物件情報</div>
+		<div class="normal_message">&nbsp;※印は入力必須項目です。</div>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="btr02">
+		<div class="midashi_label_175_20">物件名（全角）&nbsp;&nbsp;※</div>
+		<%= text_field_tag 'bukenmei','', :value => @bukenmei, :id => 'id_txt_BTR_Bukenmei', :class => 'input_4', :maxlength => 40, :tabindex => 29 %>
+	</div>
+	<div class="btr02">
+		<div class="midashi_label_175_20">物件担当者名</div>
+		<%= text_field_tag 'bukenTantoshamei','', :value => @bukenTandoshamei, :id => 'id_txt_BTR_BukenTantoshamei', :class => 'input_4', :maxlength => 20, :tabindex => 30 %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="btr02">
+		<div class="midashi_label_175_20">物件郵便番号</div>
+		<%= text_field_tag 'bukenPostno1','', :value => @bukenPostno.to_s.slice(0,3), :id => 'id_txt_BTR_BukenPostno1', :class => 'input_5', :maxlength => 3, :tabindex => 31 %>
+	</div>
+	<div class="btr02">
+		<div class="normal_message">―</div>
+	</div>
+	<div class="btr02">
+		<%= text_field_tag 'bukenPostno2','', :value => @bukenPostno.to_s.slice(3,4), :id => 'id_txt_BTR_BukenPostno2', :class => 'input_5', :maxlength => 4, :tabindex => 32, :onkeyup => "AjaxZip3.zip2addr('bukenPostno1','bukenPostno2','bukenAdrs','bukenAdrs');" %>
+	</div>
+	<div class="btr02">
+		<div class="midashi_label_175_20">物件住所</div>
+		<%= text_field_tag 'bukenAdrs','', :value => @bukenAdrs, :id => 'id_txt_BTR_BukenAdrs', :class => 'input_6', :maxlength => 40, :tabindex => 33 %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="btr02">
+		<div class="midashi_label_175_20">物件電話番号</div>
+		<%= text_field_tag 'bukenTelno','', :value => @bukenTelno, :id => 'id_txt_BTR_BukenTelno', :class => 'input_4_no', :maxlength => 20, :tabindex => 34 %>
+	</div>
+	<div class="btr02">
+		<div class="midashi_label_175_20">物件FAX番号</div>
+		<%= text_field_tag 'bukenFaxno','', :value => @bukenFaxno, :id => 'id_txt_BTR_BukenFaxno', :class => 'input_4_no', :maxlength => 20, :tabindex => 35 %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="btr02">
+		<div class="midashi_label_175_20">点検開始年度&nbsp;&nbsp;※</div>
+		<%= select_tag('tenkenkaishiY', options_for_select(@tenkenkaishiY,@tenkenkaishi_data), :id => 'id_cmb_BTR_TenkenkaishiY', :class => 'select_270', :tabindex => 36, :include_blank => @default_nendo ) %>
+	</div>
+	
+	<div class="btr02">
+		<div class="midashi_label_175_20">点検区分&nbsp;&nbsp;※</div>
+		<%= select_tag('tenkenKbn',options_for_select(@tenkenKbn,@tenken_data), :id => 'id_cmb_BTR_Tenkenkbn', :class => 'select_270', :tabindex => 37 ) %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="btr02">
+		<div class="midashi_label_175_20">請求方法</div>
+		<!--総合テスト不具合2-1 修正　浜 2014-12-10 -->
+		<%= select_tag('seikyuhouhou',options_for_select(@seikyuhouhou,@seikyuhouhou_data), :id => 'id_cmb_BTR_Seikyuhouhou', :class => 'select_270', :tabindex => 38 ) %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="btr02">
+		<div class="midashi_label_175_60">メモ（管理者用）</div>
+		<%= text_area_tag 'memo1',@memo1, { :id => 'id_txt_BTR_Memo1', :class => 'input_7_bjs', :maxlength => 150, :cols =>40, :rows => 3, :tabindex => 39 } %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<div class="btr02">
+		<div class="midashi_label_175_20">メモ（点検担当者用）</div>
+		<%= text_field_tag 'memo2','', :value => @memo2, :id => 'id_txt_BTR_Memo2', :class => 'input_8', :maxlength => 80, :tabindex => 40 %>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	<%# 点検情報 %>
+	<div class="btr01">
+		<div class="midashi4_label_175_20">◆点検情報</div>
+		<div class="normal_message">&nbsp;※印は入力必須項目です。&nbsp;&nbsp;<font color="#000000">●</font>は条件により必須入力です。</div>
+	</div>
+	<div class="btr02">
+		<div class="btr_heaader01">選択※</div>
+		<div class="btr_heaader02">点検種別</div>
+		<div class="btr_heaader02">年間点検回数&nbsp;※</div>
+		<div class="btr_heaader03">防火対象物点検回数●</div>
+		<div class="btr_heaader04">上段：総合／１回目、下段：機器／2回目</div>
+		<div class="btr_heaader05">点検予定月※</div>
+		<div class="btr_heaader07">契約金額（円）※</div>
+		<div class="btr_heaader08">メイン点検担当者※</div>
+		<div class="btr_heaader06">点検担当者※</div>
+		<div class="btr_heaader06">外注費（円）●</div>
+	</div>
+	
+	<div class="kugiri"></div>
+	
+	
+	<div class="btr04">
+		<%= raw @html_str %> 	
+	</div>		
+	<%= submit_tag( '登録' , :class => 'button_4 loading', :id => 'id_Btn_BTR_Toroku'  ) %>
+	<input type="hidden" id="id_Hid_HachushaCode" name="nm_Hid_HachushaCode" value="">
+<% end %>
+	</div>	
+
+	<% content_for :title do %>物件登録<% end %>
+	<% content_for :for_top do %><span class="right_float">ログイン中：管理者用&nbsp;&nbsp;<a id="jump">トップページへ</a></span><% end %>
+	<% content_for :sub_title do %>物件登録<% end %>
+<script src="https://ajaxzip3.github.io/ajaxzip3.js" charset="UTF-8"></script>

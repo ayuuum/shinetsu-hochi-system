@@ -28,3 +28,13 @@ app/tsconfig.tsbuildinfo
 ~$*.xlsx
 .gstack/
 .vercel
+
+# Supabase CLI temp
+supabase/.temp/
+
+# Legacy inspection system (exclude bulk data / runtime)
+legacy-src/shinetsuhochi/db/backup/
+legacy-src/shinetsuhochi/log/
+legacy-src/shinetsuhochi/tmp/
+legacy-src/shinetsuhochi/public/pdf/
+legacy-src/shinetsuhochi/vendor/bundle/
