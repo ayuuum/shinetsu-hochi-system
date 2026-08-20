@@ -243,7 +243,6 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess, lat
                             )} />
                         ) : null}
 
-                        {!isPartner ? (
                         <div className="grid grid-cols-2 gap-4">
                             <FormField control={form.control} name="birth_date" render={({ field }) => (
                                 <FormItem>
@@ -268,7 +267,23 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess, lat
                                 </FormItem>
                             )} />
                         </div>
-                        ) : null}
+                        <FormField control={form.control} name="blood_type" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>血液型</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger><SelectValue placeholder="選択" /></SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="A型">A型</SelectItem>
+                                        <SelectItem value="B型">B型</SelectItem>
+                                        <SelectItem value="O型">O型</SelectItem>
+                                        <SelectItem value="AB型">AB型</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
 
                         <div className="grid grid-cols-2 gap-4">
                             <FormField control={form.control} name="phone_number" render={({ field }) => (
@@ -416,7 +431,15 @@ export function EditEmployeeModal({ employee, open, onOpenChange, onSuccess, lat
                                 </FormItem>
                             )} />
                         </div>
-                        ) : null}
+                        ) : (
+                        <FormField control={form.control} name="job_title" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>職種</FormLabel>
+                                <FormControl><Input placeholder="主任技術者" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                        )}
 
                         {!isPartner ? (
                         <FormField control={form.control} name="position" render={({ field }) => (

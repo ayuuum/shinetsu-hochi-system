@@ -33,10 +33,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { DatePickerField } from "@/components/shared/date-picker-field";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { calculateFireDefenseExpiry } from "@/lib/qualification-logic";
-import { addTrainingHistoryAction } from "@/app/actions/admin-record-actions";
+import { addTrainingHistoryAction, updateTrainingHistoryAction } from "@/app/actions/admin-record-actions";
 
 const formSchema = z.object({
     training_date: z.string().min(1, "受講日は必須です"),
@@ -50,9 +50,21 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+export type TrainingHistoryRecord = {
+    id: string;
+    training_date: string;
+    training_type: string;
+    provider: string | null;
+    certificate_number: string | null;
+    next_due_date: string | null;
+    notes: string | null;
+    photo_url: string | null;
+};
+
 interface AddTrainingModalProps {
     employeeQualificationId: string;
     qualificationName?: string;
+    record?: TrainingHistoryRecord;
 }
 
 function suggestNextDueDate(qualificationName: string | undefined, trainingDate: string, trainingType: string) {
@@ -63,22 +75,27 @@ function suggestNextDueDate(qualificationName: string | undefined, trainingDate:
     return format(calculateFireDefenseExpiry(trainingDate, isInitial), "yyyy-MM-dd");
 }
 
-export function AddTrainingModal({ employeeQualificationId, qualificationName }: AddTrainingModalProps) {
+function toFormValues(record?: TrainingHistoryRecord): FormValues {
+    return {
+        training_date: record?.training_date || "",
+        training_type: record?.training_type || "初回",
+        provider: record?.provider || "",
+        certificate_number: record?.certificate_number || "",
+        next_due_date: record?.next_due_date || "",
+        notes: record?.notes || "",
+        photo_url: record?.photo_url || "",
+    };
+}
+
+export function AddTrainingModal({ employeeQualificationId, qualificationName, record }: AddTrainingModalProps) {
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const router = useRouter();
+    const isEdit = !!record;
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
-        defaultValues: {
-            training_date: "",
-            training_type: "初回",
-            provider: "",
-            certificate_number: "",
-            next_due_date: "",
-            notes: "",
-            photo_url: "",
-        },
+        defaultValues: toFormValues(record),
     });
 
     const applySuggestedNextDueDate = (trainingDate: string, trainingType: string) => {
@@ -89,28 +106,22 @@ export function AddTrainingModal({ employeeQualificationId, qualificationName }:
     };
 
     const resetForm = () => {
-        form.reset({
-            training_date: "",
-            training_type: "初回",
-            provider: "",
-            certificate_number: "",
-            next_due_date: "",
-            notes: "",
-            photo_url: "",
-        });
+        form.reset(toFormValues(record));
     };
 
     const handleOpenChange = (nextOpen: boolean) => {
         setOpen(nextOpen);
-        if (!nextOpen) {
-            resetForm();
+        if (nextOpen) {
+            form.reset(toFormValues(record));
+            return;
         }
+        resetForm();
     };
 
     async function onSubmit(values: FormValues) {
         setIsSubmitting(true);
 
-        const result = await addTrainingHistoryAction({
+        const payload = {
             employeeQualificationId,
             trainingDate: values.training_date,
             trainingType: values.training_type,
@@ -119,7 +130,11 @@ export function AddTrainingModal({ employeeQualificationId, qualificationName }:
             nextDueDate: values.next_due_date,
             notes: values.notes,
             photoUrl: values.photo_url,
-        });
+        };
+
+        const result = isEdit
+            ? await updateTrainingHistoryAction({ id: record.id, ...payload })
+            : await addTrainingHistoryAction(payload);
 
         setIsSubmitting(false);
 
@@ -130,8 +145,12 @@ export function AddTrainingModal({ employeeQualificationId, qualificationName }:
 
         toast.success(
             result.expiryUpdated
-                ? "講習履歴を登録し、資格の有効期限を自動更新しました"
-                : "講習履歴を登録しました",
+                ? isEdit
+                    ? "講習履歴を更新し、資格の有効期限を自動更新しました"
+                    : "講習履歴を登録し、資格の有効期限を自動更新しました"
+                : isEdit
+                    ? "講習履歴を更新しました"
+                    : "講習履歴を登録しました",
         );
         setOpen(false);
         resetForm();
@@ -141,11 +160,19 @@ export function AddTrainingModal({ employeeQualificationId, qualificationName }:
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger
-                render={<Button><Plus className="mr-2 h-4 w-4" />講習履歴を追加</Button>}
+                render={
+                    isEdit ? (
+                        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label="講習履歴を編集">
+                            <Pencil className="h-4 w-4" />
+                        </Button>
+                    ) : (
+                        <Button><Plus className="mr-2 h-4 w-4" />講習履歴を追加</Button>
+                    )
+                }
             />
             <DialogContent className="sm:max-w-[540px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>講習履歴の登録</DialogTitle>
+                    <DialogTitle>{isEdit ? "講習履歴の編集" : "講習履歴の登録"}</DialogTitle>
                     <DialogDescription>
                         受講した講習の日時・内容を入力してください。次回期限を入力すると、資格の有効期限も自動更新されます。
                     </DialogDescription>
@@ -238,7 +265,7 @@ export function AddTrainingModal({ employeeQualificationId, qualificationName }:
                         <DialogFooter>
                             <Button type="submit" disabled={isSubmitting} className="w-full">
                                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                登録する
+                                {isEdit ? "保存する" : "登録する"}
                             </Button>
                         </DialogFooter>
                     </form>

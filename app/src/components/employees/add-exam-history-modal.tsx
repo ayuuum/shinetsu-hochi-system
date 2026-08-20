@@ -31,9 +31,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { DatePickerField } from "@/components/shared/date-picker-field";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { createExamHistoryAction } from "@/app/actions/admin-record-actions";
+import { Tables } from "@/types/supabase";
+import { createExamHistoryAction, updateExamHistoryAction } from "@/app/actions/admin-record-actions";
 
 const formSchema = z.object({
     qualification_name: z.string().min(1, "資格名は必須です"),
@@ -46,57 +47,75 @@ type FormValues = z.infer<typeof formSchema>;
 
 interface AddExamHistoryModalProps {
     employeeId: string;
+    existingRecord?: Tables<"qualification_exam_history">;
     onSuccess?: () => void;
 }
 
-export function AddExamHistoryModal({ employeeId, onSuccess }: AddExamHistoryModalProps) {
+function toFormValues(record?: Tables<"qualification_exam_history">): FormValues {
+    return {
+        qualification_name: record?.qualification_name || "",
+        exam_date: record?.exam_date || "",
+        result: record?.result === "不合格" ? "不合格" : "合格",
+        notes: record?.notes || "",
+    };
+}
+
+export function AddExamHistoryModal({ employeeId, existingRecord, onSuccess }: AddExamHistoryModalProps) {
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const isEdit = !!existingRecord;
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
-        defaultValues: {
-            qualification_name: "",
-            exam_date: "",
-            result: "合格",
-            notes: "",
-        },
+        defaultValues: toFormValues(existingRecord),
     });
 
     const handleOpenChange = (nextOpen: boolean) => {
         setOpen(nextOpen);
-        if (!nextOpen) form.reset();
+        form.reset(toFormValues(existingRecord));
     };
 
     async function onSubmit(values: FormValues) {
         setIsSubmitting(true);
-        const result = await createExamHistoryAction({
+        const payload = {
             employee_id: employeeId,
             qualification_name: values.qualification_name,
             exam_date: values.exam_date,
             result: values.result,
             notes: values.notes || null,
-        });
+        };
+        const result = isEdit
+            ? await updateExamHistoryAction(existingRecord.id, payload)
+            : await createExamHistoryAction(payload);
         setIsSubmitting(false);
 
         if (!result.success) {
             toast.error(result.error);
-        } else {
-            toast.success("受験履歴を登録しました");
-            setOpen(false);
-            form.reset();
-            onSuccess?.();
+            return;
         }
+
+        toast.success(isEdit ? "受験履歴を更新しました" : "受験履歴を登録しました");
+        setOpen(false);
+        form.reset(toFormValues(existingRecord));
+        onSuccess?.();
     }
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger
-                render={<Button size="sm"><Plus className="mr-2 h-4 w-4" />受験履歴を追加</Button>}
+                render={
+                    isEdit ? (
+                        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label="受験履歴を編集">
+                            <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                    ) : (
+                        <Button size="sm"><Plus className="mr-2 h-4 w-4" />受験履歴を追加</Button>
+                    )
+                }
             />
             <DialogContent className="sm:max-w-[480px]">
                 <DialogHeader>
-                    <DialogTitle>受験履歴の登録</DialogTitle>
+                    <DialogTitle>{isEdit ? "受験履歴の編集" : "受験履歴の登録"}</DialogTitle>
                     <DialogDescription>資格の受験日と合否を記録します。</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -146,7 +165,7 @@ export function AddExamHistoryModal({ employeeId, onSuccess }: AddExamHistoryMod
                         <DialogFooter>
                             <Button type="submit" disabled={isSubmitting} className="w-full">
                                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                登録する
+                                {isEdit ? "保存する" : "登録する"}
                             </Button>
                         </DialogFooter>
                     </form>

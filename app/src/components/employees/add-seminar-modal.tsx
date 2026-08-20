@@ -24,9 +24,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { DatePickerField } from "@/components/shared/date-picker-field";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { createSeminarRecordAction } from "@/app/actions/admin-record-actions";
+import { Tables } from "@/types/supabase";
+import { createSeminarRecordAction, updateSeminarRecordAction } from "@/app/actions/admin-record-actions";
 
 const formSchema = z.object({
     seminar_name: z.string().min(1, "セミナー名は必須です"),
@@ -41,33 +42,39 @@ type FormValues = z.infer<typeof formSchema>;
 
 interface AddSeminarModalProps {
     employeeId: string;
+    existingRecord?: Tables<"seminar_records">;
     onSuccess?: () => void;
 }
 
-export function AddSeminarModal({ employeeId, onSuccess }: AddSeminarModalProps) {
+function toFormValues(record?: Tables<"seminar_records">): FormValues {
+    return {
+        seminar_name: record?.seminar_name || "",
+        held_date: record?.held_date || "",
+        hours: record?.hours != null ? String(record.hours) : "",
+        organizer: record?.organizer || "",
+        notes: record?.notes || "",
+        photo_url: record?.photo_url || "",
+    };
+}
+
+export function AddSeminarModal({ employeeId, existingRecord, onSuccess }: AddSeminarModalProps) {
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const isEdit = !!existingRecord;
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
-        defaultValues: {
-            seminar_name: "",
-            held_date: "",
-            hours: "",
-            organizer: "",
-            notes: "",
-            photo_url: "",
-        },
+        defaultValues: toFormValues(existingRecord),
     });
 
     const handleOpenChange = (nextOpen: boolean) => {
         setOpen(nextOpen);
-        if (!nextOpen) form.reset();
+        form.reset(toFormValues(existingRecord));
     };
 
     async function onSubmit(values: FormValues) {
         setIsSubmitting(true);
-        const result = await createSeminarRecordAction({
+        const payload = {
             employee_id: employeeId,
             seminar_name: values.seminar_name,
             held_date: values.held_date,
@@ -75,27 +82,39 @@ export function AddSeminarModal({ employeeId, onSuccess }: AddSeminarModalProps)
             organizer: values.organizer || null,
             notes: values.notes || null,
             photo_url: values.photo_url || null,
-        });
+        };
+        const result = isEdit
+            ? await updateSeminarRecordAction(existingRecord.id, payload)
+            : await createSeminarRecordAction(payload);
         setIsSubmitting(false);
 
         if (!result.success) {
             toast.error(result.error);
-        } else {
-            toast.success("セミナー受講履歴を登録しました");
-            setOpen(false);
-            form.reset();
-            onSuccess?.();
+            return;
         }
+
+        toast.success(isEdit ? "セミナー受講履歴を更新しました" : "セミナー受講履歴を登録しました");
+        setOpen(false);
+        form.reset(toFormValues(existingRecord));
+        onSuccess?.();
     }
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger
-                render={<Button size="sm"><Plus className="mr-2 h-4 w-4" />セミナーを追加</Button>}
+                render={
+                    isEdit ? (
+                        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label="セミナー履歴を編集">
+                            <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                    ) : (
+                        <Button size="sm"><Plus className="mr-2 h-4 w-4" />セミナーを追加</Button>
+                    )
+                }
             />
             <DialogContent className="sm:max-w-[480px]">
                 <DialogHeader>
-                    <DialogTitle>セミナー受講履歴の登録</DialogTitle>
+                    <DialogTitle>{isEdit ? "セミナー受講履歴の編集" : "セミナー受講履歴の登録"}</DialogTitle>
                     <DialogDescription>受講したセミナーの情報を入力してください。</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -153,7 +172,7 @@ export function AddSeminarModal({ employeeId, onSuccess }: AddSeminarModalProps)
                         <DialogFooter>
                             <Button type="submit" disabled={isSubmitting} className="w-full">
                                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                登録する
+                                {isEdit ? "保存する" : "登録する"}
                             </Button>
                         </DialogFooter>
                     </form>

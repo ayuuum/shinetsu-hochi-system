@@ -1346,6 +1346,197 @@ export async function addTrainingHistoryAction(input: {
     }
 }
 
+export async function updateTrainingHistoryAction(input: {
+    id: string;
+    employeeQualificationId: string;
+    trainingDate: string;
+    trainingType: string;
+    provider?: string | null;
+    certificateNumber?: string | null;
+    nextDueDate?: string | null;
+    notes?: string | null;
+    photoUrl?: string | null;
+}): Promise<AddTrainingHistoryResult> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) {
+        return { success: false, error: auth.error };
+    }
+
+    const trainingDate = input.trainingDate.trim();
+    const trainingType = input.trainingType.trim();
+    if (!trainingDate || !trainingType) {
+        return { success: false, error: "受講日と種別は必須です。" };
+    }
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: history, error: historyError } = await supabase
+            .from("training_history")
+            .select("id, employee_qualification_id")
+            .eq("id", input.id)
+            .maybeSingle();
+
+        if (historyError) {
+            console.error("Failed to load training history:", historyError);
+            if (historyError.message.includes("relation") && historyError.message.includes("does not exist")) {
+                return { success: false, error: "講習履歴テーブルが未作成です。マイグレーションを実行してください。" };
+            }
+            return { success: false, error: "講習履歴の更新に失敗しました。" };
+        }
+
+        if (!history || history.employee_qualification_id !== input.employeeQualificationId) {
+            return { success: false, error: "講習履歴が見つかりません。" };
+        }
+
+        const { data: qualification, error: fetchError } = await supabase
+            .from("employee_qualifications")
+            .select("id, employee_id, deleted_at")
+            .eq("id", input.employeeQualificationId)
+            .maybeSingle();
+
+        if (fetchError || !qualification || qualification.deleted_at) {
+            return { success: false, error: "資格情報が見つかりません。" };
+        }
+
+        const nextDueDate = input.nextDueDate?.trim() || null;
+
+        const { error: updateError } = await supabase
+            .from("training_history")
+            .update({
+                training_date: trainingDate,
+                training_type: trainingType,
+                provider: input.provider?.trim() || null,
+                certificate_number: input.certificateNumber?.trim() || null,
+                next_due_date: nextDueDate,
+                notes: input.notes?.trim() || null,
+                photo_url: input.photoUrl?.trim() || null,
+            })
+            .eq("id", input.id);
+
+        if (updateError) {
+            console.error("Failed to update training history:", updateError);
+            return { success: false, error: "講習履歴の更新に失敗しました。" };
+        }
+
+        let expiryUpdated = false;
+        if (nextDueDate) {
+            const { error: expiryError } = await supabase
+                .from("employee_qualifications")
+                .update({
+                    expiry_date: nextDueDate,
+                    status: "更新済み",
+                })
+                .eq("id", input.employeeQualificationId)
+                .is("deleted_at", null);
+
+            if (expiryError) {
+                console.error("Failed to sync qualification expiry from training:", expiryError);
+                return {
+                    success: false,
+                    error: "講習履歴は更新しましたが、有効期限の自動更新に失敗しました。資格編集から有効期限を更新してください。",
+                };
+            }
+            expiryUpdated = true;
+        }
+
+        await recordAuditLog({
+            actorId: auth.user.id,
+            actorEmail: auth.user.email,
+            entityType: "training_history",
+            entityId: input.id,
+            action: "update",
+            summary: `講習履歴を更新${expiryUpdated ? "（有効期限を自動更新）" : ""}`,
+            metadata: {
+                employee_id: qualification.employee_id,
+                employee_qualification_id: input.employeeQualificationId,
+                training_date: trainingDate,
+                next_due_date: nextDueDate,
+                expiry_updated: expiryUpdated,
+            },
+        });
+
+        revalidateEmployeePaths(qualification.employee_id || undefined);
+        revalidatePath(`/qualifications/${input.employeeQualificationId}`);
+        return { success: true, expiryUpdated };
+    } catch (error) {
+        console.error("Unexpected error while updating training history:", error);
+        return { success: false, error: "講習履歴の更新に失敗しました。" };
+    }
+}
+
+export async function deleteTrainingHistoryAction(input: {
+    id: string;
+    employeeQualificationId: string;
+}): Promise<DeleteActionResult> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) {
+        return { success: false, error: auth.error };
+    }
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: history, error: historyError } = await supabase
+            .from("training_history")
+            .select("id, employee_qualification_id, training_date, training_type")
+            .eq("id", input.id)
+            .maybeSingle();
+
+        if (historyError) {
+            console.error("Failed to load training history:", historyError);
+            if (historyError.message.includes("relation") && historyError.message.includes("does not exist")) {
+                return { success: false, error: "講習履歴テーブルが未作成です。マイグレーションを実行してください。" };
+            }
+            return { success: false, error: "講習履歴の削除に失敗しました。" };
+        }
+
+        if (!history || history.employee_qualification_id !== input.employeeQualificationId) {
+            return { success: false, error: "講習履歴が見つかりません。" };
+        }
+
+        const { data: qualification, error: fetchError } = await supabase
+            .from("employee_qualifications")
+            .select("id, employee_id, deleted_at")
+            .eq("id", input.employeeQualificationId)
+            .maybeSingle();
+
+        if (fetchError || !qualification || qualification.deleted_at) {
+            return { success: false, error: "資格情報が見つかりません。" };
+        }
+
+        const { error: deleteError } = await supabase
+            .from("training_history")
+            .delete()
+            .eq("id", input.id);
+
+        if (deleteError) {
+            console.error("Failed to delete training history:", deleteError);
+            return { success: false, error: "講習履歴の削除に失敗しました。" };
+        }
+
+        await recordAuditLog({
+            actorId: auth.user.id,
+            actorEmail: auth.user.email,
+            entityType: "training_history",
+            entityId: input.id,
+            action: "delete",
+            summary: "講習履歴を削除",
+            metadata: {
+                employee_id: qualification.employee_id,
+                employee_qualification_id: input.employeeQualificationId,
+                training_date: history.training_date,
+                training_type: history.training_type,
+            },
+        });
+
+        revalidateEmployeePaths(qualification.employee_id || undefined);
+        revalidatePath(`/qualifications/${input.employeeQualificationId}`);
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while deleting training history:", error);
+        return { success: false, error: "講習履歴の削除に失敗しました。" };
+    }
+}
+
 export async function deleteVehicleAction(vehicleId: string): Promise<DeleteActionResult> {
     const auth = await requireAdminOrHr();
     if (!auth.ok) {
@@ -2371,6 +2562,52 @@ export async function createExamHistoryAction(data: {
     }
 }
 
+export async function updateExamHistoryAction(id: string, data: {
+    employee_id: string;
+    qualification_id?: string | null;
+    qualification_name?: string | null;
+    exam_date: string;
+    result: "合格" | "不合格";
+    notes?: string | null;
+}): Promise<{ success: true } | { success: false; error: string }> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) return { success: false, error: auth.error };
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: existing, error: fetchError } = await supabase
+            .from("qualification_exam_history")
+            .select("id, employee_id")
+            .eq("id", id)
+            .maybeSingle();
+
+        if (fetchError || !existing) return { success: false, error: "受験履歴が見つかりません。" };
+        if (existing.employee_id !== data.employee_id) return { success: false, error: "不正な操作です。" };
+
+        const { error } = await supabase
+            .from("qualification_exam_history")
+            .update({
+                qualification_id: data.qualification_id ?? null,
+                qualification_name: data.qualification_name ?? null,
+                exam_date: data.exam_date,
+                result: data.result,
+                notes: data.notes ?? null,
+            })
+            .eq("id", id);
+
+        if (error) {
+            console.error("Failed to update exam history:", error);
+            return { success: false, error: "受験履歴の更新に失敗しました。" };
+        }
+
+        revalidateEmployeePaths(data.employee_id);
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while updating exam history:", error);
+        return { success: false, error: "受験履歴の更新に失敗しました。" };
+    }
+}
+
 export async function deleteExamHistoryAction(id: string): Promise<DeleteActionResult> {
     const auth = await requireAdminOrHr();
     if (!auth.ok) return { success: false, error: auth.error };
@@ -2431,6 +2668,54 @@ export async function createSeminarRecordAction(data: {
     } catch (error) {
         console.error("Unexpected error while creating seminar record:", error);
         return { success: false, error: "セミナー受講履歴の登録に失敗しました。" };
+    }
+}
+
+export async function updateSeminarRecordAction(id: string, data: {
+    employee_id: string;
+    seminar_name: string;
+    held_date: string;
+    hours?: number | null;
+    organizer?: string | null;
+    notes?: string | null;
+    photo_url?: string | null;
+}): Promise<{ success: true } | { success: false; error: string }> {
+    const auth = await requireAdminOrHr();
+    if (!auth.ok) return { success: false, error: auth.error };
+
+    try {
+        const supabase = await createSupabaseServer();
+        const { data: existing, error: fetchError } = await supabase
+            .from("seminar_records")
+            .select("id, employee_id")
+            .eq("id", id)
+            .maybeSingle();
+
+        if (fetchError || !existing) return { success: false, error: "セミナー履歴が見つかりません。" };
+        if (existing.employee_id !== data.employee_id) return { success: false, error: "不正な操作です。" };
+
+        const { error } = await supabase
+            .from("seminar_records")
+            .update({
+                seminar_name: data.seminar_name,
+                held_date: data.held_date,
+                hours: data.hours ?? null,
+                organizer: data.organizer ?? null,
+                notes: data.notes ?? null,
+                photo_url: data.photo_url ?? null,
+            })
+            .eq("id", id);
+
+        if (error) {
+            console.error("Failed to update seminar record:", error);
+            return { success: false, error: "セミナー履歴の更新に失敗しました。" };
+        }
+
+        revalidateEmployeePaths(data.employee_id);
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error while updating seminar record:", error);
+        return { success: false, error: "セミナー履歴の更新に失敗しました。" };
     }
 }
 

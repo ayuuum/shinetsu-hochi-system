@@ -45,8 +45,9 @@ function createDefaultValues(personType: "employee" | "partner" = "employee"): E
         employee_number: "",
         name: "",
         name_kana: "",
-        birth_date: personType === "partner" ? "1900-01-01" : "",
+        birth_date: "",
         gender: "",
+        blood_type: "",
         phone_number: "",
         email: "",
         address: "",
@@ -163,7 +164,7 @@ export function AddEmployeeModal({
                 <DialogHeader className="pb-4">
                     <DialogTitle className="text-2xl font-bold tracking-tight">{isPartner ? "新規協力会社登録" : "新規社員登録"}</DialogTitle>
                     <DialogDescription className="text-muted-foreground">
-                        {isPartner ? "協力会社の会社情報と担当者連絡先を入力してください。" : "従業員の基本情報と雇用情報を入力してください。"}
+                        {isPartner ? "協力会社の会社情報と担当者の基本情報を入力してください。" : "従業員の基本情報と雇用情報を入力してください。"}
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -221,7 +222,6 @@ export function AddEmployeeModal({
                                 )} />
                             ) : null}
 
-                            {!isPartner ? (
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <FormField control={form.control} name="birth_date" render={({ field }) => (
                                     <FormItem>
@@ -246,7 +246,23 @@ export function AddEmployeeModal({
                                     </FormItem>
                                 )} />
                             </div>
-                            ) : null}
+                            <FormField control={form.control} name="blood_type" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>血液型</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger className="max-w-[200px]"><SelectValue placeholder="選択" /></SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="A型">A型</SelectItem>
+                                            <SelectItem value="B型">B型</SelectItem>
+                                            <SelectItem value="O型">O型</SelectItem>
+                                            <SelectItem value="AB型">AB型</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
 
                             <FormItem>
                                 <FormLabel>顔写真</FormLabel>
@@ -356,6 +372,14 @@ export function AddEmployeeModal({
                                 )} />
                             </div>
                             ) : (
+                            <div className="space-y-4">
+                                <FormField control={form.control} name="job_title" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>職種</FormLabel>
+                                        <FormControl><Input placeholder="主任技術者" {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} />
                                 <FormField control={form.control} name="partner_notes" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>備考</FormLabel>
@@ -363,6 +387,7 @@ export function AddEmployeeModal({
                                         <FormMessage />
                                     </FormItem>
                                 )} />
+                            </div>
                             )}
                         </div>
 

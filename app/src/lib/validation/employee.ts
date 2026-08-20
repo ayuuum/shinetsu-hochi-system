@@ -46,6 +46,7 @@ const employeeBaseSchema = z.object({
     name_kana: requiredText("フリガナ"),
     birth_date: requiredDate("生年月日"),
     gender: optionalText,
+    blood_type: optionalText,
     phone_number: optionalText,
     email: optionalEmail,
     address: optionalText,
@@ -117,6 +118,13 @@ function enrollmentFormValue(value?: boolean | null) {
     return "";
 }
 
+const PLACEHOLDER_PARTNER_BIRTH_DATE = "1900-01-01";
+
+export function toFormBirthDate(value?: string | null) {
+    if (!value || value === PLACEHOLDER_PARTNER_BIRTH_DATE) return "";
+    return value;
+}
+
 export function toEmployeeInsert(values: EmployeeCreateValues): TablesInsert<"employees"> {
     return {
         employee_number: normalizeRequiredText(values.employee_number),
@@ -125,6 +133,7 @@ export function toEmployeeInsert(values: EmployeeCreateValues): TablesInsert<"em
         name_kana: normalizeRequiredText(values.name_kana),
         birth_date: values.birth_date,
         gender: normalizeNullableText(values.gender),
+        blood_type: normalizeNullableText(values.blood_type),
         phone_number: normalizeNullableText(values.phone_number),
         email: normalizeNullableText(values.email),
         address: normalizeNullableText(values.address),
@@ -158,6 +167,7 @@ export function toEmployeeUpdate(values: EmployeeUpdateValues): TablesUpdate<"em
         name_kana: normalizeRequiredText(values.name_kana),
         birth_date: values.birth_date,
         gender: normalizeNullableText(values.gender),
+        blood_type: normalizeNullableText(values.blood_type),
         phone_number: normalizeNullableText(values.phone_number),
         email: normalizeNullableText(values.email),
         address: normalizeNullableText(values.address),
@@ -190,8 +200,9 @@ export function toEmployeeUpdateFormValues(employee: Tables<"employees">): Emplo
         person_type: employee.person_type === "partner" ? "partner" : "employee",
         name: employee.name,
         name_kana: employee.name_kana,
-        birth_date: employee.birth_date || "",
+        birth_date: toFormBirthDate(employee.birth_date),
         gender: employee.gender || "",
+        blood_type: employee.blood_type || "",
         phone_number: employee.phone_number || "",
         email: employee.email || "",
         address: employee.address || "",

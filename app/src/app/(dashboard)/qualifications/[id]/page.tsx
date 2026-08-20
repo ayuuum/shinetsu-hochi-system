@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { ArrowLeft, FileImage } from "lucide-react";
 import { AddTrainingModal } from "@/components/qualifications/add-training-modal";
+import { DeleteTrainingHistoryButton } from "@/components/qualifications/delete-training-history-button";
 import { DeleteQualificationButton } from "@/components/qualifications/delete-qualification-button";
 import { alertStyles } from "@/lib/alert-utils";
 
@@ -110,6 +111,7 @@ export default async function QualificationDetailPage({ params }: PageProps) {
         certificate_number: string | null;
         next_due_date: string | null;
         notes: string | null;
+        photo_url: string | null;
         created_at: string | null;
     }[] = [];
     let trainingTableExists = true;
@@ -321,6 +323,7 @@ export default async function QualificationDetailPage({ params }: PageProps) {
                                         <TableHead>修了証番号</TableHead>
                                         <TableHead>次回期限</TableHead>
                                         <TableHead>備考</TableHead>
+                                        {canManage ? <TableHead className="w-20"><span className="sr-only">操作</span></TableHead> : null}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -332,6 +335,31 @@ export default async function QualificationDetailPage({ params }: PageProps) {
                                             <TableCell className="text-sm">{t.certificate_number || "-"}</TableCell>
                                             <TableCell className="text-sm">{t.next_due_date || "-"}</TableCell>
                                             <TableCell className="text-sm">{t.notes || "-"}</TableCell>
+                                            {canManage ? (
+                                                <TableCell className="text-right">
+                                                    <div className="flex items-center justify-end gap-0.5">
+                                                        <AddTrainingModal
+                                                            employeeQualificationId={id}
+                                                            qualificationName={qualification.qualification_master?.name || ""}
+                                                            record={{
+                                                                id: t.id,
+                                                                training_date: t.training_date,
+                                                                training_type: t.training_type,
+                                                                provider: t.provider,
+                                                                certificate_number: t.certificate_number,
+                                                                next_due_date: t.next_due_date,
+                                                                notes: t.notes,
+                                                                photo_url: t.photo_url,
+                                                            }}
+                                                        />
+                                                        <DeleteTrainingHistoryButton
+                                                            id={t.id}
+                                                            employeeQualificationId={id}
+                                                            trainingDate={t.training_date}
+                                                        />
+                                                    </div>
+                                                </TableCell>
+                                            ) : null}
                                         </TableRow>
                                     ))}
                                 </TableBody>

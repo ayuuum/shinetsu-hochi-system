@@ -17,6 +17,7 @@ import {
     shouldLoadQualificationCertificateUrls,
     shouldLoadSeminarRecords,
 } from "@/lib/employee-detail";
+import { getCachedEmployeeList } from "@/lib/cached-queries";
 import { Tables } from "@/types/supabase";
 
 export type EmployeeListContext = "employees" | "partners";
@@ -240,6 +241,10 @@ export async function EmployeeDetailView({
         });
     }
 
+    const projectEmployees = shouldLoadConstructionRecords(currentTab)
+        ? await getCachedEmployeeList()
+        : [];
+
     return (
         <EmployeeDetailClient
             employee={employee}
@@ -247,6 +252,7 @@ export async function EmployeeDetailView({
             initialTab={currentTab}
             photoUrl={photoUrl}
             listContext={listContext}
+            projectEmployees={projectEmployees}
         />
     );
 }

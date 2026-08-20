@@ -27,12 +27,14 @@ function buildBooleanGroup(operator: "or" | "and", conditions: string[]) {
 }
 
 function applyEmployeeEmploymentFilter<T extends {
-    or: (filters: string) => T;
+    or: (filters: string, options?: { referencedTable?: string }) => T;
     not: (column: string, operator: string, value: null) => T;
     lt: (column: string, value: string) => T;
 }>(query: T, status: EmploymentStatus, today: string): T {
     if (status === "active") {
-        return query.or(`employees.termination_date.is.null,employees.termination_date.gte.${today}`);
+        // 結合先 employees に対する OR は referencedTable が必要。
+        // employees.termination_date... を親の or に書くと PostgREST が解釈できず、一覧が空になる。
+        return query.or(`termination_date.is.null,termination_date.gte.${today}`, { referencedTable: "employees" });
     }
     if (status === "retired") {
         return query.not("employees.termination_date", "is", null).lt("employees.termination_date", today);
@@ -232,6 +234,10 @@ export default async function QualificationsPage({
                 pageResult = pqResult as typeof pageResult;
                 summaryData = (sqResult.data || []) as { expiry_date: string | null }[];
             }
+        }
+
+        if (pageResult.error) {
+            console.error("Failed to query qualifications:", pageResult.error);
         }
 
         const items = (pageResult.data || []) as QualificationRow[];

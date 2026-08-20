@@ -64,7 +64,11 @@ import {
 } from "@/app/actions/admin-record-actions";
 import { AddExamHistoryModal } from "@/components/employees/add-exam-history-modal";
 import { AddSeminarModal } from "@/components/employees/add-seminar-modal";
+import { EditQualificationModal } from "@/components/qualifications/edit-qualification-modal";
+import type { QualificationRow } from "@/components/qualifications/qualifications-client";
+import { EditProjectModal } from "@/components/projects/edit-project-modal";
 import { formatDisplayDate } from "@/lib/date";
+import { toFormBirthDate } from "@/lib/validation/employee";
 import { RecordActionsMenu } from "@/components/shared/record-actions-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { getHealthCheckResultLabel } from "@/lib/display-labels";
@@ -127,6 +131,21 @@ function formatEnrollment(enrolled: boolean | null | undefined, name?: string | 
     return name?.trim() ? `加入（${name.trim()}）` : "加入";
 }
 
+function toQualificationRow(
+    qualification: EmployeeQualification,
+    employee: Pick<Tables<"employees">, "id" | "name" | "branch">,
+): QualificationRow {
+    return {
+        ...qualification,
+        employees: { id: employee.id, name: employee.name, branch: employee.branch },
+        qualification_master: qualification.qualification_master
+            ? {
+                name: qualification.qualification_master.name,
+                category: qualification.qualification_master.category,
+            }
+            : null,
+    };
+}
 
 export function EmployeeDetailClient({
     employee,
@@ -134,12 +153,14 @@ export function EmployeeDetailClient({
     initialTab,
     photoUrl,
     listContext = "employees",
+    projectEmployees = [],
 }: {
     employee: EmployeeDetail;
     certUrls: Record<string, string>;
     initialTab: EmployeeDetailTab;
     photoUrl: string | null;
     listContext?: "employees" | "partners";
+    projectEmployees?: { id: string; name: string }[];
 }) {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<EmployeeDetailTab>(initialTab);
@@ -154,11 +175,14 @@ export function EmployeeDetailClient({
     const [deletingItAccountId, setDeletingItAccountId] = useState<string | null>(null);
     const [deletingExamHistoryId, setDeletingExamHistoryId] = useState<string | null>(null);
     const [deletingSeminarId, setDeletingSeminarId] = useState<string | null>(null);
+    const [editingQual, setEditingQual] = useState<QualificationRow | null>(null);
+    const [editingConstruction, setEditingConstruction] = useState<Tables<"construction_records"> | null>(null);
     const [showDeletedQuals, setShowDeletedQuals] = useState(false);
     const { isAdmin, isAdminOrHr, role, linkedEmployeeId } = useAuth();
     const isTechnicianSelf = role === "technician" && linkedEmployeeId === employee.id;
     // 健康診断・家族・血圧などの機微情報は、管理者/人事、または本人のみ閲覧可
     const canViewSensitive = isAdminOrHr || isTechnicianSelf;
+    const canPrintCertificates = isAdminOrHr || isTechnicianSelf;
     const latestHealthCheck = employee.health_checks[0] ?? null;
     const isPartner = employee.person_type === "partner";
     const licenseGroups = useMemo(
@@ -183,6 +207,15 @@ export function EmployeeDetailClient({
     });
 
     const listHref = listContext === "partners" ? "/partners" : "/employees";
+    const constructionEmployeeOptions = useMemo(() => {
+        if (projectEmployees.length > 0) {
+            return projectEmployees;
+        }
+        const displayName = isPartner
+            ? employee.partner_contact_name || employee.name
+            : employee.name;
+        return [{ id: employee.id, name: displayName }];
+    }, [employee.id, employee.name, employee.partner_contact_name, isPartner, projectEmployees]);
 
     const handleBack = () => {
         if (isTechnicianSelf) {
@@ -201,7 +234,8 @@ export function EmployeeDetailClient({
     const handleTabChange = (tab: EmployeeDetailTab) => {
         setActiveTab(tab);
         startTabTransition(() => {
-            router.push(`/employees/${employee.id}?tab=${tab}`, { scroll: false });
+            const basePath = listContext === "partners" ? "/partners" : "/employees";
+            router.push(`${basePath}/${employee.id}?tab=${tab}`, { scroll: false });
         });
     };
 
@@ -474,7 +508,7 @@ export function EmployeeDetailClient({
                                 <CardTitle className="text-lg flex items-center gap-2"><User className="h-5 w-5 text-primary" />個人・連絡先</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-0">
-                                <DetailItem label="生年月日" value={formatDisplayDate(employee.birth_date)} />
+                                <DetailItem label="生年月日" value={formatDisplayDate(toFormBirthDate(employee.birth_date) || null)} />
                                 <DetailItem label="性別" value={employee.gender} />
                                 <DetailItem label="電話番号" value={employee.phone_number} />
                                 <DetailItem label="メール" value={employee.email} />
@@ -687,7 +721,7 @@ export function EmployeeDetailClient({
                     <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                         <h3 className="text-lg font-bold">保有資格一覧</h3>
                         <div className="flex flex-wrap items-center gap-2">
-                            {employee.employee_qualifications.some((q) => q.certificate_url) ? (
+                            {canPrintCertificates && employee.employee_qualifications.some((q) => q.certificate_url) ? (
                                 <Button size="sm" variant="outline" render={<Link href={`/employees/${employee.id}/certificates/print`} />}>
                                     <Printer className="mr-2 h-4 w-4" />
                                     提出用シート（A4）
@@ -716,6 +750,10 @@ export function EmployeeDetailClient({
                                                     {getExpiryBadge(qualification.expiry_date)}
                                                     {isAdminOrHr && (
                                                         <RecordActionsMenu label={qualification.qualification_master?.name || "資格"}>
+                                                            <DropdownMenuItem onClick={() => setEditingQual(toQualificationRow(qualification, employee))}>
+                                                                <Pencil className="h-4 w-4" />
+                                                                編集
+                                                            </DropdownMenuItem>
                                                             <DropdownMenuItem variant="destructive" onClick={() => setDeletingQualId(qualification.id)}>
                                                                 <Trash2 className="h-4 w-4" />
                                                                 削除
@@ -836,6 +874,10 @@ export function EmployeeDetailClient({
                                                     <span className="text-xs text-muted-foreground tabular-nums">{formatDisplayDate(record.construction_date)}</span>
                                                     {isAdminOrHr && (
                                                         <RecordActionsMenu label={record.construction_name}>
+                                                            <DropdownMenuItem onClick={() => setEditingConstruction(record)}>
+                                                                <Pencil className="h-4 w-4" />
+                                                                編集
+                                                            </DropdownMenuItem>
                                                             <DropdownMenuItem variant="destructive" onClick={() => setDeletingConstructionId(record.id)}>
                                                                 <Trash2 className="h-4 w-4" />
                                                                 削除
@@ -988,9 +1030,12 @@ export function EmployeeDetailClient({
                                                     {record.result}
                                                 </Badge>
                                                 {isAdminOrHr && (
-                                                    <Button variant="ghost" size="sm" onClick={() => setDeletingExamHistoryId(record.id)} className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10">
-                                                        <Trash2 className="h-3.5 w-3.5" />
-                                                    </Button>
+                                                    <>
+                                                        <AddExamHistoryModal employeeId={employee.id} existingRecord={record} onSuccess={() => router.refresh()} />
+                                                        <Button variant="ghost" size="sm" onClick={() => setDeletingExamHistoryId(record.id)} className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </>
                                                 )}
                                             </div>
                                         </div>
@@ -1030,9 +1075,12 @@ export function EmployeeDetailClient({
                                                     </a>
                                                 )}
                                                 {isAdminOrHr && (
-                                                    <Button variant="ghost" size="sm" onClick={() => setDeletingSeminarId(record.id)} className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10">
-                                                        <Trash2 className="h-3.5 w-3.5" />
-                                                    </Button>
+                                                    <>
+                                                        <AddSeminarModal employeeId={employee.id} existingRecord={record} onSuccess={() => router.refresh()} />
+                                                        <Button variant="ghost" size="sm" onClick={() => setDeletingSeminarId(record.id)} className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </>
                                                 )}
                                             </div>
                                         </div>
@@ -1045,6 +1093,27 @@ export function EmployeeDetailClient({
             </Tabs>
                 );
             })()}
+
+            {isAdminOrHr && editingQual && (
+                <EditQualificationModal
+                    qualification={editingQual}
+                    open={!!editingQual}
+                    onOpenChange={(open) => {
+                        if (!open) setEditingQual(null);
+                    }}
+                />
+            )}
+
+            {isAdminOrHr && editingConstruction && (
+                <EditProjectModal
+                    record={editingConstruction}
+                    employees={constructionEmployeeOptions}
+                    open={!!editingConstruction}
+                    onOpenChange={(open) => {
+                        if (!open) setEditingConstruction(null);
+                    }}
+                />
+            )}
 
             {isAdminOrHr && (
                 <DeleteConfirmDialog
