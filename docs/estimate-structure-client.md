@@ -148,4 +148,4 @@ D（後段・任意）	230万円	TKC前整理、追加データ移行、原価
 
 ---
 
-*関連: [as-is-to-be-analysis.md](./as-is-to-be-analysis.md) / [inspection-system-prd.md](./inspection-system-prd.md)*
+*関連: [as-is-to-be-analysis.md](./as-is-to-be-analysis.md) / [inspection-system-prd.md](./inspection-system-prd.md) / [ai-opportunities-memo.md](./ai-opportunities-memo.md)*

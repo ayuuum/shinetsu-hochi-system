@@ -22,6 +22,9 @@
 5. **[お見積構成（先方向け）](docs/estimate-structure-client.md)**
    - 第1弾必須〜第3弾後段の切り方・金額サマリー（スプレッドシート貼付用）
 
+6. **[AI活用メモ](docs/ai-opportunities-memo.md)**
+   - 生成AI・AIエージェント・OCRを全フェーズで整理（オプション見積案つき）
+
 4. **[ユーザー向け操作マニュアル](docs/user-manual.md)**
    - 作業者向けの毎日使う操作
    - 管理者・人事向けの画面別操作
