@@ -97,7 +97,7 @@ export function QualificationAlerts() {
                     if (parts.length > 0) {
                         new Notification("信越報知 - 資格期限アラート", {
                             body: parts.join(" / "),
-                            icon: "/favicon.ico",
+                            icon: "/shinetsu-hochi-mark.png",
                         });
                     }
                 }

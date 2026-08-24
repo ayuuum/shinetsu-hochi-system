@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 
 const LOGO_WIDTH = 366;
 const LOGO_HEIGHT = 59;
+const MARK_SIZE = 64;
 
 type BrandLogoProps = {
     alt?: string;
@@ -19,17 +20,15 @@ export function BrandLogo({
 }: BrandLogoProps) {
     if (variant === "mark") {
         return (
-            <div className={cn("overflow-hidden", className)}>
-                <Image
-                    src="/shinetsu-hochi-logo.svg"
-                    alt={alt}
-                    width={LOGO_WIDTH}
-                    height={LOGO_HEIGHT}
-                    priority={priority}
-                    unoptimized
-                    className="block h-full w-auto max-w-none"
-                />
-            </div>
+            <Image
+                src="/shinetsu-hochi-mark.svg"
+                alt={alt}
+                width={MARK_SIZE}
+                height={MARK_SIZE}
+                priority={priority}
+                unoptimized
+                className={cn("block h-full w-full", className)}
+            />
         );
     }
 
