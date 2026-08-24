@@ -3,7 +3,7 @@ import { exchangeCodeAndRedirect, exchangeCodeFromPost } from "@/lib/auth-exchan
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
-    const rawNext = searchParams.get("next") ?? "/";
+    const rawNext = searchParams.get("next") ?? "/auth/update-password";
     return exchangeCodeAndRedirect(request, rawNext);
 }
 

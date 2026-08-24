@@ -15,7 +15,7 @@ describe("auth-callback-utils", () => {
 
     it("builds api callback redirect urls", () => {
         expect(buildAuthCallbackRedirectUrl("http://localhost:3000", "/auth/update-password"))
-            .toBe("http://localhost:3000/api/auth/callback/recovery");
+            .toBe("http://localhost:3000/api/auth/callback");
         expect(buildAuthCallbackRedirectUrl("http://localhost:3000", "/dashboard"))
             .toBe("http://localhost:3000/api/auth/callback?next=%2Fdashboard");
     });
