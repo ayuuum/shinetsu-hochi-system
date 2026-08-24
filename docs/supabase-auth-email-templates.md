@@ -14,19 +14,26 @@
 
 ## Redirect URL
 
+`Authentication` → `URL Configuration` の `Redirect URLs` に、**次の2つを両方**追加してください。
+
 本番環境:
 
 ```text
+https://<本番ドメイン>/api/auth/callback
 https://<本番ドメイン>/auth/callback
 ```
 
 ローカル検証:
 
 ```text
+http://localhost:3000/api/auth/callback
 http://localhost:3000/auth/callback
 ```
 
-`Site URL` は本番ドメインに設定してください。ローカルURLは `Redirect URLs` に追加します。
+- `/api/auth/callback` … パスワード再設定メールなど PKCE 形式のリンク用（アプリの標準経路）
+- `/auth/callback` … 旧来のハッシュ形式トークン（`#access_token=...`）のフォールバック用
+
+`Site URL` は本番ドメイン（例: `https://<本番ドメイン>`）に設定してください。
 
 ## Invite user
 
@@ -88,6 +95,8 @@ http://localhost:3000/auth/callback
 
 ## 運用メモ
 
-- 通常の新規ユーザー登録は、アプリの `ユーザー管理` から招待します。
+- 通常の新規ユーザー登録は、アプリの `ユーザー管理` から行い、管理者が初期パスワードを直接設定して本人に伝えます（招待メールは使いません）。
+- パスワードを忘れた社員は、まず管理者が `ユーザー管理` の鍵アイコンから再発行できます。本人が自分で再設定する場合は、ログイン画面の「パスワードを忘れた場合」から再設定メールを送信します。
+- Supabase 標準メールは送信数に制限があります。再設定メールが届きにくい場合は、カスタム SMTP の導入を検討してください。
 - CLIでのユーザー作成は、初期パスワードを管理者が直接指定したい場合の例外運用です。
 - 認証メールと業務アラートメールは別物です。業務アラートメールは使いません。

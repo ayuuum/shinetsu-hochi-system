@@ -22,8 +22,16 @@ export default defineConfig({
       testMatch: /auth\.setup\.ts/,
     },
     {
+      name: "unauthenticated",
+      testMatch: /auth-flows\.spec\.ts/,
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: { cookies: [], origins: [] },
+      },
+    },
+    {
       name: "chromium",
-      testIgnore: [/mobile\.spec\.ts/, /perf\.spec\.ts/],
+      testIgnore: [/mobile\.spec\.ts/, /perf\.spec\.ts/, /auth-flows\.spec\.ts/],
       use: {
         ...devices["Desktop Chrome"],
         storageState: ".auth/admin.json",

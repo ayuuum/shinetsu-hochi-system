@@ -2,22 +2,15 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { AuthPageLoading, AuthPageShell } from "@/components/auth-page-shell";
 import { supabase } from "@/lib/supabase";
-
-function getSafeNextPath(value: string | null) {
-    if (!value || !value.startsWith("/") || value.startsWith("//")) {
-        return "/";
-    }
-
-    return value;
-}
+import { getSafeAuthNextPath } from "@/lib/auth-callback-utils";
 
 function CallbackContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [message, setMessage] = useState("認証リンクを確認しています...");
-    const nextPath = useMemo(() => getSafeNextPath(searchParams.get("next")), [searchParams]);
+    const nextPath = useMemo(() => getSafeAuthNextPath(searchParams.get("next")), [searchParams]);
 
     useEffect(() => {
         let cancelled = false;
@@ -75,26 +68,19 @@ function CallbackContent() {
     }, [nextPath, router, searchParams]);
 
     return (
-        <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-            <div className="rounded-2xl bg-white px-6 py-5 text-center shadow-xl">
-                <Loader2 className="mx-auto mb-3 h-6 w-6 animate-spin text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">{message}</p>
-            </div>
-        </main>
+        <div className="flex flex-col items-center justify-center gap-3 py-6 text-center">
+            <AuthPageLoading className="h-10" />
+            <p className="text-sm text-muted-foreground">{message}</p>
+        </div>
     );
 }
 
 export default function AuthCallbackPage() {
     return (
-        <Suspense fallback={(
-            <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-                <div className="rounded-2xl bg-white px-6 py-5 text-center shadow-xl">
-                    <Loader2 className="mx-auto mb-3 h-6 w-6 animate-spin text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">認証リンクを確認しています...</p>
-                </div>
-            </main>
-        )}>
-            <CallbackContent />
-        </Suspense>
+        <AuthPageShell subtitle="認証を確認しています">
+            <Suspense fallback={<AuthPageLoading className="h-24" />}>
+                <CallbackContent />
+            </Suspense>
+        </AuthPageShell>
     );
 }

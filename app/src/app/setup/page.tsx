@@ -17,12 +17,12 @@ export default async function SetupPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col items-center justify-center p-4 gap-8">
+        <div className="min-h-screen bg-muted/40 flex flex-col items-center justify-center p-4 gap-8">
 
             {/* ロゴ */}
-            <div className="text-center space-y-2">
-                <BrandLogo priority className="mx-auto w-[220px] max-w-full" />
-                <p className="text-xs text-muted-foreground">社員・資格管理システム</p>
+            <div className="text-center space-y-3">
+                <BrandLogo priority className="mx-auto w-[240px] max-w-full" />
+                <p className="text-sm text-muted-foreground">社員・資格管理システム</p>
             </div>
 
             {/* メインカード */}
