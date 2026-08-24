@@ -1,8 +1,20 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSafeAuthNextPath } from "@/lib/auth-callback-utils";
+import { AUTH_RECOVERY_COOKIE, PASSWORD_RESET_NEXT_PATH } from "@/lib/auth-recovery";
 import { getSupabaseEnv } from "@/lib/supabase-env";
 import type { Database } from "@/types/supabase";
+
+function attachRecoveryCookie(response: NextResponse, targetPath: string) {
+    if (targetPath === PASSWORD_RESET_NEXT_PATH) {
+        response.cookies.set(AUTH_RECOVERY_COOKIE, "1", {
+            path: "/",
+            maxAge: 60 * 30,
+            sameSite: "lax",
+            secure: process.env.NODE_ENV === "production",
+        });
+    }
+}
 
 export async function exchangeCodeAndRedirect(
     request: NextRequest,
@@ -34,6 +46,7 @@ export async function exchangeCodeAndRedirect(
                     cookiesToSet.forEach(({ name, value, options }) =>
                         response.cookies.set(name, value, options),
                     );
+                    attachRecoveryCookie(response, safePath);
                 },
             },
         },
@@ -46,6 +59,7 @@ export async function exchangeCodeAndRedirect(
         return NextResponse.redirect(`${origin}${errorRedirectPath}`);
     }
 
+    attachRecoveryCookie(response, safePath);
     return response;
 }
 

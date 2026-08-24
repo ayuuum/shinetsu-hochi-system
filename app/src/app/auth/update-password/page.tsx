@@ -2,14 +2,35 @@
 
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AuthPageLoading, AuthPageShell } from "@/components/auth-page-shell";
+import { AUTH_RECOVERY_COOKIE } from "@/lib/auth-recovery";
 import { supabase } from "@/lib/supabase";
 import { getPasswordUpdateErrorMessage } from "@/lib/auth-error-messages";
 import { CheckCircle2, Loader2 } from "lucide-react";
+
+function clearRecoveryCookie() {
+    document.cookie = `${AUTH_RECOVERY_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+}
+
+function CallbackCodeRedirect() {
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+        const code = searchParams.get("code");
+        if (!code) {
+            return;
+        }
+
+        const query = new URLSearchParams({ code });
+        window.location.replace(`/api/auth/callback?${query.toString()}`);
+    }, [searchParams]);
+
+    return <AuthPageLoading className="h-40" />;
+}
 
 function UpdatePasswordForm() {
     const [password, setPassword] = useState("");
@@ -20,8 +41,14 @@ function UpdatePasswordForm() {
     const [sessionChecked, setSessionChecked] = useState(false);
     const [hasSession, setHasSession] = useState(false);
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const hasCallbackCode = Boolean(searchParams.get("code"));
 
     useEffect(() => {
+        if (hasCallbackCode) {
+            return;
+        }
+
         let cancelled = false;
 
         supabase.auth.getSession().then(({ data: { session } }) => {
@@ -30,12 +57,15 @@ function UpdatePasswordForm() {
             }
             setHasSession(Boolean(session));
             setSessionChecked(true);
+            if (session) {
+                clearRecoveryCookie();
+            }
         });
 
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [hasCallbackCode]);
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -60,12 +90,17 @@ function UpdatePasswordForm() {
             return;
         }
 
+        clearRecoveryCookie();
         setSuccess(true);
         toast.success("パスワードを更新しました");
         setTimeout(() => {
             router.push("/");
             router.refresh();
         }, 1500);
+    }
+
+    if (hasCallbackCode) {
+        return <CallbackCodeRedirect />;
     }
 
     if (!sessionChecked) {
@@ -145,6 +180,14 @@ function UpdatePasswordForm() {
     );
 }
 
+function UpdatePasswordContent() {
+    return (
+        <Suspense fallback={<AuthPageLoading className="h-40" />}>
+            <UpdatePasswordForm />
+        </Suspense>
+    );
+}
+
 export default function UpdatePasswordPage() {
     return (
         <AuthPageShell
@@ -152,9 +195,7 @@ export default function UpdatePasswordPage() {
             title="新しいパスワードを設定"
             description="認証メールのリンクからアクセスして、新しいパスワードを設定してください。リンクの有効期限が切れている場合は、ログイン画面から再設定メールを再送してください。"
         >
-            <Suspense fallback={<AuthPageLoading className="h-40" />}>
-                <UpdatePasswordForm />
-            </Suspense>
+            <UpdatePasswordContent />
         </AuthPageShell>
     );
 }

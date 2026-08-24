@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { BrandLogo } from "@/components/brand-logo";
 import { supabase } from "@/lib/supabase";
-import { buildAuthCallbackRedirectUrl } from "@/lib/auth-callback-utils";
+import { getPasswordResetCallbackUrl } from "@/lib/auth-recovery";
 import { getLoginErrorMessage, getPasswordResetRequestErrorMessage } from "@/lib/auth-error-messages";
 import { Loader2 } from "lucide-react";
 
@@ -106,7 +106,7 @@ function LoginForm() {
         }
 
         setResetLoading(true);
-        const redirectTo = buildAuthCallbackRedirectUrl(window.location.origin, "/auth/update-password");
+        const redirectTo = getPasswordResetCallbackUrl(window.location.origin);
         const { error: resetErr } = await supabase.auth.resetPasswordForEmail(trimmed, {
             redirectTo,
         });

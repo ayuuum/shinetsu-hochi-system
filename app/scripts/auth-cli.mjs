@@ -239,6 +239,42 @@ async function setupTestUser() {
     await ensureTestUser(env);
 }
 
+async function generateRecoveryLink(email, siteOrigin) {
+    const { url, serviceRoleKey } = getRuntimeEnv();
+    if (!url || !serviceRoleKey) {
+        console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+        process.exit(1);
+    }
+
+    const emailNorm = email.trim().toLowerCase();
+    if (!emailNorm) {
+        console.error("email is required");
+        process.exit(1);
+    }
+
+    const origin = (siteOrigin || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
+    const redirectTo = `${origin}/api/auth/callback`;
+    const admin = createClient(url, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const { data, error } = await admin.auth.admin.generateLink({
+        type: "recovery",
+        email: emailNorm,
+        options: { redirectTo },
+    });
+
+    if (error) {
+        console.error("generateLink failed:", error.message);
+        process.exit(1);
+    }
+
+    console.log("OK: recovery link generated");
+    console.log("  email:", emailNorm);
+    console.log("  redirectTo:", redirectTo);
+    console.log("  action_link:", data.properties.action_link);
+}
+
 function printUsage() {
     console.error(`Usage:
   verify:   node scripts/auth-cli.mjs verify <email> <password>
@@ -252,6 +288,9 @@ function printUsage() {
 
   set-role: node scripts/auth-cli.mjs set-role <email> <admin|hr|technician>
             既存ユーザーの user_roles.role を更新
+
+  recovery-link: node scripts/auth-cli.mjs recovery-link <email> [site-origin]
+            メール送信なしでパスワード再設定リンクを生成（テスト用）
 
   setup-test: node scripts/auth-cli.mjs setup-test
             .env.local が無ければ対話入力で自動作成し、そのまま test ユーザーを用意`);
@@ -296,6 +335,16 @@ function printUsage() {
         }
         if (cmd === "setup-test") {
             await setupTestUser();
+            return;
+        }
+        if (cmd === "recovery-link") {
+            const email = rest[0] ?? norm(process.env.RECOVERY_EMAIL);
+            const siteOrigin = rest[1] ?? norm(process.env.NEXT_PUBLIC_SITE_URL);
+            if (!email) {
+                printUsage();
+                process.exit(1);
+            }
+            await generateRecoveryLink(email, siteOrigin);
             return;
         }
         printUsage();

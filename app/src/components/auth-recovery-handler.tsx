@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { AUTH_RECOVERY_COOKIE, PASSWORD_RESET_NEXT_PATH } from "@/lib/auth-recovery";
 import { supabase } from "@/lib/supabase";
 
 function hasRecoveryHash() {
@@ -13,12 +14,16 @@ function hasRecoveryHash() {
     return hashParams.get("type") === "recovery" && Boolean(hashParams.get("access_token"));
 }
 
+function markRecoveryPending() {
+    document.cookie = `${AUTH_RECOVERY_COOKIE}=1; Path=/; Max-Age=1800; SameSite=Lax`;
+}
+
 export function AuthRecoveryHandler() {
     const pathname = usePathname();
     const router = useRouter();
 
     useEffect(() => {
-        if (pathname === "/auth/update-password" || pathname.startsWith("/auth/callback")) {
+        if (pathname === PASSWORD_RESET_NEXT_PATH || pathname.startsWith("/auth/callback")) {
             return;
         }
 
@@ -26,7 +31,8 @@ export function AuthRecoveryHandler() {
             return;
         }
 
-        const next = encodeURIComponent("/auth/update-password");
+        markRecoveryPending();
+        const next = encodeURIComponent(PASSWORD_RESET_NEXT_PATH);
         window.location.replace(`/auth/callback?next=${next}${window.location.hash}`);
     }, [pathname]);
 
@@ -36,11 +42,12 @@ export function AuthRecoveryHandler() {
                 return;
             }
 
-            if (window.location.pathname === "/auth/update-password") {
+            if (window.location.pathname === PASSWORD_RESET_NEXT_PATH) {
                 return;
             }
 
-            router.replace("/auth/update-password");
+            markRecoveryPending();
+            router.replace(PASSWORD_RESET_NEXT_PATH);
         });
 
         return () => {

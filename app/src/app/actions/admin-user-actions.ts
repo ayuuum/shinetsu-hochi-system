@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { getStrictAuthSnapshot } from "@/lib/auth-server";
 
-import { buildAuthCallbackRedirectUrl } from "@/lib/auth-callback-utils";
+import { getPasswordResetCallbackUrl } from "@/lib/auth-recovery";
 
 type UserRole = "admin" | "hr" | "technician";
 
@@ -49,7 +49,7 @@ export async function inviteUserAction(
         const adminClient = createAdminClient();
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
         const inviteOptions = siteUrl
-            ? { redirectTo: buildAuthCallbackRedirectUrl(siteUrl, "/auth/update-password") }
+            ? { redirectTo: getPasswordResetCallbackUrl(siteUrl) }
             : undefined;
 
         const { data, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, inviteOptions);
