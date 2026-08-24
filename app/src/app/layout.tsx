@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
+import { AuthRecoveryHandler } from "@/components/auth-recovery-handler";
 
 const noto = Noto_Sans_JP({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
@@ -21,6 +22,7 @@ export default function RootLayout({
     return (
         <html lang="ja">
             <body className={noto.className}>
+                <AuthRecoveryHandler />
                 {children}
                 <Toaster position="top-right" richColors />
             </body>

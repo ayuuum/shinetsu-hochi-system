@@ -7,5 +7,9 @@ export function getSafeAuthNextPath(value: string | null) {
 }
 
 export function buildAuthCallbackRedirectUrl(origin: string, nextPath: string) {
-    return `${origin}/api/auth/callback?next=${encodeURIComponent(nextPath)}`;
+    if (nextPath === "/auth/update-password") {
+        return `${origin.replace(/\/$/, "")}/api/auth/callback/recovery`;
+    }
+
+    return `${origin.replace(/\/$/, "")}/api/auth/callback?next=${encodeURIComponent(nextPath)}`;
 }

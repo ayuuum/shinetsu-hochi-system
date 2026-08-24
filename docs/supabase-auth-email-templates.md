@@ -19,6 +19,7 @@
 本番環境:
 
 ```text
+https://<本番ドメイン>/api/auth/callback/recovery
 https://<本番ドメイン>/api/auth/callback
 https://<本番ドメイン>/auth/callback
 ```
@@ -26,11 +27,13 @@ https://<本番ドメイン>/auth/callback
 ローカル検証:
 
 ```text
+http://localhost:3000/api/auth/callback/recovery
 http://localhost:3000/api/auth/callback
 http://localhost:3000/auth/callback
 ```
 
-- `/api/auth/callback` … パスワード再設定メールなど PKCE 形式のリンク用（アプリの標準経路）
+- `/api/auth/callback/recovery` … パスワード再設定メール用（アプリの標準経路。`next` クエリ不要）
+- `/api/auth/callback` … その他 PKCE 形式のリンク用
 - `/auth/callback` … 旧来のハッシュ形式トークン（`#access_token=...`）のフォールバック用
 
 `Site URL` は本番ドメイン（例: `https://<本番ドメイン>`）に設定してください。
