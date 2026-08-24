@@ -36,7 +36,7 @@ test("password reset dialog opens and shows success message", async ({ page }) =
 
 test("password update without session shows recovery guidance", async ({ page }) => {
   await page.goto("/auth/update-password");
-  await expect(page.getByText("再設定リンクの有効期限が切れているか")).toBeVisible();
+  await expect(page.getByText("再設定リンクが無効です")).toBeVisible();
   await expect(page.getByRole("link", { name: "ログイン画面へ" })).toBeVisible();
 });
 

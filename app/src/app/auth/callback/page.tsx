@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, startTransition, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthPageLoading, AuthPageShell } from "@/components/auth-page-shell";
 import { supabase } from "@/lib/supabase";
@@ -47,23 +47,30 @@ function CallbackContent() {
                 return;
             }
 
-            router.replace(nextPath);
-            router.refresh();
+            startTransition(() => {
+                router.replace(nextPath);
+                router.refresh();
+            });
         }
 
-        completeAuthCallback().catch((error) => {
-            console.error("Auth callback failed:", error);
+        const frame = window.requestAnimationFrame(() => {
+            completeAuthCallback().catch((error) => {
+                console.error("Auth callback failed:", error);
 
-            if (cancelled) {
-                return;
-            }
+                if (cancelled) {
+                    return;
+                }
 
-            setMessage("認証リンクの処理に失敗しました。ログイン画面に戻ります...");
-            router.replace("/login?authError=callback");
+                startTransition(() => {
+                    setMessage("認証リンクの処理に失敗しました。ログイン画面に戻ります...");
+                    router.replace("/login?authError=callback");
+                });
+            });
         });
 
         return () => {
             cancelled = true;
+            window.cancelAnimationFrame(frame);
         };
     }, [nextPath, router, searchParams]);
 

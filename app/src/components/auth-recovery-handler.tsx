@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { startTransition, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AUTH_RECOVERY_COOKIE, PASSWORD_RESET_NEXT_PATH } from "@/lib/auth-recovery";
 import { supabase } from "@/lib/supabase";
@@ -37,8 +37,10 @@ export function AuthRecoveryHandler() {
     }, [pathname]);
 
     useEffect(() => {
+        let active = true;
+
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-            if (event !== "PASSWORD_RECOVERY") {
+            if (!active || event !== "PASSWORD_RECOVERY") {
                 return;
             }
 
@@ -47,10 +49,19 @@ export function AuthRecoveryHandler() {
             }
 
             markRecoveryPending();
-            router.replace(PASSWORD_RESET_NEXT_PATH);
+            // onAuthStateChange は購読直後に同期発火しうるため、遷移はマウント後に遅延する
+            queueMicrotask(() => {
+                if (!active) {
+                    return;
+                }
+                startTransition(() => {
+                    router.replace(PASSWORD_RESET_NEXT_PATH);
+                });
+            });
         });
 
         return () => {
+            active = false;
             subscription.unsubscribe();
         };
     }, [router]);

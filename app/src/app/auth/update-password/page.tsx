@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, startTransition, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -42,31 +42,34 @@ function UpdatePasswordForm() {
     const [sessionChecked, setSessionChecked] = useState(false);
     const [hasSession, setHasSession] = useState(false);
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const hasCallbackCode = Boolean(searchParams.get("code"));
 
     useEffect(() => {
-        if (hasCallbackCode) {
-            return;
-        }
-
         let cancelled = false;
 
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            if (cancelled) {
-                return;
-            }
-            setHasSession(Boolean(session));
-            setSessionChecked(true);
-            if (session) {
-                clearRecoveryCookie();
-            }
+        // React 19: getSession が同期的に解決するとマウント前 setState 警告になるため、
+        // 次フレームまでずらしてから状態を更新する。
+        const frame = window.requestAnimationFrame(() => {
+            void supabase.auth.getSession().then(({ data: { session } }) => {
+                if (cancelled) {
+                    return;
+                }
+
+                startTransition(() => {
+                    setHasSession(Boolean(session));
+                    setSessionChecked(true);
+                });
+
+                if (session) {
+                    clearRecoveryCookie();
+                }
+            });
         });
 
         return () => {
             cancelled = true;
+            window.cancelAnimationFrame(frame);
         };
-    }, [hasCallbackCode]);
+    }, []);
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -94,14 +97,10 @@ function UpdatePasswordForm() {
         clearRecoveryCookie();
         setSuccess(true);
         toast.success("パスワードを更新しました");
-        setTimeout(() => {
+        window.setTimeout(() => {
             router.push("/");
             router.refresh();
         }, 1500);
-    }
-
-    if (hasCallbackCode) {
-        return <CallbackCodeRedirect />;
     }
 
     if (!sessionChecked) {
@@ -183,12 +182,15 @@ function UpdatePasswordForm() {
     );
 }
 
-function UpdatePasswordContent() {
-    return (
-        <Suspense fallback={<AuthPageLoading className="h-40" />}>
-            <UpdatePasswordForm />
-        </Suspense>
-    );
+function UpdatePasswordGate() {
+    const searchParams = useSearchParams();
+    const hasCallbackCode = Boolean(searchParams.get("code"));
+
+    if (hasCallbackCode) {
+        return <CallbackCodeRedirect />;
+    }
+
+    return <UpdatePasswordForm />;
 }
 
 export default function UpdatePasswordPage() {
@@ -198,7 +200,9 @@ export default function UpdatePasswordPage() {
             title="新しいパスワードを設定"
             description="認証メールのリンクからアクセスして、新しいパスワードを設定してください。リンクの有効期限が切れている場合は、ログイン画面から再設定メールを再送してください。"
         >
-            <UpdatePasswordContent />
+            <Suspense fallback={<AuthPageLoading className="h-40" />}>
+                <UpdatePasswordGate />
+            </Suspense>
         </AuthPageShell>
     );
 }
