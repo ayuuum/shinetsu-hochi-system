@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Check, Copy, Loader2, RefreshCw } from "lucide-react";
 import { resetUserPasswordAction } from "@/app/actions/admin-user-actions";
 import { generatePassword } from "@/lib/password";
+import { StatusBanner } from "@/components/shared/status-banner";
 
 interface ResetPasswordModalProps {
     open: boolean;
@@ -80,11 +81,13 @@ export function ResetPasswordModal({ open, onOpenChange, userId, userEmail }: Re
                 {done ? (
                     <>
                         <DialogHeader>
-                            <DialogTitle>パスワードを再設定しました</DialogTitle>
-                            <DialogDescription>
-                                新しいパスワードを本人に直接お伝えください。この画面を閉じると再表示できません。
-                            </DialogDescription>
+                            <DialogTitle>再設定完了</DialogTitle>
                         </DialogHeader>
+                        <StatusBanner
+                            variant="success"
+                            title="パスワードを再設定しました"
+                            description="新しいパスワードを本人に直接お伝えください。この画面を閉じると再表示できません。"
+                        />
                         <div className="space-y-3 rounded-lg border bg-muted/40 p-4">
                             <div className="space-y-1">
                                 <p className="text-xs text-muted-foreground">メールアドレス</p>

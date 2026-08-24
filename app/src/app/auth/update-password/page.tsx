@@ -7,10 +7,11 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AuthPageLoading, AuthPageShell } from "@/components/auth-page-shell";
+import { StatusBanner } from "@/components/shared/status-banner";
 import { AUTH_RECOVERY_COOKIE } from "@/lib/auth-recovery";
 import { supabase } from "@/lib/supabase";
 import { getPasswordUpdateErrorMessage } from "@/lib/auth-error-messages";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 function clearRecoveryCookie() {
     document.cookie = `${AUTH_RECOVERY_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
@@ -109,13 +110,12 @@ function UpdatePasswordForm() {
 
     if (!hasSession) {
         return (
-            <div className="space-y-4 text-center">
-                <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
-                    再設定リンクの有効期限が切れているか、正しいリンクからアクセスしていません。
-                </p>
-                <p className="text-sm text-muted-foreground">
-                    ログイン画面の「パスワードを忘れた場合」から、再設定メールをもう一度送信してください。
-                </p>
+            <div className="space-y-4">
+                <StatusBanner
+                    variant="error"
+                    title="再設定リンクが無効です"
+                    description="ログイン画面の「パスワードを忘れた場合」から、再設定メールをもう一度送信してください。"
+                />
                 <Button render={<Link href="/login" />} className="w-full">
                     ログイン画面へ
                 </Button>
@@ -125,13 +125,16 @@ function UpdatePasswordForm() {
 
     if (success) {
         return (
-            <div className="flex flex-col items-center justify-center gap-3 py-6 text-center">
-                <CheckCircle2 className="h-12 w-12 text-emerald-500" />
-                <p className="text-base font-semibold">パスワードを更新しました</p>
-                <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="space-y-4 py-2">
+                <StatusBanner
+                    variant="success"
+                    title="パスワードを更新しました"
+                    description="ダッシュボードへ移動しています…"
+                />
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    ダッシュボードへ移動しています...
-                </p>
+                    しばらくお待ちください
+                </div>
             </div>
         );
     }
@@ -145,7 +148,7 @@ function UpdatePasswordForm() {
                 <Input
                     id="new-password"
                     type="password"
-                    placeholder="8文字以上"
+                    placeholder="8文字以上…"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -161,7 +164,7 @@ function UpdatePasswordForm() {
                 <Input
                     id="confirm-password"
                     type="password"
-                    placeholder="もう一度入力"
+                    placeholder="もう一度入力…"
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
                     required
@@ -170,7 +173,7 @@ function UpdatePasswordForm() {
                 />
             </div>
             {error && (
-                <p aria-live="polite" className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">{error}</p>
+                <StatusBanner variant="error" title={error} />
             )}
             <Button type="submit" className="w-full" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

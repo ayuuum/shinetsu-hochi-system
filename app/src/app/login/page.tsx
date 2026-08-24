@@ -8,12 +8,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
 import { BrandLogo } from "@/components/brand-logo";
+import { StatusBanner } from "@/components/shared/status-banner";
 import { supabase } from "@/lib/supabase";
 import { getPasswordResetCallbackUrl } from "@/lib/auth-recovery";
 import { getLoginErrorMessage, getPasswordResetRequestErrorMessage } from "@/lib/auth-error-messages";
@@ -126,9 +126,11 @@ function LoginForm() {
         <>
         <form onSubmit={handleLogin} className="space-y-6" noValidate>
             {authError === "callback" && (
-                <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
-                    認証リンクの処理に失敗しました。リンクの有効期限が切れている可能性があります。再度「パスワードを忘れた場合」からお試しください。
-                </p>
+                <StatusBanner
+                    variant="error"
+                    title="認証リンクの処理に失敗しました"
+                    description="リンクの有効期限が切れている可能性があります。再度「パスワードを忘れた場合」からお試しください。"
+                />
             )}
             <div>
                 <label htmlFor="email" className="mb-2.5 block text-sm font-semibold tracking-tight">メールアドレス</label>
@@ -149,7 +151,7 @@ function LoginForm() {
                 <Input
                     id="password"
                     type="password"
-                    placeholder="パスワードを入力"
+                    placeholder="パスワードを入力…"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -158,11 +160,11 @@ function LoginForm() {
                 />
             </div>
             {error && (
-                <p aria-live="polite" className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">{error}</p>
+                <StatusBanner variant="error" title={error} />
             )}
             <Button type="submit" className="mt-1 w-full" disabled={loading || redirecting}>
                 {(loading || redirecting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {redirecting ? "移動中..." : "ログイン"}
+                {redirecting ? "移動中…" : "ログイン"}
             </Button>
             <p className="pt-1 text-center text-sm">
                 <button
@@ -184,11 +186,15 @@ function LoginForm() {
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>パスワードの再設定</DialogTitle>
-                    <DialogDescription>
-                        登録済みのメールアドレスに、再設定用のリンクを送信します。
-                        届いたメールのボタンから新しいパスワードを設定してください。
-                    </DialogDescription>
                 </DialogHeader>
+                <div className="space-y-3 text-sm text-muted-foreground">
+                    <p>
+                        通常は管理者に連絡し、ユーザー管理画面からパスワードを再発行してもらってください。
+                    </p>
+                    <p>
+                        自分で再設定する場合は、登録済みのメールアドレスにリンクを送信します。届いたメールから新しいパスワードを設定してください。
+                    </p>
+                </div>
                 <form onSubmit={handlePasswordReset} className="space-y-5">
                     <div>
                         <label htmlFor="reset-email" className="mb-2.5 block text-sm font-semibold tracking-tight">メールアドレス</label>
@@ -203,10 +209,14 @@ function LoginForm() {
                         />
                     </div>
                     {resetError && (
-                        <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">{resetError}</p>
+                        <StatusBanner variant="error" title={resetError} />
                     )}
                     {resetMessage && (
-                        <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">{resetMessage}</p>
+                        <StatusBanner
+                            variant="success"
+                            title="再設定メールを送信しました"
+                            description={resetMessage}
+                        />
                     )}
                     <DialogFooter className="gap-2 sm:gap-0">
                         <Button type="button" variant="outline" onClick={() => setResetOpen(false)}>

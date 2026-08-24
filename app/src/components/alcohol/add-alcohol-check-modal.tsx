@@ -30,10 +30,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, Beer, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Plus, Loader2, ClipboardCheck, ShieldCheck, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { createAlcoholCheckAction } from "@/app/actions/admin-record-actions";
 import { alcoholCheckSchema, type AlcoholCheckValues } from "@/lib/validation/alcohol-check";
+import { alertStyles } from "@/lib/alert-utils";
 import { useAuth } from "@/hooks/use-auth";
 
 type Employee = { id: string; name: string };
@@ -157,7 +158,7 @@ export function AddAlcoholCheckModal({
                 onOpenChange={handleOpenChange}
                 title={
                     <span className="text-xl md:text-2xl font-bold flex items-center justify-center gap-2">
-                        <Beer className="h-6 w-6 text-primary" />
+                        <ClipboardCheck className="h-6 w-6 text-primary" />
                         アルコールチェック
                     </span>
                 }
@@ -249,7 +250,7 @@ export function AddAlcoholCheckModal({
                             )} />
 
                             {isAbnormal && (
-                                <div className="p-3 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 rounded-xl text-sm font-semibold border border-blue-200 dark:border-blue-900 flex items-start gap-2">
+                                <div className={`flex items-start gap-2 rounded-xl p-3 text-sm font-semibold ${alertStyles.danger.banner}`}>
                                     <AlertTriangle className="h-5 w-5 shrink-0" />
                                     <p>不適正として記録されます。作業員は絶対に運転を開始しないでください。</p>
                                 </div>
@@ -296,7 +297,7 @@ export function AddAlcoholCheckModal({
                                 {isSubmitting ? (
                                     <Loader2 className="mr-2 h-6 w-6 animate-spin" />
                                 ) : (
-                                    <Beer className="mr-2 h-6 w-6" />
+                                    <ClipboardCheck className="mr-2 h-6 w-6" />
                                 )}
                                 {isAbnormal ? "不適正として記録" : "記録を保存する"}
                             </Button>

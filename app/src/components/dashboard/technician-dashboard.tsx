@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { differenceInDays } from "date-fns";
-import { Award, Beer, CheckCircle2, AlertTriangle, ShieldAlert, ArrowRight } from "lucide-react";
+import { Award, CheckCircle2, AlertTriangle, ClipboardCheck, ShieldAlert, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -76,7 +76,7 @@ export async function TechnicianDashboard({ employeeId, employeeName }: { employ
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div className="space-y-1">
                         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                            My Dashboard
+                            マイページ
                         </p>
                         <h1 className="text-2xl font-semibold tracking-tight">
                             {employeeName ? `${employeeName}さん、お疲れ様です` : "お疲れ様です"}
@@ -93,14 +93,14 @@ export async function TechnicianDashboard({ employeeId, employeeName }: { employ
             <Card className="border-border/50">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base">
-                        <Beer className="h-5 w-5 text-muted-foreground" />
+                        <ClipboardCheck className="h-5 w-5 text-muted-foreground" />
                         本日のアルコールチェック
                     </CardTitle>
                     <CardDescription>{today} の記録状況</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {hasAbnormal && (
-                        <div className="mb-4 flex items-start gap-2 rounded-xl border border-blue-600/20 bg-blue-600/10 px-4 py-3 text-sm font-semibold text-blue-700">
+                        <div className={`mb-4 flex items-start gap-2 rounded-xl px-4 py-3 text-sm font-semibold ${alertStyles.danger.banner}`}>
                             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                             不適正の記録があります。安全運転管理者に報告してください。
                         </div>

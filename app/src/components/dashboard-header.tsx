@@ -40,6 +40,11 @@ export function DashboardHeader() {
                         </span>
                     </Button>
                     
+                    <div className="min-w-0 flex-1 md:hidden">
+                        <p className="truncate text-sm font-semibold text-foreground">{activeItem.title}</p>
+                        <p className="truncate text-[11px] text-muted-foreground">{section.title}</p>
+                    </div>
+
                     <div className="hidden min-w-0 items-center gap-2 text-sm md:flex">
                         <span className="min-w-0 truncate text-muted-foreground/70 text-xs font-medium tracking-wide">
                             {section.title}

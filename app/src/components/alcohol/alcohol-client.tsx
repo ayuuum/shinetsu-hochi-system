@@ -40,6 +40,7 @@ import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useIntentPrefetch } from "@/hooks/use-intent-prefetch";
+import { alertStyles } from "@/lib/alert-utils";
 
 const ALCOHOL_LOCATION_OPTIONS = [
     { value: "all", label: "全拠点" },
@@ -541,7 +542,7 @@ export function AlcoholClient({
                         <Card
                             key={check.id}
                             size="sm"
-                            className={check.is_abnormal ? "border-blue-600/20 bg-blue-600/5" : "border-border/60"}
+                            className={check.is_abnormal ? alertStyles.danger.subtle : "border-border/60"}
                         >
                             <CardContent className="space-y-3">
                                 <div className="flex items-start justify-between gap-3">
@@ -651,8 +652,8 @@ export function AlcoholClient({
                                 const checkerPrefetchProps = checkerHref ? getIntentPrefetchProps(checkerHref) : {};
 
                                 return (
-                                <TableRow key={check.id} className={check.is_abnormal ? "group bg-blue-600/5 hover:bg-blue-600/10" : "group hover:bg-muted/50 transition-colors"}>
-                                    <TableCell className={`sticky left-0 z-10 font-medium shadow-[inset_-1px_0_0_hsl(var(--border))] ${check.is_abnormal ? "bg-background group-hover:bg-blue-600/10" : "bg-card group-hover:bg-muted/50"}`}>
+                                <TableRow key={check.id} className={check.is_abnormal ? `group ${alertStyles.danger.subtle} hover:bg-destructive/10` : "group hover:bg-muted/50 transition-colors"}>
+                                    <TableCell className={`sticky left-0 z-10 font-medium shadow-[inset_-1px_0_0_hsl(var(--border))] ${check.is_abnormal ? "bg-background group-hover:bg-destructive/10" : "bg-card group-hover:bg-muted/50"}`}>
                                         {check.employee?.id ? (
                                             <TableCellLink href={employeeHref} className="font-medium hover:underline" {...employeePrefetchProps}>
                                                 {check.employee.name}

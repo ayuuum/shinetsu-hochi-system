@@ -32,11 +32,13 @@ import { getUserRoleLabel } from "@/lib/display-labels";
 
 export function AppSidebar() {
     const pathname = usePathname();
-    const { user, role, signOut, isAdminOrHr, linkedEmployeeId } = useAuth();
+    const { user, role, signOut, isAdminOrHr, linkedEmployeeId, linkedEmployeeName } = useAuth();
     const { getIntentPrefetchProps } = useIntentPrefetch();
     const { state, toggleSidebar } = useSidebar();
 
-    const displayName = user?.email?.split("@")[0] || "ユーザー";
+    const displayName = linkedEmployeeName
+        || user?.email?.split("@")[0]
+        || "ユーザー";
     const roleLabel = role ? getUserRoleLabel(role) : "";
     const navigationSections = getGroupedAppNavigation(isAdminOrHr, role, linkedEmployeeId);
 

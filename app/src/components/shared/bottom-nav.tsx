@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Users, BriefcaseBusiness, Beer, Menu } from "lucide-react";
+import { ClipboardCheck, LayoutDashboard, Menu, ScrollText, Users } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -12,16 +12,25 @@ const ADMIN_NAV_ITEMS = [
         title: "ホーム",
         url: "/dashboard",
         icon: LayoutDashboard,
+        match: (pathname: string) => pathname === "/dashboard" || pathname === "/",
     },
     {
         title: "社員",
         url: "/employees",
         icon: Users,
+        match: (pathname: string) => pathname === "/employees" || pathname.startsWith("/employees/"),
     },
     {
-        title: "施工",
-        url: "/projects",
-        icon: BriefcaseBusiness,
+        title: "資格",
+        url: "/qualifications?level=urgent",
+        icon: ScrollText,
+        match: (pathname: string) => pathname === "/qualifications" || pathname.startsWith("/qualifications/"),
+    },
+    {
+        title: "検査",
+        url: "/alcohol-checks",
+        icon: ClipboardCheck,
+        match: (pathname: string) => pathname === "/alcohol-checks" || pathname.startsWith("/alcohol-checks/"),
     },
 ];
 
@@ -30,11 +39,13 @@ const TECHNICIAN_NAV_ITEMS = [
         title: "ホーム",
         url: "/today",
         icon: LayoutDashboard,
+        match: (pathname: string) => pathname === "/today" || pathname === "/",
     },
     {
-        title: "アルコール",
+        title: "検査",
         url: "/alcohol-checks",
-        icon: Beer,
+        icon: ClipboardCheck,
+        match: (pathname: string) => pathname === "/alcohol-checks" || pathname.startsWith("/alcohol-checks/"),
     },
 ];
 
@@ -49,7 +60,7 @@ export function BottomNav() {
         <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/98 backdrop-blur-lg border-t border-border/20 pb-[env(safe-area-inset-bottom)] shadow-[0_-1px_3px_rgba(0,0,0,0.03)]">
             <div className="flex items-center justify-around h-[60px] px-1">
                 {navItems.map((item) => {
-                    const isActive = pathname === item.url || (item.url !== "/" && pathname.startsWith(item.url));
+                    const isActive = item.match(pathname);
                     const Icon = item.icon;
 
                     return (
@@ -79,9 +90,10 @@ export function BottomNav() {
                     );
                 })}
 
-                {/* More / Menu Toggle */}
                 <button
+                    type="button"
                     onClick={toggleSidebar}
+                    aria-label="メニューを開く"
                     className="flex flex-col items-center justify-center w-full h-full py-1.5 transition-all duration-200 text-muted-foreground/70 active:text-foreground"
                 >
                     <div className="flex items-center justify-center w-10 h-10 rounded-xl transition-all">

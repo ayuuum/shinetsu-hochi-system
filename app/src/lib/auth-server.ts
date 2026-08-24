@@ -9,28 +9,31 @@ export type AuthSnapshot = {
     user: AuthUser;
     role: UserRole;
     linkedEmployeeId: string | null;
+    linkedEmployeeName: string | null;
 };
 
 type CachedRoleSnapshot = {
     role: UserRole;
     linkedEmployeeId: string | null;
+    linkedEmployeeName: string | null;
 };
 
 const EMPTY_AUTH_SNAPSHOT: AuthSnapshot = {
     user: null,
     role: null,
     linkedEmployeeId: null,
+    linkedEmployeeName: null,
 };
 
 export const getCachedUserRoleSnapshot = unstable_cache(
     async (userId: string): Promise<CachedRoleSnapshot> => {
         const supabase = createSupabaseAdmin();
         if (!supabase) {
-            return { role: null, linkedEmployeeId: null };
+            return { role: null, linkedEmployeeId: null, linkedEmployeeName: null };
         }
         const { data: roleRow, error } = await supabase
             .from("user_roles")
-            .select("role, employee_id")
+            .select("role, employee_id, employees(name)")
             .eq("id", userId)
             .maybeSingle();
 
@@ -38,9 +41,12 @@ export const getCachedUserRoleSnapshot = unstable_cache(
             console.error("Failed to load cached user role:", error);
         }
 
+        const employee = roleRow?.employees as { name: string } | null | undefined;
+
         return {
             role: (roleRow?.role as UserRole) ?? null,
             linkedEmployeeId: roleRow?.employee_id ?? null,
+            linkedEmployeeName: employee?.name ?? null,
         };
     },
     ["user-role-snapshot"],
@@ -73,6 +79,7 @@ export const getFastAuthSnapshot = cache(async (): Promise<AuthSnapshot> => {
         },
         role: roleSnapshot.role,
         linkedEmployeeId: roleSnapshot.linkedEmployeeId,
+        linkedEmployeeName: roleSnapshot.linkedEmployeeName,
     };
 });
 
@@ -90,13 +97,15 @@ export const getStrictAuthSnapshot = cache(async (): Promise<AuthSnapshot> => {
 
     const { data: roleRow, error: roleError } = await supabase
         .from("user_roles")
-        .select("role, employee_id")
+        .select("role, employee_id, employees(name)")
         .eq("id", user.id)
         .maybeSingle();
 
     if (roleError) {
         console.error("Failed to load user role:", roleError);
     }
+
+    const employee = roleRow?.employees as { name: string } | null | undefined;
 
     return {
         user: {
@@ -105,6 +114,7 @@ export const getStrictAuthSnapshot = cache(async (): Promise<AuthSnapshot> => {
         },
         role: (roleRow?.role as UserRole) ?? null,
         linkedEmployeeId: roleRow?.employee_id ?? null,
+        linkedEmployeeName: employee?.name ?? null,
     };
 });
 

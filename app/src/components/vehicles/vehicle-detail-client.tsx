@@ -21,6 +21,7 @@ import {
 import { AddVehicleTireModal } from "@/components/vehicles/add-vehicle-tire-modal";
 import { AddVehicleRepairModal } from "@/components/vehicles/add-vehicle-repair-modal";
 import { AddVehicleAccidentModal } from "@/components/vehicles/add-vehicle-accident-modal";
+import { alertStyles, getAlertLevel } from "@/lib/alert-utils";
 
 type VehicleDetail = Tables<"vehicles"> & {
     employees: { id: string; name: string } | null;
@@ -32,9 +33,14 @@ type VehicleDetail = Tables<"vehicles"> & {
 function getExpiryBadge(date: string | null) {
     if (!date) return null;
     const days = differenceInDays(new Date(date), new Date());
-    if (days < 0) return <Badge variant="destructive">{Math.abs(days)}日超過</Badge>;
-    if (days <= 30) return <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">残{days}日</Badge>;
-    return <Badge variant="outline" className="text-green-700 border-green-200">有効</Badge>;
+    const level = getAlertLevel(date);
+    if (level === "danger") {
+        return <Badge variant="secondary" className={alertStyles.danger.badge}>{Math.abs(days)}日超過</Badge>;
+    }
+    if (level === "urgent" || level === "warning") {
+        return <Badge variant="secondary" className={alertStyles[level].badge}>残{days}日</Badge>;
+    }
+    return <Badge variant="secondary" className={alertStyles.ok.badge}>有効</Badge>;
 }
 
 function DetailItem({ label, value }: { label: string; value: string | null | number }) {

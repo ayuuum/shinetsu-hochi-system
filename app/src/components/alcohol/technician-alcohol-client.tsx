@@ -2,10 +2,11 @@
 
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Beer, CheckCircle2, AlertTriangle } from "lucide-react";
+import { CheckCircle2, AlertTriangle, ClipboardCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddAlcoholCheckModal } from "./add-alcohol-check-modal";
+import { alertStyles } from "@/lib/alert-utils";
 import type { AlcoholCheckRow } from "./alcohol-client";
 
 type Employee = { id: string; name: string };
@@ -44,7 +45,7 @@ export function TechnicianAlcoholClient({ initialChecks, employee, currentDate }
             </div>
 
             {hasAbnormal && (
-                <div className="flex items-start gap-2 rounded-xl border border-blue-600/20 bg-blue-600/10 px-4 py-3 text-sm font-semibold text-blue-700">
+                <div className={`flex items-start gap-2 rounded-xl px-4 py-3 text-sm font-semibold ${alertStyles.danger.banner}`}>
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                     不適正の記録があります。安全運転管理者に報告してください。
                 </div>
@@ -76,7 +77,7 @@ export function TechnicianAlcoholClient({ initialChecks, employee, currentDate }
             <Card className="border-border/50">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base">
-                        <Beer className="h-5 w-5 text-muted-foreground" />
+                        <ClipboardCheck className="h-5 w-5 text-muted-foreground" />
                         本日の記録
                     </CardTitle>
                     <CardDescription>{initialChecks.length}件の記録</CardDescription>
@@ -94,7 +95,7 @@ export function TechnicianAlcoholClient({ initialChecks, employee, currentDate }
                                             <Badge
                                                 variant="secondary"
                                                 className={check.is_abnormal
-                                                    ? "border-blue-700/50 bg-blue-700/10 text-blue-700 text-xs font-semibold"
+                                                    ? `${alertStyles.danger.badge} text-xs font-semibold`
                                                     : "border-emerald-200 bg-emerald-50 text-emerald-700 text-xs font-semibold dark:border-emerald-900 dark:bg-emerald-950/30"
                                                 }
                                             >

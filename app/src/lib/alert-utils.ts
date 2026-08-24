@@ -24,32 +24,39 @@ export function getDaysRemaining(expiryDate: string, now: Date = new Date()): nu
     return differenceInDays(new Date(expiryDate), now);
 }
 
+/** ホバー時のみ表示する副次操作（モバイルでは常時表示） */
+export const hoverRevealActionsClassName =
+    "opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100";
+
 export const alertStyles = {
     danger: {
-        color: "text-blue-700",
-        strong: "text-blue-700",
-        icon: "bg-blue-700/10 text-blue-700",
-        bg: "border border-border bg-card shadow-sm",
-        subtle: "border border-border bg-card shadow-sm",
-        badge: "border border-blue-700/50 bg-blue-700/10 text-blue-700 font-semibold",
+        color: "text-destructive",
+        strong: "text-destructive",
+        icon: "bg-destructive/10 text-destructive",
+        bg: "border border-destructive/30 bg-destructive/5 shadow-sm",
+        subtle: "border border-destructive/20 bg-destructive/5",
+        badge: "border border-destructive/40 bg-destructive/10 text-destructive font-semibold",
+        banner: "border border-destructive/25 bg-destructive/10 text-destructive",
         label: "期限切れ",
     },
     urgent: {
-        color: "text-blue-600",
-        strong: "text-blue-600",
-        icon: "bg-blue-600/10 text-blue-600",
-        bg: "border border-border bg-card shadow-sm",
-        subtle: "border border-border bg-card shadow-sm",
-        badge: "border border-blue-600/50 bg-blue-600/10 text-blue-600 font-semibold",
+        color: "text-amber-700 dark:text-amber-400",
+        strong: "text-amber-700 dark:text-amber-400",
+        icon: "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400",
+        bg: "border border-amber-300/50 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20 shadow-sm",
+        subtle: "border border-amber-200/60 bg-amber-50/80 dark:border-amber-900/50 dark:bg-amber-950/15",
+        badge: "border border-amber-400/50 bg-amber-100 text-amber-800 font-semibold dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300",
+        banner: "border border-amber-300/40 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300",
         label: "14日以内",
     },
     warning: {
-        color: "text-blue-400",
-        strong: "text-blue-400",
-        icon: "bg-blue-400/10 text-blue-400",
-        bg: "border border-border bg-card shadow-sm",
-        subtle: "border border-border bg-card shadow-sm",
-        badge: "border border-blue-400/50 bg-blue-400/10 text-blue-400 font-semibold",
+        color: "text-yellow-700 dark:text-yellow-400",
+        strong: "text-yellow-700 dark:text-yellow-400",
+        icon: "bg-yellow-100 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-400",
+        bg: "border border-yellow-300/50 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/20 shadow-sm",
+        subtle: "border border-yellow-200/60 bg-yellow-50/80 dark:border-yellow-900/50 dark:bg-yellow-950/15",
+        badge: "border border-yellow-400/50 bg-yellow-100 text-yellow-800 font-semibold dark:border-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-300",
+        banner: "border border-yellow-300/40 bg-yellow-50 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-300",
         label: "30日以内",
     },
     info: {
@@ -59,6 +66,7 @@ export const alertStyles = {
         bg: "border border-border bg-card shadow-sm",
         subtle: "border border-border bg-card shadow-sm",
         badge: "border border-border bg-muted/50 text-muted-foreground font-medium",
+        banner: "border border-border bg-muted/40 text-foreground",
         label: "60日以内",
     },
     ok: {
@@ -68,6 +76,7 @@ export const alertStyles = {
         bg: "border border-border bg-card shadow-sm",
         subtle: "border border-border bg-card shadow-sm",
         badge: "border border-chart-2/50 bg-chart-2/10 text-chart-2 font-semibold",
+        banner: "border border-chart-2/30 bg-chart-2/10 text-chart-2",
         label: "正常",
     },
 } as const;

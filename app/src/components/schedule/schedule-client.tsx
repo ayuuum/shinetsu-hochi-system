@@ -8,6 +8,7 @@ import * as z from "zod";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
+import { hoverRevealActionsClassName } from "@/lib/alert-utils";
 import { Tables } from "@/types/supabase";
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -562,7 +563,7 @@ function ScheduleRow({
                 )}
             </div>
             {isAdmin && (
-                <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className={`flex items-center gap-1 shrink-0 ${hoverRevealActionsClassName}`}>
                     <Button
                         variant="ghost"
                         size="sm"

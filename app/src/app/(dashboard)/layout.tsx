@@ -20,6 +20,7 @@ export default async function DashboardLayout({
             initialUser={auth.user}
             initialRole={auth.role}
             initialLinkedEmployeeId={auth.linkedEmployeeId}
+            initialLinkedEmployeeName={auth.linkedEmployeeName}
         >
             <SidebarProvider>
                 <AppSidebar />

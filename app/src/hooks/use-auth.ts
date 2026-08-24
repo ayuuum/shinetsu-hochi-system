@@ -8,6 +8,7 @@ interface AuthState {
     user: AuthUser;
     role: UserRole;
     linkedEmployeeId: string | null;
+    linkedEmployeeName: string | null;
     isAdmin: boolean;
     isAdminOrHr: boolean;
     loading: boolean;
@@ -16,10 +17,14 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
-async function fetchRoleAndLink(userId: string): Promise<{ role: UserRole; linkedEmployeeId: string | null }> {
+async function fetchRoleAndLink(userId: string): Promise<{
+    role: UserRole;
+    linkedEmployeeId: string | null;
+    linkedEmployeeName: string | null;
+}> {
     const { data, error } = await supabase
         .from("user_roles")
-        .select("role, employee_id")
+        .select("role, employee_id, employees(name)")
         .eq("id", userId)
         .maybeSingle();
 
@@ -27,9 +32,12 @@ async function fetchRoleAndLink(userId: string): Promise<{ role: UserRole; linke
         throw error;
     }
 
+    const employee = data?.employees as { name: string } | null | undefined;
+
     return {
         role: (data?.role as UserRole) ?? null,
         linkedEmployeeId: data?.employee_id ?? null,
+        linkedEmployeeName: employee?.name ?? null,
     };
 }
 
@@ -37,6 +45,7 @@ function buildAuthState(
     user: AuthUser,
     role: UserRole,
     linkedEmployeeId: string | null,
+    linkedEmployeeName: string | null,
     loading: boolean,
     signOut: () => Promise<void>
 ): AuthState {
@@ -44,6 +53,7 @@ function buildAuthState(
         user,
         role,
         linkedEmployeeId,
+        linkedEmployeeName,
         isAdmin: role === "admin",
         isAdminOrHr: role === "admin" || role === "hr",
         loading,
@@ -55,16 +65,19 @@ export function AuthProvider({
     initialUser,
     initialRole,
     initialLinkedEmployeeId,
+    initialLinkedEmployeeName,
     children,
 }: {
     initialUser: AuthUser;
     initialRole: UserRole;
     initialLinkedEmployeeId: string | null;
+    initialLinkedEmployeeName: string | null;
     children: React.ReactNode;
 }) {
     const [user, setUser] = useState<AuthUser>(initialUser);
     const [role, setRole] = useState<UserRole>(initialRole);
     const [linkedEmployeeId, setLinkedEmployeeId] = useState<string | null>(initialLinkedEmployeeId);
+    const [linkedEmployeeName, setLinkedEmployeeName] = useState<string | null>(initialLinkedEmployeeName);
     const [loading, setLoading] = useState(false);
     const userRef = useRef<AuthUser>(initialUser);
     const roleRef = useRef<UserRole>(initialRole);
@@ -85,6 +98,7 @@ export function AuthProvider({
             if (!nextUser) {
                 setRole(null);
                 setLinkedEmployeeId(null);
+                setLinkedEmployeeName(null);
                 setLoading(false);
                 return;
             }
@@ -94,10 +108,12 @@ export function AuthProvider({
                 const next = await fetchRoleAndLink(nextUser.id);
                 setRole(next.role);
                 setLinkedEmployeeId(next.linkedEmployeeId);
+                setLinkedEmployeeName(next.linkedEmployeeName);
             } catch (error) {
                 console.error("Failed to refresh auth role:", error);
                 setRole(null);
                 setLinkedEmployeeId(null);
+                setLinkedEmployeeName(null);
             } finally {
                 setLoading(false);
             }
@@ -130,8 +146,8 @@ export function AuthProvider({
     }, []);
 
     const value = useMemo(
-        () => buildAuthState(user, role, linkedEmployeeId, loading, signOut),
-        [linkedEmployeeId, loading, role, signOut, user]
+        () => buildAuthState(user, role, linkedEmployeeId, linkedEmployeeName, loading, signOut),
+        [linkedEmployeeId, linkedEmployeeName, loading, role, signOut, user]
     );
 
     return createElement(AuthContext.Provider, { value }, children);

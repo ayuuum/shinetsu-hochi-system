@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseServer } from "@/lib/supabase-server";
-import { alertStyles, getAlertLevel, getDaysRemaining, type AlertLevel } from "@/lib/alert-utils";
+import { alertStyles, getAlertLevel, getDaysRemaining, hoverRevealActionsClassName, type AlertLevel } from "@/lib/alert-utils";
 import { getTodayInTokyo, getTokyoCalendarMonthBounds, isYmdInInclusiveRange } from "@/lib/date";
 import {
     getCachedDashboardEmployees,
@@ -517,7 +517,7 @@ export function DashboardHeroSection() {
             <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                 <div className="space-y-3">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary/70">
-                        Daily Overview
+                        本日の概要
                     </p>
                     <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
                         本日の業務状況
@@ -753,7 +753,7 @@ export async function DashboardTaskListSection() {
                                         <Button
                                             size="sm"
                                             variant="ghost"
-                                            className="shrink-0 text-xs h-8 px-3 opacity-0 group-hover:opacity-100 transition-all"
+                                            className={`shrink-0 text-xs h-8 px-3 ${hoverRevealActionsClassName}`}
                                             render={<Link href={`/employees/${task.employeeId}?tab=qualifications`} />}
                                         >
                                             資格タブ <ArrowRight className="ml-1.5 h-3 w-3" />

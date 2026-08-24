@@ -49,7 +49,7 @@ import { AddItAccountModal } from "@/components/employees/add-it-account-modal";
 import { AddFamilyModal } from "@/components/employees/add-family-modal";
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog";
 import { useAuth } from "@/hooks/use-auth";
-import { alertStyles } from "@/lib/alert-utils";
+import { alertStyles, hoverRevealActionsClassName } from "@/lib/alert-utils";
 import { computeLicenseGroups } from "@/lib/license-groups";
 import { computeCurrentExperience, formatExperience } from "@/lib/experience";
 import {
@@ -683,7 +683,7 @@ export function EmployeeDetailClient({
                                                     表示順 {row.sort_order}
                                                 </Badge>
                                                 {isAdminOrHr && (
-                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className={`flex items-center gap-1 ${hoverRevealActionsClassName}`}>
                                                     <AddItAccountModal
                                                         employeeId={employee.id}
                                                         existingRecord={row}
@@ -781,7 +781,7 @@ export function EmployeeDetailClient({
                                         <div className="flex justify-between"><span className="text-muted-foreground">取得日</span><span className="tabular-nums">{formatDisplayDate(qualification.acquired_date)}</span></div>
                                         <div className="flex justify-between font-bold">
                                             <span className="text-muted-foreground">有効期限</span>
-                                            <span className={`tabular-nums ${qualification.expiry_date && new Date(qualification.expiry_date) < new Date() ? "text-blue-700" : ""}`}>
+                                            <span className={`tabular-nums ${qualification.expiry_date && new Date(qualification.expiry_date) < new Date() ? alertStyles.danger.strong : ""}`}>
                                                 {formatDisplayDate(qualification.expiry_date, "期限なし")}
                                             </span>
                                         </div>
@@ -925,7 +925,7 @@ export function EmployeeDetailClient({
                                         </div>
                                         <div className="flex flex-col items-end gap-2">
                                             {family.is_emergency_contact && (
-                                                <Badge className={`${alertStyles.danger.badge} border-blue-700/50`}>
+                                                <Badge className={alertStyles.danger.badge}>
                                                     緊急連絡先
                                                 </Badge>
                                             )}
